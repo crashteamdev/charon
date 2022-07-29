@@ -34,3 +34,5 @@ build/
 /.mvn/
 /gen/
 /Dockerfile
+/mvnw
+/mvnw.cmd
