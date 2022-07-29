@@ -56,6 +56,11 @@ public class PaymentTest {
         YookassaMock.paymentStatus(mockYookassaClient);
     }
 
+    @BeforeEach
+    public void clearPayments() {
+        paymentRepository.deleteAll();
+    }
+
     @Test
     public void createPaymentTest() {
         PaymentCreateRequest paymentCreateRequest = PaymentCreateRequest.newBuilder()
@@ -139,7 +144,7 @@ public class PaymentTest {
     @Test
     public void testRefundPayment() {
         Payment payment = new Payment();
-        payment.setPaymentId("request_payment_id");
+        payment.setPaymentId("request_refund_payment_id");
         payment.setExternalId("22e12f66-000f-5000-8000-18db351245c7");
         payment.setStatus("pending");
         payment.setCurrency("RUB");
@@ -152,12 +157,12 @@ public class PaymentTest {
         StreamRecorder<PaymentRefundResponse> refundObserver = StreamRecorder.create();
         PaymentRefundRequest refundRequest = PaymentRefundRequest.newBuilder()
                 .setAmount(Amount.newBuilder().setValue(1000L).setCurrency("RUB").build())
-                .setPaymentId("request_payment_id")
+                .setPaymentId("request_refund_payment_id")
                 .setUserId("user_id").build();
         grpcService.refundPayment(refundRequest, refundObserver);
         Assertions.assertNull(refundObserver.getError());
 
-        Payment refundedPayment = paymentRepository.findByPaymentId("request_payment_id")
+        Payment refundedPayment = paymentRepository.findByPaymentId("request_refund_payment_id")
                 .orElseThrow(EntityNotFoundException::new);
         Assertions.assertEquals(RequestPaymentStatus.SUCCEEDED.getTitle(), refundedPayment.getStatus());
     }
