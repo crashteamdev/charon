@@ -1,0 +1,23 @@
+<?xml version="1.1" encoding="UTF-8" standalone="no"?>
+<databaseChangeLog xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+                   xmlns:ext="http://www.liquibase.org/xml/ns/dbchangelog-ext"
+                   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                   xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog-ext http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-ext.xsd http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.6.xsd">
+
+    <changeSet id="create_payment_table" author="sagefreke">
+        <createSequence sequenceName="payment_history_id_seq" startValue="1" incrementBy="1"/>
+        <createTable tableName="payment">
+            <column name="id" type="BIGINT">
+                <constraints primaryKey="true" primaryKeyName="payment_history_pkey"/>
+            </column>
+            <column name="payment_id" type="VARCHAR(255)"/>
+            <column name="user_id" type="VARCHAR(255)"/>
+            <column name="status" type="VARCHAR(64)"/>
+            <column name="value" type="BIGINT"/>
+            <column name="currency" type="VARCHAR(32)"/>
+            <column name="created" type="TIMESTAMP"/>
+            <column name="updated" type="TIMESTAMP"/>
+            <column name="external_id" type="VARCHAR(64)"/>
+        </createTable>
+    </changeSet>
+</databaseChangeLog>
