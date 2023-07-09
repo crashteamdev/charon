@@ -35,7 +35,6 @@ public class PaymentService {
     }
 
     public Payment saveFromRefundResponse(PaymentRefundResponseDTO refundResponse, String userId, String id) {
-
         Payment payment = paymentRepository.findByPaymentId(id).orElseThrow(EntityNotFoundException::new);
         payment.setPaymentId(id);
         payment.setExternalId(refundResponse.getId());
@@ -49,19 +48,6 @@ public class PaymentService {
     }
 
     public Payment saveFromPaymentResponse(PaymentResponseDTO paymentResponse, String userId, String id) {
-        Payment payment = new Payment();
-        payment.setPaymentId(id);
-        payment.setExternalId(paymentResponse.getId());
-        payment.setStatus(paymentResponse.getStatus());
-        payment.setCurrency(paymentResponse.getAmount().getCurrency());
-        payment.setValue(Double.valueOf(paymentResponse.getAmount().getValue()).longValue());
-        payment.setUserId(userId);
-        payment.setCreated(paymentResponse.getCreatedAt());
-        payment.setUpdated(LocalDateTime.now());
-        return savePayment(payment);
-    }
-
-    public Payment saveFromRecurrentPaymentResponse(PaymentResponseDTO paymentResponse, String userId, String id) {
         Payment payment = new Payment();
         payment.setPaymentId(id);
         payment.setExternalId(paymentResponse.getId());

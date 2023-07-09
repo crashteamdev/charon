@@ -1,6 +1,7 @@
 package dev.crashteam.charon.job;
 
 import dev.crashteam.charon.model.RequestPaymentStatus;
+import dev.crashteam.charon.model.domain.Payment;
 import dev.crashteam.charon.service.PaymentService;
 import dev.crashteam.charon.service.feign.YookassaClient;
 import lombok.RequiredArgsConstructor;
@@ -15,16 +16,20 @@ import org.springframework.stereotype.Service;
 @RequiredArgsConstructor
 public class PaymentCheckJob {
 
-    private final PaymentService historyService;
+    private final PaymentService paymentService;
     private final YookassaClient client;
 
     @Recurring(id = "payment-status-check", cron = "*/10 * * * * *")
     @Job(name = "Payment status check")
     public void check() {
-        var paymentHistories = historyService
+        var payments = paymentService
                 .getPaymentByStatus(RequestPaymentStatus.PENDING.getTitle()).stream();
-        BackgroundJob.enqueue(paymentHistories, payment -> {
+        BackgroundJob.enqueue(payments, payment -> {
             client.paymentStatus(payment.getStatus());
         });
+    }
+
+    private void checkPayments(Payment payment) {
+        client.paymentStatus(payment.getStatus());
     }
 }

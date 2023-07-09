@@ -28,7 +28,7 @@ public class YookassaService implements PaymentResolver {
     public PaymentRecurrentResponse createRecurrentPayment(RecurrentPaymentCreateRequest request) {
         PaymentCreateRequestDTO requestDto = paymentMapper.getRecurrentPaymentRequestDto(request);
         PaymentResponseDTO response = kassaClient.createPayment(requestDto);
-        paymentService.saveFromRecurrentPaymentResponse(response, request.getUserId(), request.getId());
+        paymentService.saveFromPaymentResponse(response, request.getUserId(), request.getId());
         return paymentMapper.getRecurrentPaymentResponse(response);
     }
 
