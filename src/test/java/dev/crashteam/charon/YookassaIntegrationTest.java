@@ -4,8 +4,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.tomakehurst.wiremock.WireMockServer;
 import dev.crashteam.charon.config.WireMockConfig;
 import dev.crashteam.charon.mock.YookassaMock;
-import dev.crashteam.charon.model.dto.yookassa.PaymentCreateRequestDTO;
-import dev.crashteam.charon.model.dto.yookassa.PaymentRefundRequestDTO;
+import dev.crashteam.charon.model.dto.yookassa.YkPaymentCreateRequestDTO;
+import dev.crashteam.charon.model.dto.yookassa.YkPaymentRefundRequestDTO;
 import dev.crashteam.charon.service.feign.YookassaClient;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
@@ -56,7 +56,7 @@ public class YookassaIntegrationTest {
     @Test
     public void testRefund() {
         Assertions.assertDoesNotThrow(() -> {
-            PaymentRefundRequestDTO refundRequest = createRefundRequest();
+            YkPaymentRefundRequestDTO refundRequest = createRefundRequest();
             yookassaClient.refund(refundRequest);
         });
     }
@@ -64,19 +64,19 @@ public class YookassaIntegrationTest {
     @Test
     public void testCreatePayment() {
         Assertions.assertDoesNotThrow(() -> {
-            PaymentCreateRequestDTO request = createPaymentCreateRequest();
+            YkPaymentCreateRequestDTO request = createPaymentCreateRequest();
             yookassaClient.createPayment(request);
         });
     }
 
-    private PaymentRefundRequestDTO createRefundRequest() throws IOException {
+    private YkPaymentRefundRequestDTO createRefundRequest() throws IOException {
         String requestJson = getRequestJson("yookassa/payment-refund-request.json");
-        return objectMapper.readValue(requestJson, PaymentRefundRequestDTO.class);
+        return objectMapper.readValue(requestJson, YkPaymentRefundRequestDTO.class);
     }
 
-    private PaymentCreateRequestDTO createPaymentCreateRequest() throws IOException {
+    private YkPaymentCreateRequestDTO createPaymentCreateRequest() throws IOException {
         String requestJson = getRequestJson("yookassa/payment-create-request.json");
-        return objectMapper.readValue(requestJson, PaymentCreateRequestDTO.class);
+        return objectMapper.readValue(requestJson, YkPaymentCreateRequestDTO.class);
     }
 
     private String getRequestJson(String jsonPath) throws IOException {

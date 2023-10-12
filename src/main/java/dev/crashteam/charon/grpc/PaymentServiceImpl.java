@@ -1,8 +1,7 @@
 package dev.crashteam.charon.grpc;
 
-import dev.crashteam.charon.mapper.YookassaPaymentMapper;
+import dev.crashteam.charon.mapper.ProtoMapper;
 import dev.crashteam.charon.service.PaymentService;
-import dev.crashteam.charon.service.YookassaService;
 import dev.crashteam.payment.*;
 import io.grpc.stub.StreamObserver;
 import lombok.RequiredArgsConstructor;
@@ -14,13 +13,12 @@ import java.util.List;
 @RequiredArgsConstructor
 public class PaymentServiceImpl extends PaymentServiceGrpc.PaymentServiceImplBase {
 
-    private final YookassaService yookassaService;
     private final PaymentService paymentService;
-    private final YookassaPaymentMapper paymentMapper;
+    private final ProtoMapper protoMapper;
 
     @Override
     public void createPayment(PaymentCreateRequest request, StreamObserver<PaymentCreateResponse> responseObserver) {
-        var payment = yookassaService.createPayment(request);
+        var payment = paymentService.createPayment(request);
         responseObserver.onNext(payment);
         responseObserver.onCompleted();
     }
@@ -28,7 +26,7 @@ public class PaymentServiceImpl extends PaymentServiceGrpc.PaymentServiceImplBas
     @Override
     public void getPayments(PaymentsQuery request, StreamObserver<PaymentsResponse> responseObserver) {
         var payments = paymentService.getPayments(request);
-        List<UserPayment> userPayments = paymentMapper.getUserPaymentResponse(payments.getContent());
+        List<UserPayment> userPayments = protoMapper.getUserPaymentResponse(payments.getContent());
         LimitOffsetPaginationResult paginationResult = LimitOffsetPaginationResult.newBuilder()
                 .setLimit(request.getPagination().getLimit())
                 .setOffset(request.getPagination().getOffset())
@@ -54,18 +52,4 @@ public class PaymentServiceImpl extends PaymentServiceGrpc.PaymentServiceImplBas
         responseObserver.onCompleted();
     }
 
-
-    @Override
-    public void createRecurrentPayment(RecurrentPaymentCreateRequest request, StreamObserver<PaymentRecurrentResponse> responseObserver) {
-        var payment = yookassaService.createRecurrentPayment(request);
-        responseObserver.onNext(payment);
-        responseObserver.onCompleted();
-    }
-
-    @Override
-    public void refundPayment(PaymentRefundRequest request, StreamObserver<PaymentRefundResponse> responseObserver) {
-        var payment = yookassaService.refundPayment(request);
-        responseObserver.onNext(payment);
-        responseObserver.onCompleted();
-    }
 }

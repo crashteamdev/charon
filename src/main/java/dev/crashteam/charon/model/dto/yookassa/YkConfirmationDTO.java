@@ -6,7 +6,7 @@ import lombok.Data;
 
 @Data
 @Builder
-public class ConfirmationDTO {
+public class YkConfirmationDTO {
 
     private String type;
     @JsonProperty("return_url")

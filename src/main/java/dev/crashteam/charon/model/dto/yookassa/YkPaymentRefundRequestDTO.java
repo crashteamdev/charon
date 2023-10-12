@@ -5,8 +5,9 @@ import lombok.Data;
 import java.util.Map;
 
 @Data
-public class PaymentCancelRequestDTO {
-    private AmountDTO amount;
+public class YkPaymentRefundRequestDTO {
+
     private String paymentId;
+    private YkAmountDTO amount;
     private Map<String, String> metaData;
 }

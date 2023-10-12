@@ -4,9 +4,11 @@ import java.util.Arrays;
 
 public enum RequestPaymentStatus {
 
-    SUCCEEDED("succeeded"),
+    UNKNOWN("unknown"),
+    SUCCESS("success"),
     PENDING("pending"),
-    CANCELED("canceled");
+    CANCELED("canceled"),
+    FAILED("failed");
 
     private final String title;
 

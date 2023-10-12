@@ -5,12 +5,10 @@
                    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog-ext http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-ext.xsd http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.6.xsd">
 
     <changeSet id="create_payment_table" author="sagefreke">
-        <createSequence sequenceName="payment_history_id_seq" startValue="1" incrementBy="1"/>
         <createTable tableName="payment">
-            <column name="id" type="BIGINT">
-                <constraints primaryKey="true" primaryKeyName="payment_history_pkey"/>
+            <column name="payment_id" type="VARCHAR(255)">
+                <constraints primaryKey="true" primaryKeyName="payment_pkey"/>
             </column>
-            <column name="payment_id" type="VARCHAR(255)"/>
             <column name="user_id" type="VARCHAR(255)"/>
             <column name="status" type="VARCHAR(64)"/>
             <column name="value" type="BIGINT"/>
@@ -18,6 +16,86 @@
             <column name="created" type="TIMESTAMP"/>
             <column name="updated" type="TIMESTAMP"/>
             <column name="external_id" type="VARCHAR(64)"/>
+            <column name="payment_system" type="VARCHAR(64)"/>
+            <column name="promo_code_id" type="BIGINT"/>
+            <column name="operation_id" type="VARCHAR(255)"/>
+            <column name="description" type="TEXT"/>
+            <column name="paid_service_id" type="BIGINT"/>
+            <column name="meta_data" type="TEXT"/>
         </createTable>
+        <createIndex tableName="payment" indexName="idx_payment_user_id">
+            <column name="user_id"/>
+        </createIndex>
+        <createIndex tableName="payment" indexName="idx_payment_status">
+            <column name="status"/>
+        </createIndex>
+        <createIndex tableName="payment" indexName="idx_payment_created">
+            <column name="created"/>
+        </createIndex>
+    </changeSet>
+    <changeSet id="create_promo_code_table" author="sagefreke">
+        <createTable tableName="promo_code">
+            <column name="id" type="BIGINT">
+                <constraints primaryKey="true" primaryKeyName="promo_code_id_pkey"/>
+            </column>
+            <column name="code" type="VARCHAR(255)"/>
+            <column name="valid_until" type="TIMESTAMP"/>
+            <column name="usage_limit" type="BIGINT"/>
+            <column name="discount_percentage" type="SMALLINT"/>
+        </createTable>
+        <createIndex tableName="promo_code" indexName="idx_promo_code_code">
+            <column name="code"/>
+        </createIndex>
+        <createSequence sequenceName="promo_code_id_seq" startValue="1" incrementBy="1"/>
+    </changeSet>
+    <changeSet id="create_promo_code_foreign_key" author="sagefreke">
+        <addForeignKeyConstraint baseTableName="payment"
+                                 baseColumnNames="promo_code_id"
+                                 constraintName="payment_promo_code_fkey"
+                                 onDelete="NO ACTION"
+                                 onUpdate="NO ACTION"
+                                 referencedTableName="promo_code"
+                                 referencedColumnNames="id"/>
+    </changeSet>
+    <changeSet id="createUserTable" author="sagefreke">
+        <createTable tableName="app_user">
+            <column name="id" type="VARCHAR(255)">
+                <constraints primaryKey="true" primaryKeyName="user_id_pkey"/>
+            </column>
+            <column name="balance" type="BIGINT" defaultValue="0"/>
+            <column name="currency" type="STRING"/>
+        </createTable>
+    </changeSet>
+    <changeSet id="create_app_user_foreign_key" author="sagefreke">
+        <addForeignKeyConstraint baseTableName="payment"
+                                 baseColumnNames="user_id"
+                                 constraintName="payment_user_fkey"
+                                 onDelete="NO ACTION"
+                                 onUpdate="NO ACTION"
+                                 referencedTableName="app_user"
+                                 referencedColumnNames="id"/>
+    </changeSet>
+    <changeSet id="create_paid_service_table" author="sagefreke">
+        <createTable tableName="paid_service">
+            <column name="id" type="BIGINT">
+                <constraints primaryKey="true" primaryKeyName="paid_service_id_pkey"/>
+            </column>
+            <column name="type" type="VARCHAR(255)"/>
+            <column name="plan" type="TIMESTAMP"/>
+            <column name="value" type="BIGINT"/>
+        </createTable>
+        <createIndex tableName="paid_service" indexName="idx_paid_service_type">
+            <column name="type"/>
+        </createIndex>
+        <createSequence sequenceName="paid_service_id_seq" startValue="1" incrementBy="1"/>
+    </changeSet>
+    <changeSet id="create_promo_code_foreign_key" author="sagefreke">
+        <addForeignKeyConstraint baseTableName="payment"
+                                 baseColumnNames="paid_service_id"
+                                 constraintName="payment_paid_service_fkey"
+                                 onDelete="NO ACTION"
+                                 onUpdate="NO ACTION"
+                                 referencedTableName="paid_service"
+                                 referencedColumnNames="id"/>
     </changeSet>
 </databaseChangeLog>

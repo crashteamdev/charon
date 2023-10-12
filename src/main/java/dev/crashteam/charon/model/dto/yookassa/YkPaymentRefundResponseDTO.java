@@ -10,16 +10,16 @@ import java.util.Map;
 
 @Data
 @JsonIgnoreProperties(ignoreUnknown = true)
-public class PaymentRefundResponseDTO {
+public class YkPaymentRefundResponseDTO {
     private String id;
     private String status;
-    private AmountDTO amount;
+    private YkAmountDTO amount;
     @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME)
     @JsonProperty(value = "created_at")
     private LocalDateTime createdAt;
     @JsonProperty(value = "payment_id")
     private String paymentId;
     @JsonProperty(value = "cancellation_details")
-    private CancellationDetailsDTO cancellationDetails;
+    private YkCancellationDetailsDTO cancellationDetails;
     private Map<String, String> metaData;
 }

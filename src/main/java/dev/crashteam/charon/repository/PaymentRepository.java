@@ -16,6 +16,8 @@ public interface PaymentRepository extends JpaRepository<Payment, String>, JpaSp
     @Query("select p from Payment p where p.userId = :userId")
     List<Payment> findByUserId(String userId, Pageable pageable);
 
+    Optional<Payment> findByOperationId(String operationId);
+
     @Query("select p from Payment p where p.paymentId = :userId")
     Optional<Payment> findByPaymentId(String userId);
 

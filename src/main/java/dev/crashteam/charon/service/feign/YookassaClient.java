@@ -11,21 +11,21 @@ import org.springframework.web.bind.annotation.RequestBody;
 public interface YookassaClient {
 
     @PostMapping("/payments")
-    PaymentResponseDTO createPayment(@RequestBody PaymentCreateRequestDTO paymentCreateRequestDTO);
+    YkPaymentResponseDTO createPayment(@RequestBody YkPaymentCreateRequestDTO ykPaymentCreateRequestDTO);
 
     @PostMapping("/payments/{payment_id}/cancel")
-    PaymentCancelResponseDTO cancelPayment(@PathVariable("payment_id") String paymentId);
+    YkPaymentCancelResponseDTO cancelPayment(@PathVariable("payment_id") String paymentId);
 
     @PostMapping("/refunds")
-    PaymentRefundResponseDTO refund(@RequestBody PaymentRefundRequestDTO paymentRefundRequestDTO);
+    YkPaymentRefundResponseDTO refund(@RequestBody YkPaymentRefundRequestDTO ykPaymentRefundRequestDTO);
 
     @GetMapping("/refunds/{refund_id}")
-    PaymentRefundResponseDTO refundStatus(@PathVariable("refund_id") String refundId);
+    YkPaymentRefundResponseDTO refundStatus(@PathVariable("refund_id") String refundId);
 
     @GetMapping("/payments/{payment_id}")
-    PaymentResponseDTO paymentStatus(@PathVariable("payment_id") String paymentId);
+    YkPaymentResponseDTO paymentStatus(@PathVariable("payment_id") String paymentId);
 
     @PostMapping("payments/{payment_id}/capture")
-    PaymentResponseDTO capturePayment(@PathVariable("payment_id") String paymentId);
+    YkPaymentResponseDTO capturePayment(@PathVariable("payment_id") String paymentId);
 
 }

@@ -5,7 +5,7 @@ import lombok.Data;
 
 @Data
 @JsonIgnoreProperties(ignoreUnknown = true)
-public class CancellationDetailsDTO {
+public class YkCancellationDetailsDTO {
 
     private String party;
     private String reason;

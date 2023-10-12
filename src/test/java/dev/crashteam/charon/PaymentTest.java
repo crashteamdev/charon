@@ -67,7 +67,6 @@ public class PaymentTest {
                 .setUserId("test_user_id")
                 .setAmount(Amount.newBuilder().setCurrency("RUB").setValue(1000L).build())
                 .setDescription("Some test")
-                .setId("request_payment_id")
                 .setReturnUrl("return.com")
                 .build();
         StreamRecorder<PaymentCreateResponse> paymentCreateObserver = StreamRecorder.create();
@@ -164,6 +163,6 @@ public class PaymentTest {
 
         Payment refundedPayment = paymentRepository.findByPaymentId("request_refund_payment_id")
                 .orElseThrow(EntityNotFoundException::new);
-        Assertions.assertEquals(RequestPaymentStatus.SUCCEEDED.getTitle(), refundedPayment.getStatus());
+        Assertions.assertEquals(RequestPaymentStatus.SUCCESS.getTitle(), refundedPayment.getStatus());
     }
 }
