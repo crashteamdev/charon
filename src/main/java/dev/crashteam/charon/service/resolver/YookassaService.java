@@ -19,9 +19,9 @@ public class YookassaService implements PaymentResolver {
     private final YookassaClient kassaClient;
     private final YookassaPaymentMapper yookassaPaymentMapper;
 
-    public PaymentData createPayment(PaymentCreateRequest request, String currency, String value) {
+    public PaymentData createPayment(PaymentCreateRequest request, String currency, String amount) {
         YkPaymentCreateRequestDTO paymentRequestDto = yookassaPaymentMapper
-                .getCreatePaymentRequestDto(request, currency, value);
+                .getCreatePaymentRequestDto(request, currency, amount);
         YkPaymentResponseDTO responseDTO = kassaClient.createPayment(paymentRequestDto);
         PaymentData paymentData = new PaymentData();
         paymentData.setId(responseDTO.getId());

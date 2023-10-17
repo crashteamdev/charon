@@ -1,10 +1,13 @@
 package dev.crashteam.charon.service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import dev.crashteam.charon.exception.DuplicateTransactionException;
+import dev.crashteam.charon.exception.NoSuchPaymentTypeException;
+import dev.crashteam.charon.exception.NoSuchSubscriptionTypeException;
 import dev.crashteam.charon.mapper.ProtoMapper;
-import dev.crashteam.charon.mapper.integration.PaymentMapper;
 import dev.crashteam.charon.model.PaymentData;
 import dev.crashteam.charon.model.RequestPaymentStatus;
+import dev.crashteam.charon.model.domain.PaidService;
 import dev.crashteam.charon.model.domain.Payment;
 import dev.crashteam.charon.model.domain.PromoCode;
 import dev.crashteam.charon.model.domain.User;
@@ -13,7 +16,6 @@ import dev.crashteam.charon.model.dto.yookassa.YkPaymentResponseDTO;
 import dev.crashteam.charon.repository.PaymentRepository;
 import dev.crashteam.charon.repository.specification.PaymentSpecification;
 import dev.crashteam.charon.service.resolver.PaymentResolver;
-import dev.crashteam.charon.util.PaymentProtoUtils;
 import dev.crashteam.payment.*;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
@@ -29,7 +31,6 @@ import javax.persistence.EntityNotFoundException;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.UUID;
 
 @Slf4j
@@ -38,11 +39,47 @@ import java.util.UUID;
 public class PaymentService {
 
     private final PaymentRepository paymentRepository;
-    private final PaidServiceService paidServiceService;
+    private final PaidServiceService paidService;
     private final PromoCodeService promoCodeService;
     private final UserService userService;
     private final ProtoMapper protoMapper;
     private final List<PaymentResolver> paymentResolvers;
+
+    @Transactional(readOnly = true)
+    public GetBalanceResponse getBalanceResponse(GetBalanceRequest request) {
+        User user = userService.getUser(request.getUserId());
+        return protoMapper.getBalanceResponse(user);
+    }
+
+    @Transactional
+    public PurchaseServiceResponse purchaseService(PurchaseServiceRequest request) {
+        if (paymentRepository.findByOperationId(request.getOperationId()).isPresent())
+            throw new DuplicateTransactionException("Transaction with operation id %s already exists".formatted(request.getOperationId()));
+
+        User user = userService.getUser(request.getUserId());
+        PaidServiceContext context = request.getPaidService().getContext();
+        PaidService paidService = getPaidServiceFromContext(context);
+        long balanceAfterPurchase = user.getBalance() - paidService.getAmount();
+        Payment payment = new Payment();
+        String paymentId = UUID.randomUUID().toString();
+        payment.setPaymentId(paymentId);
+        payment.setOperationId(request.getOperationId());
+        payment.setCurrency(paidService.getCurrency());
+        payment.setValue(paidService.getAmount());
+        payment.setCreated(LocalDateTime.now());
+        payment.setUpdated(LocalDateTime.now());
+        payment.setMonthPaid(context.getMultiply());
+        payment.setPaymentSystem("LK");
+        if (balanceAfterPurchase < 0) {
+            payment.setStatus(RequestPaymentStatus.FAILED.getTitle());
+            payment.setUser(user);
+            return protoMapper.getPurchaseServiceResponse(paymentRepository.save(payment), user.getBalance());
+        }
+        payment.setStatus(RequestPaymentStatus.SUCCESS.getTitle());
+        user.setBalance(balanceAfterPurchase);
+        payment.setUser(userService.saveUser(user));
+        return protoMapper.getPurchaseServiceResponse(paymentRepository.save(payment), user.getBalance());
+    }
 
     @Transactional(readOnly = true)
     public UserPayment getUserPaymentByPaymentId(PaymentQuery request) {
@@ -75,8 +112,8 @@ public class PaymentService {
     public PaymentCreateResponse createPayment(PaymentCreateRequest request) {
         return switch (request.getPaymentCase()) {
             case PAYMENT_DEPOSIT_USER_BALANCE -> createBalanceDepositPayment(request);
-            case PAYMENT_PURCHASE_SERVICE -> null;
-            case PAYMENT_NOT_SET -> null;
+            case PAYMENT_PURCHASE_SERVICE -> createPurchaseServicePayment(request);
+            case PAYMENT_NOT_SET -> throw new NoSuchPaymentTypeException();
         };
     }
 
@@ -92,10 +129,11 @@ public class PaymentService {
         PromoCode promoCode = StringUtils.hasText(purchaseService.getPromoCode())
                 ? promoCodeService.getPromoCode(purchaseService.getPromoCode()) : null;
 
-        PaidServiceContext context = purchaseService.getPaidService().getContext();
-        //TODO: Написать для PaidService все виды подписок и их планы(default и тд), написать фабрику где будет матчить по типу объекта
+        PaidServiceContext paidServiceContext = purchaseService.getPaidService().getContext();
+        PaidService servicePlan = getPaidServiceFromContext(paidServiceContext);
 
-        PaymentData response = paymentResolver.createPayment(request);
+        PaymentData response = paymentResolver
+                .createPayment(request, servicePlan.getCurrency(), String.valueOf(servicePlan.getAmount()));
 
         User user = getUser(purchaseService.getUserId());
 
@@ -105,14 +143,14 @@ public class PaymentService {
         payment.setPaymentId(paymentId);
         payment.setExternalId(response.getId());
         payment.setStatus(RequestPaymentStatus.PENDING.getTitle());
-        payment.setCurrency(balanceRequest.getAmount().getCurrency());
-        payment.setValue(balanceRequest.getAmount().getValue());
+        payment.setCurrency(servicePlan.getCurrency());
+        payment.setValue(servicePlan.getAmount());
         payment.setUser(userService.saveUser(user));
         payment.setCreated(response.getCreatedAt());
         payment.setUpdated(LocalDateTime.now());
         payment.setUser(user);
         payment.setPromoCode(promoCode);
-        payment.setMonthPaid(context.getMultiply());
+        payment.setMonthPaid(paidServiceContext.getMultiply());
         payment.setPaymentSystem(purchaseService.getPaymentSystem().toString());
         payment.setMetadata(objectMapper.writeValueAsString(request.getMetadataMap()));
 
@@ -191,5 +229,20 @@ public class PaymentService {
         Pageable pageable = PageRequest.of((int) (pagination.getOffset()
                 / pagination.getLimit()), (int) pagination.getLimit());
         return paymentRepository.findAll(new PaymentSpecification(paymentsQuery), pageable);
+    }
+
+    public PaidService getPaidServiceFromContext(PaidServiceContext paidServiceContext) {
+        var paidServiceContextType = paidServiceContext.getContextCase().getNumber();
+
+        var subscriptionType = switch (paidServiceContext.getContextCase()) {
+            case UZUM_ANALYTICS_CONTEXT ->
+                    paidServiceContext.getUzumAnalyticsContext().getPlan().getPlanCase().getNumber();
+            case KE_ANALYTICS_CONTEXT -> paidServiceContext.getKeAnalyticsContext().getPlan().getPlanCase().getNumber();
+            case UZUM_REPRICER_CONTEXT ->
+                    paidServiceContext.getUzumRepricerContext().getPlan().getPlanCase().getNumber();
+            case CONTEXT_NOT_SET -> throw new NoSuchSubscriptionTypeException();
+        };
+        return paidService
+                .getPaidServiceByTypeAndPlan(String.valueOf(paidServiceContextType), String.valueOf(subscriptionType));
     }
 }

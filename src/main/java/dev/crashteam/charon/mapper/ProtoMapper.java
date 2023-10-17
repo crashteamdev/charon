@@ -5,6 +5,7 @@ import dev.crashteam.charon.exception.NoConfirmationUrlException;
 import dev.crashteam.charon.model.PaymentData;
 import dev.crashteam.charon.model.RequestPaymentStatus;
 import dev.crashteam.charon.model.domain.Payment;
+import dev.crashteam.charon.model.domain.User;
 import dev.crashteam.charon.model.dto.yookassa.YkCancellationDetailsDTO;
 import dev.crashteam.charon.model.dto.yookassa.YkConfirmationDTO;
 import dev.crashteam.charon.model.dto.yookassa.YkPaymentRefundResponseDTO;
@@ -19,10 +20,15 @@ import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
-import static dev.crashteam.charon.util.PaymentProtoUtils.getPaymentStatus;
-
 @Service
 public class ProtoMapper {
+
+    public GetBalanceResponse getBalanceResponse(User user) {
+        return GetBalanceResponse.newBuilder()
+                .setAmount(BalanceAmount.newBuilder().setValue(user.getBalance()).build())
+                .setUserId(user.getId())
+                .build();
+    }
 
     public UserPayment getUserPayment(Payment payment) {
         Amount amount = Amount.newBuilder()
@@ -65,6 +71,25 @@ public class ProtoMapper {
                 .setStatus(getPaymentStatus(response.getStatus()))
                 .setConfirmationUrl(response.getConfirmationUrl())
                 .build();
+    }
+
+    public PurchaseServiceResponse getPurchaseServiceResponse(Payment payment, Long amount) {
+        BalanceAmount balanceAmount = BalanceAmount.newBuilder().setValue(amount).build();
+        if (payment.getStatus().equals(RequestPaymentStatus.FAILED.getTitle())) {
+            PurchaseServiceResponse.ErrorResponse errorResponse = PurchaseServiceResponse.ErrorResponse.newBuilder()
+                    .setErrorCode(PurchaseServiceResponse.ErrorResponse.ErrorCode.ERROR_CODE_INSUFFICIENT_FUNDS)
+                    .setDescription("Not enough money")
+                    .setUserBalanceAmount(balanceAmount).build();
+            return PurchaseServiceResponse.newBuilder().setErrorResponse(errorResponse).build();
+        } else {
+            PurchaseServiceResponse.SuccessResponse successResponse = PurchaseServiceResponse.SuccessResponse.newBuilder()
+                    .setUserBalanceAmount(balanceAmount)
+                    .setOperationId(payment.getOperationId())
+                    .build();
+            return PurchaseServiceResponse.newBuilder()
+                    .setSuccessResponse(successResponse)
+                    .build();
+        }
     }
 
     @Deprecated

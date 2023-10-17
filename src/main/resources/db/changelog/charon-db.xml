@@ -33,6 +33,7 @@
             <column name="created"/>
         </createIndex>
     </changeSet>
+
     <changeSet id="create_promo_code_table" author="sagefreke">
         <createTable tableName="promo_code">
             <column name="id" type="BIGINT">
@@ -48,6 +49,7 @@
         </createIndex>
         <createSequence sequenceName="promo_code_id_seq" startValue="1" incrementBy="1"/>
     </changeSet>
+
     <changeSet id="create_promo_code_foreign_key" author="sagefreke">
         <addForeignKeyConstraint baseTableName="payment"
                                  baseColumnNames="promo_code_id"
@@ -57,6 +59,7 @@
                                  referencedTableName="promo_code"
                                  referencedColumnNames="id"/>
     </changeSet>
+
     <changeSet id="createUserTable" author="sagefreke">
         <createTable tableName="app_user">
             <column name="id" type="VARCHAR(255)">
@@ -66,6 +69,7 @@
             <column name="currency" type="STRING"/>
         </createTable>
     </changeSet>
+
     <changeSet id="create_app_user_foreign_key" author="sagefreke">
         <addForeignKeyConstraint baseTableName="payment"
                                  baseColumnNames="user_id"
@@ -75,20 +79,23 @@
                                  referencedTableName="app_user"
                                  referencedColumnNames="id"/>
     </changeSet>
+
     <changeSet id="create_paid_service_table" author="sagefreke">
         <createTable tableName="paid_service">
             <column name="id" type="BIGINT">
                 <constraints primaryKey="true" primaryKeyName="paid_service_id_pkey"/>
             </column>
-            <column name="type" type="VARCHAR(255)"/>
             <column name="plan" type="TIMESTAMP"/>
-            <column name="value" type="BIGINT"/>
+            <column name="name" type="VARCHAR(255)"/>
+            <column name="amount" type="BIGINT"/>
+            <column name="subscription_id" type="BIGINT"/>
         </createTable>
         <createIndex tableName="paid_service" indexName="idx_paid_service_type">
             <column name="type"/>
         </createIndex>
         <createSequence sequenceName="paid_service_id_seq" startValue="1" incrementBy="1"/>
     </changeSet>
+
     <changeSet id="create_promo_code_foreign_key" author="sagefreke">
         <addForeignKeyConstraint baseTableName="payment"
                                  baseColumnNames="paid_service_id"
@@ -97,5 +104,107 @@
                                  onUpdate="NO ACTION"
                                  referencedTableName="paid_service"
                                  referencedColumnNames="id"/>
+    </changeSet>
+
+    <changeSet id="create_subscription_type_table" author="sagefreke">
+        <createTable tableName="subscription_type">
+            <column name="id" type="BIGINT">
+                <constraints primaryKey="true" primaryKeyName="paid_service_id_pkey"/>
+            </column>
+            <column name="type" type="VARCHAR(255)"/>
+            <column name="name" type="VARCHAR(255)"/>
+        </createTable>
+        <createSequence sequenceName="subscription_type_id_seq" startValue="1" incrementBy="1"/>
+        <createIndex tableName="subscription_type" indexName="idx_subscription_name">
+            <column name="name"/>
+        </createIndex>
+    </changeSet>
+
+    <changeSet id="create_subscription_type_foreign_key" author="sagefreke">
+        <addForeignKeyConstraint baseTableName="paid_service"
+                                 baseColumnNames="subscription_id"
+                                 constraintName="paid_service_subscription_type_fkey"
+                                 onDelete="NO ACTION"
+                                 onUpdate="NO ACTION"
+                                 referencedTableName="subscription_type"
+                                 referencedColumnNames="id"/>
+    </changeSet>
+
+    <changeSet id="initialize_paid_service_and_subscription" author="sagefreke">
+        <insert tableName="subscription_type">
+            <column name="id" valueComputed="SELECT nextval(subscription_type_id_seq)"/>
+            <column name="name" value="default"/>
+            <column name="type" value="10"/>
+        </insert>
+        <insert tableName="subscription_type">
+            <column name="id" valueComputed="SELECT nextval(subscription_type_id_seq)"/>
+            <column name="name" value="advanced"/>
+            <column name="type" value="11"/>
+        </insert>
+        <insert tableName="subscription_type">
+            <column name="id" valueComputed="SELECT nextval(subscription_type_id_seq)"/>
+            <column name="name" value="pro"/>
+            <column name="type" value="12"/>
+        </insert>
+
+        <insert tableName="paid_service">
+            <column name="id" valueComputed="SELECT nextval(paid_service_id_seq)"/>
+            <column name="name" value="uzum_analytics"/>
+            <column name="type" value="10"/>
+            <column name="amount" value="15"/>
+            <column name="currency" value="USD"/>
+            <column name="subscription_id" valueComputed="SELECT id FROM subscription_type WHERE name='default'"/>
+        </insert>
+        <insert tableName="paid_service">
+            <column name="id" valueComputed="SELECT nextval(paid_service_id_seq)"/>
+            <column name="name" value="uzum_analytics"/>
+            <column name="type" value="10"/>
+            <column name="amount" value="25"/>
+            <column name="currency" value="USD"/>
+            <column name="subscription_id" valueComputed="SELECT id FROM subscription_type WHERE name='advanced'"/>
+        </insert>
+        <insert tableName="paid_service">
+            <column name="id" valueComputed="SELECT nextval(paid_service_id_seq)"/>
+            <column name="name" value="uzum_analytics"/>
+            <column name="type" value="10"/>
+            <column name="amount" value="49"/>
+            <column name="currency" value="USD"/>
+            <column name="subscription_id" valueComputed="SELECT id FROM subscription_type WHERE name='pro'"/>
+        </insert>
+
+        <insert tableName="paid_service">
+            <column name="id" valueComputed="SELECT nextval(paid_service_id_seq)"/>
+            <column name="name" value="ke_analytics"/>
+            <column name="type" value="11"/>
+            <column name="amount" value="15"/>
+            <column name="currency" value="USD"/>
+            <column name="subscription_id" valueComputed="SELECT id FROM subscription_type WHERE name='default'"/>
+        </insert>
+        <insert tableName="paid_service">
+            <column name="id" valueComputed="SELECT nextval(paid_service_id_seq)"/>
+            <column name="name" value="ke_analytics"/>
+            <column name="type" value="11"/>
+            <column name="amount" value="25"/>
+            <column name="currency" value="USD"/>
+            <column name="subscription_id" valueComputed="SELECT id FROM subscription_type WHERE name='advanced'"/>
+        </insert>
+        <insert tableName="paid_service">
+            <column name="id" valueComputed="SELECT nextval(paid_service_id_seq)"/>
+            <column name="name" value="ke_analytics"/>
+            <column name="type" value="11"/>
+            <column name="amount" value="49"/>
+            <column name="currency" value="USD"/>
+            <column name="subscription_id" valueComputed="SELECT id FROM subscription_type WHERE name='pro'"/>
+        </insert>
+
+        <insert tableName="paid_service">
+            <column name="id" valueComputed="SELECT nextval(paid_service_id_seq)"/>
+            <column name="name" value="uzum_repricer"/>
+            <column name="type" value="12"/>
+            <column name="amount" value="30"/>
+            <column name="currency" value="USD"/>
+            <column name="subscription_id" valueComputed="SELECT id FROM subscription_type WHERE name='default'"/>
+        </insert>
+
     </changeSet>
 </databaseChangeLog>

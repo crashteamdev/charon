@@ -9,5 +9,5 @@ public interface PaymentResolver {
 
     PaymentSystem getPaymentSystem();
 
-    PaymentData createPayment(PaymentCreateRequest request, String currency, String value);
+    PaymentData createPayment(PaymentCreateRequest request, String currency, String amount);
 }

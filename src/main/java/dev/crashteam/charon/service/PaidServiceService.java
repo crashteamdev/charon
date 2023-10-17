@@ -13,7 +13,7 @@ public class PaidServiceService {
 
     private final PaidServiceRepository paidServiceRepository;
 
-    public PaidService getPaidServiceByTypeAndPlan(String type, String plan) {
-        return paidServiceRepository.findByTypeAndPlan(type, plan).orElseThrow(EntityNotFoundException::new);
+    public PaidService getPaidServiceByTypeAndPlan(String type, String subscriptionType) {
+        return paidServiceRepository.findByTypeAndSubscriptionType(type, subscriptionType).orElseThrow(EntityNotFoundException::new);
     }
 }

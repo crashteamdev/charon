@@ -16,6 +16,29 @@ public class PaymentServiceImpl extends PaymentServiceGrpc.PaymentServiceImplBas
     private final PaymentService paymentService;
     private final ProtoMapper protoMapper;
 
+
+    @Override
+    public void createPromoCode(CreatePromoCodeRequest request, StreamObserver<CreatePromoCodeResponse> responseObserver) {
+        super.createPromoCode(request, responseObserver);
+    }
+
+    @Override
+    public void checkPromoCode(CheckPromoCodeRequest request, StreamObserver<CheckPromoCodeResponse> responseObserver) {
+        super.checkPromoCode(request, responseObserver);
+    }
+
+    @Override
+    public void getBalance(GetBalanceRequest request, StreamObserver<GetBalanceResponse> responseObserver) {
+        responseObserver.onNext(paymentService.getBalanceResponse(request));
+        responseObserver.onCompleted();
+    }
+
+    @Override
+    public void purchaseService(PurchaseServiceRequest request, StreamObserver<PurchaseServiceResponse> responseObserver) {
+       responseObserver.onNext(paymentService.purchaseService(request));
+       responseObserver.onCompleted();
+    }
+
     @Override
     public void createPayment(PaymentCreateRequest request, StreamObserver<PaymentCreateResponse> responseObserver) {
         var payment = paymentService.createPayment(request);

@@ -20,13 +20,19 @@ public class PaidService {
     @Column(name = "type")
     private String type;
 
-    @Column(name = "plan")
-    private String plan;
+    @Column(name = "name")
+    private String name;
 
-    @Column(name = "value")
-    private Long value;
+    @Column(name = "amount")
+    private Long amount;
 
     @Column(name = "currency")
     private String currency;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "subscription_type_id", referencedColumnName = "id")
+    private SubscriptionType subscriptionType;
+    @Column(name = "subscription_type_id", insertable = false, updatable = false)
+    private Long subscriptionTypeId;
 
 }
