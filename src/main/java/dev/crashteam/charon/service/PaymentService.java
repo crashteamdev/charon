@@ -5,14 +5,13 @@ import dev.crashteam.charon.exception.DuplicateTransactionException;
 import dev.crashteam.charon.exception.NoSuchPaymentTypeException;
 import dev.crashteam.charon.exception.NoSuchSubscriptionTypeException;
 import dev.crashteam.charon.mapper.ProtoMapper;
-import dev.crashteam.charon.model.PaymentData;
+import dev.crashteam.charon.model.dto.resolver.PaymentData;
 import dev.crashteam.charon.model.RequestPaymentStatus;
 import dev.crashteam.charon.model.domain.PaidService;
 import dev.crashteam.charon.model.domain.Payment;
 import dev.crashteam.charon.model.domain.PromoCode;
 import dev.crashteam.charon.model.domain.User;
 import dev.crashteam.charon.model.dto.yookassa.YkPaymentRefundResponseDTO;
-import dev.crashteam.charon.model.dto.yookassa.YkPaymentResponseDTO;
 import dev.crashteam.charon.repository.PaymentRepository;
 import dev.crashteam.charon.repository.specification.PaymentSpecification;
 import dev.crashteam.charon.service.resolver.PaymentResolver;
@@ -30,7 +29,6 @@ import org.springframework.util.StringUtils;
 import javax.persistence.EntityNotFoundException;
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.Map;
 import java.util.UUID;
 
 @Slf4j
@@ -54,7 +52,8 @@ public class PaymentService {
     @Transactional
     public PurchaseServiceResponse purchaseService(PurchaseServiceRequest request) {
         if (paymentRepository.findByOperationId(request.getOperationId()).isPresent())
-            throw new DuplicateTransactionException("Transaction with operation id %s already exists".formatted(request.getOperationId()));
+            throw new DuplicateTransactionException("Transaction with operation id %s already exists"
+                    .formatted(request.getOperationId()));
 
         User user = userService.getUser(request.getUserId());
         PaidServiceContext context = request.getPaidService().getContext();
@@ -64,8 +63,8 @@ public class PaymentService {
         String paymentId = UUID.randomUUID().toString();
         payment.setPaymentId(paymentId);
         payment.setOperationId(request.getOperationId());
-        payment.setCurrency(paidService.getCurrency());
-        payment.setValue(paidService.getAmount());
+        payment.setCurrency("USD");
+        payment.setAmount(paidService.getAmount());
         payment.setCreated(LocalDateTime.now());
         payment.setUpdated(LocalDateTime.now());
         payment.setMonthPaid(context.getMultiply());
@@ -101,7 +100,7 @@ public class PaymentService {
         payment.setExternalId(refundResponse.getId());
         payment.setStatus(refundResponse.getStatus());
         payment.setCurrency(refundResponse.getAmount().getCurrency());
-        payment.setValue(Double.valueOf(refundResponse.getAmount().getValue()).longValue());
+        payment.setAmount(Double.valueOf(refundResponse.getAmount().getValue()).longValue());
         payment.setUserId(userId);
         payment.setCreated(refundResponse.getCreatedAt());
         payment.setUpdated(LocalDateTime.now());
@@ -133,7 +132,7 @@ public class PaymentService {
         PaidService servicePlan = getPaidServiceFromContext(paidServiceContext);
 
         PaymentData response = paymentResolver
-                .createPayment(request, servicePlan.getCurrency(), String.valueOf(servicePlan.getAmount()));
+                .createPayment(request, String.valueOf(servicePlan.getAmount()));
 
         User user = getUser(purchaseService.getUserId());
 
@@ -143,15 +142,15 @@ public class PaymentService {
         payment.setPaymentId(paymentId);
         payment.setExternalId(response.getId());
         payment.setStatus(RequestPaymentStatus.PENDING.getTitle());
-        payment.setCurrency(servicePlan.getCurrency());
-        payment.setValue(servicePlan.getAmount());
+        payment.setCurrency("USD");
+        payment.setAmount(servicePlan.getAmount());
         payment.setUser(userService.saveUser(user));
         payment.setCreated(response.getCreatedAt());
         payment.setUpdated(LocalDateTime.now());
         payment.setUser(user);
         payment.setPromoCode(promoCode);
         payment.setMonthPaid(paidServiceContext.getMultiply());
-        payment.setPaymentSystem(purchaseService.getPaymentSystem().toString());
+        payment.setPaymentSystem(protoMapper.getPaymentSystemType(purchaseService.getPaymentSystem()).getTitle());
         payment.setMetadata(objectMapper.writeValueAsString(request.getMetadataMap()));
 
         paymentRepository.save(payment);
@@ -167,8 +166,7 @@ public class PaymentService {
                         .equals(balanceRequest.getPaymentSystem()))
                 .findFirst()
                 .orElseThrow(IllegalArgumentException::new);
-        PaymentData response = paymentResolver
-                .createPayment(request, balanceRequest.getAmount().getCurrency(), String.valueOf(balanceRequest.getAmount().getValue()));
+        PaymentData response = paymentResolver.createPayment(request, String.valueOf(balanceRequest.getAmount()));
 
         User user = getUser(balanceRequest.getUserId());
 
@@ -178,13 +176,13 @@ public class PaymentService {
         payment.setPaymentId(paymentId);
         payment.setExternalId(response.getId());
         payment.setStatus(RequestPaymentStatus.PENDING.getTitle());
-        payment.setCurrency(balanceRequest.getAmount().getCurrency());
-        payment.setValue(balanceRequest.getAmount().getValue());
+        payment.setCurrency("USD");
+        payment.setAmount(balanceRequest.getAmount());
         payment.setUser(userService.saveUser(user));
         payment.setCreated(response.getCreatedAt());
         payment.setUpdated(LocalDateTime.now());
         payment.setUser(user);
-        payment.setPaymentSystem(balanceRequest.getPaymentSystem().toString());
+        payment.setPaymentSystem(protoMapper.getPaymentSystemType(balanceRequest.getPaymentSystem()).getTitle());
         payment.setMetadata(objectMapper.writeValueAsString(request.getMetadataMap()));
 
         paymentRepository.save(payment);
@@ -201,26 +199,6 @@ public class PaymentService {
         user.setBalance(0L);
         user.setCurrency("USD");
         return user;
-    }
-
-    @Transactional
-    public Payment createPayment(YkPaymentResponseDTO paymentResponse,
-                                 String userId, String id, Map<String, String> metaData) {
-        Payment payment = new Payment();
-        payment.setPaymentId(id);
-        payment.setExternalId(paymentResponse.getId());
-        payment.setStatus(paymentResponse.getStatus());
-        payment.setCurrency(paymentResponse.getAmount().getCurrency());
-        payment.setValue(Double.valueOf(paymentResponse.getAmount().getValue()).longValue());
-        payment.setUserId(userId);
-        payment.setCreated(paymentResponse.getCreatedAt());
-        payment.setUpdated(LocalDateTime.now());
-        return paymentRepository.save(payment);
-    }
-
-    @Transactional(readOnly = true)
-    public Payment getPaymentByOperationId(String operationId) {
-        return paymentRepository.findByOperationId(operationId).orElseThrow(EntityNotFoundException::new);
     }
 
     @Transactional(readOnly = true)

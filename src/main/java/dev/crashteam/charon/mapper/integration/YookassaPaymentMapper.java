@@ -1,5 +1,6 @@
 package dev.crashteam.charon.mapper.integration;
 
+import dev.crashteam.charon.model.RequestPaymentStatus;
 import dev.crashteam.charon.model.dto.yookassa.YkAmountDTO;
 import dev.crashteam.charon.model.dto.yookassa.YkConfirmationDTO;
 import dev.crashteam.charon.model.dto.yookassa.YkPaymentCreateRequestDTO;
@@ -13,15 +14,14 @@ import org.springframework.stereotype.Service;
 @Service
 public class YookassaPaymentMapper {
 
-    public YkPaymentCreateRequestDTO getCreatePaymentRequestDto(PaymentCreateRequest createRequest,
-                                                                String currency, String value) {
+    public YkPaymentCreateRequestDTO getCreatePaymentRequestDto(PaymentCreateRequest createRequest, String amount) {
         YkPaymentCreateRequestDTO requestDTO = new YkPaymentCreateRequestDTO();
 
         YkConfirmationDTO redirectConfirmation = YkConfirmationDTO.builder()
                 .type("redirect")
                 .returnUrl(PaymentProtoUtils.getUrlFromRequest(createRequest))
                 .build();
-        requestDTO.setAmount(getAmountDto(currency, value));
+        requestDTO.setAmount(getAmountDto("RUB", amount));
         requestDTO.setConfirmation(redirectConfirmation);
         requestDTO.setDescription(PaymentProtoUtils.getDescriptionFromRequest(createRequest));
         requestDTO.setMetaData(createRequest.getMetadataMap());
@@ -58,6 +58,15 @@ public class YookassaPaymentMapper {
         ykAmountDto.setCurrency(currency);
         ykAmountDto.setValue(value);
         return ykAmountDto;
+    }
+
+    public RequestPaymentStatus getPaymentStatus(String status) {
+        return switch (status) {
+            case "pending" -> RequestPaymentStatus.PENDING;
+            case "succeeded" -> RequestPaymentStatus.SUCCESS;
+            case "canceled" -> RequestPaymentStatus.CANCELED;
+            default -> throw new IllegalArgumentException("No such status - %s".formatted(status));
+        };
     }
 
 }

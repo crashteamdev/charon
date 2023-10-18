@@ -4,6 +4,7 @@ import java.util.Arrays;
 
 public enum RequestPaymentStatus {
 
+    NOT_IMPLEMENTED("not implemented"),
     UNKNOWN("unknown"),
     SUCCESS("success"),
     PENDING("pending"),

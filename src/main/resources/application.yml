@@ -18,7 +18,15 @@ spring:
   liquibase:
     change-log: classpath:db/changelog/db.changelog-master.xml
 app:
+  scheduler:
+    exchange-rate:
+      cron: 0 0/60 * * * ?
+    evict-currency:
+      cron: 0 0/60 * * * ?
   integration:
+    ninjas:
+      url: https://api.api-ninjas.com/v1
+      api-key:
     yookassa: https://api.yookassa.ru/v3
 org:
   jobrunr:

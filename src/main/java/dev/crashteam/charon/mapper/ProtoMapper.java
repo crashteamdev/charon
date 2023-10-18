@@ -2,7 +2,8 @@ package dev.crashteam.charon.mapper;
 
 import com.google.protobuf.Timestamp;
 import dev.crashteam.charon.exception.NoConfirmationUrlException;
-import dev.crashteam.charon.model.PaymentData;
+import dev.crashteam.charon.model.dto.resolver.PaymentData;
+import dev.crashteam.charon.model.PaymentSystemType;
 import dev.crashteam.charon.model.RequestPaymentStatus;
 import dev.crashteam.charon.model.domain.Payment;
 import dev.crashteam.charon.model.domain.User;
@@ -33,7 +34,7 @@ public class ProtoMapper {
     public UserPayment getUserPayment(Payment payment) {
         Amount amount = Amount.newBuilder()
                 .setCurrency(payment.getCurrency())
-                .setValue(payment.getValue())
+                .setValue(payment.getAmount())
                 .build();
         Instant instantCreated = payment.getCreated().toInstant(ZoneOffset.UTC);
         Instant instantUpdated = payment.getUpdated().toInstant(ZoneOffset.UTC);
@@ -46,6 +47,16 @@ public class ProtoMapper {
                 .setPaymentId(payment.getPaymentId())
                 .setStatus(getPaymentStatus(payment.getStatus()))
                 .setUserId(payment.getUserId()).build();
+    }
+
+    public PaymentSystemType getPaymentSystemType(PaymentSystem paymentSystem) {
+        return switch (paymentSystem) {
+            case PAYMENT_SYSTEM_UNKNOWN -> PaymentSystemType.PAYMENT_SYSTEM_UNKNOWN;
+            case PAYMENT_SYSTEM_YOOKASSA -> PaymentSystemType.PAYMENT_SYSTEM_YOOKASSA;
+            case PAYMENT_SYSTEM_FREEKASSA -> PaymentSystemType.PAYMENT_SYSTEM_FREEKASSA;
+            case PAYMENT_SYSTEM_UZUM_BANK -> PaymentSystemType.PAYMENT_SYSTEM_UZUM_BANK;
+            case UNRECOGNIZED -> PaymentSystemType.UNRECOGNIZED;
+        };
     }
 
     public PaymentStatus getPaymentStatus(String status) {

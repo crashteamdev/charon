@@ -81,7 +81,7 @@ public class PaymentTest {
         payment.setExternalId("22e12f66-000f-5000-8000-18db351245c7");
         payment.setStatus("pending");
         payment.setCurrency("RUB");
-        payment.setValue(1000L);
+        payment.setAmount(1000L);
         payment.setUserId("user_id");
         payment.setCreated(LocalDateTime.now());
         payment.setUpdated(LocalDateTime.now());
@@ -104,7 +104,7 @@ public class PaymentTest {
         payment.setExternalId("22e12f66-000f-5000-8000-18db351245c7");
         payment.setStatus("pending");
         payment.setCurrency("RUB");
-        payment.setValue(1000L);
+        payment.setAmount(1000L);
         payment.setUserId("user_id");
         payment.setCreated(LocalDate.parse("2022-07-20", DateTimeFormatter.ofPattern("yyyy-MM-dd")).atStartOfDay());
         payment.setUpdated(LocalDateTime.now());
@@ -115,7 +115,7 @@ public class PaymentTest {
         secondPayment.setExternalId("23e12f62-000f-5000-8000-18db351245c7");
         secondPayment.setStatus("pending");
         secondPayment.setCurrency("RUB");
-        secondPayment.setValue(1000L);
+        secondPayment.setAmount(1000L);
         secondPayment.setUserId("other_user_id");
         secondPayment.setCreated(LocalDate.parse("2022-07-20", DateTimeFormatter.ofPattern("yyyy-MM-dd")).atStartOfDay());
         secondPayment.setUpdated(LocalDateTime.now());
@@ -147,7 +147,7 @@ public class PaymentTest {
         payment.setExternalId("22e12f66-000f-5000-8000-18db351245c7");
         payment.setStatus("pending");
         payment.setCurrency("RUB");
-        payment.setValue(1000L);
+        payment.setAmount(1000L);
         payment.setUserId("user_id");
         payment.setCreated(LocalDate.parse("2022-07-20", DateTimeFormatter.ofPattern("yyyy-MM-dd")).atStartOfDay());
         payment.setUpdated(LocalDateTime.now());

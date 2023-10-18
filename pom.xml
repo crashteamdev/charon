@@ -18,10 +18,9 @@
         <payment-proto.version>0.0.1</payment-proto.version>
         <grpc-server.version>2.13.1.RELEASE</grpc-server.version>
         <spring-cloud.version>2021.0.1</spring-cloud.version>
-        <payment-proto.version>0.0.30</payment-proto.version>
+        <payment-proto.version>0.0.31</payment-proto.version>
         <spring-data-jpa.version>2.6.4</spring-data-jpa.version>
         <grpc-testing.version>1.46.0</grpc-testing.version>
-        <jobrunr.version>5.1.2</jobrunr.version>
         <wiremock.version>2.27.2</wiremock.version>
         <server.port>8022</server.port>
         <management.port>8023</management.port>
@@ -30,12 +29,23 @@
     <dependencies>
         <dependency>
             <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-cache</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-web</artifactId>
         </dependency>
         <dependency>
             <groupId>org.springframework.cloud</groupId>
             <artifactId>spring-cloud-starter-openfeign</artifactId>
         </dependency>
+
+        <!--Scheduling      -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-quartz</artifactId>
+        </dependency>
+
         <dependency>
             <groupId>net.devh</groupId>
             <artifactId>grpc-server-spring-boot-starter</artifactId>
@@ -85,11 +95,6 @@
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-data-jpa</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>org.jobrunr</groupId>
-            <artifactId>jobrunr-spring-boot-starter</artifactId>
-            <version>${jobrunr.version}</version>
         </dependency>
         <!-- JUnit-Test -->
         <dependency>

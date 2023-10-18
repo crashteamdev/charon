@@ -1,4 +1,4 @@
-package dev.crashteam.charon.model;
+package dev.crashteam.charon.model.dto.resolver;
 
 import lombok.Data;
 

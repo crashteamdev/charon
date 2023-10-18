@@ -11,7 +11,7 @@
             </column>
             <column name="user_id" type="VARCHAR(255)"/>
             <column name="status" type="VARCHAR(64)"/>
-            <column name="value" type="BIGINT"/>
+            <column name="amount" type="BIGINT"/>
             <column name="currency" type="VARCHAR(32)"/>
             <column name="created" type="TIMESTAMP"/>
             <column name="updated" type="TIMESTAMP"/>
@@ -87,6 +87,7 @@
             </column>
             <column name="plan" type="TIMESTAMP"/>
             <column name="name" type="VARCHAR(255)"/>
+            <column name="type" type="VARCHAR(255)"/>
             <column name="amount" type="BIGINT"/>
             <column name="subscription_id" type="BIGINT"/>
         </createTable>
@@ -116,7 +117,7 @@
         </createTable>
         <createSequence sequenceName="subscription_type_id_seq" startValue="1" incrementBy="1"/>
         <createIndex tableName="subscription_type" indexName="idx_subscription_name">
-            <column name="name"/>
+            <column name="type"/>
         </createIndex>
     </changeSet>
 

@@ -24,8 +24,8 @@ public class Payment {
     private User user;
     @Column(name = "status")
     private String status;
-    @Column(name = "value")
-    private Long value;
+    @Column(name = "amount")
+    private Long amount;
     @Column(name = "currency")
     private String currency;
     @Column(name = "external_id")
