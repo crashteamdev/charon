@@ -21,6 +21,8 @@ public class PromoCode {
     private LocalDateTime validUntil;
     @Column(name = "usage_limit")
     private Long usageLimit;
+    @Column(name = "description")
+    private String description;
     @Column(name = "discount_percentage")
     private Integer discountPercentage;
 

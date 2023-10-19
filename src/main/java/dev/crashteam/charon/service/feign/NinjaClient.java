@@ -9,6 +9,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 
 @FeignClient(value = "ninjaClient", url = "${app.integration.ninja.url}")
 public interface NinjaClient {
+
     @GetMapping("/convertcurrency")
     ConversionDto convert(@RequestHeader("X-Api-Key") String apiKey,
                           @RequestParam("have") String have,

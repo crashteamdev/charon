@@ -33,7 +33,7 @@ public class YookassaService implements PaymentResolver {
         paymentData.setCurrency("RUB");
         paymentData.setValue(responseDTO.getAmount().getValue());
         paymentData.setDescription(responseDTO.getDescription());
-        paymentData.setConfirmationUrl(paymentData.getConfirmationUrl());
+        paymentData.setConfirmationUrl(responseDTO.getConfirmation().getConfirmationUrl());
         return paymentData;
     }
 

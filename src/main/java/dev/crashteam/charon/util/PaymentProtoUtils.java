@@ -24,16 +24,6 @@ public class PaymentProtoUtils {
                 .orElse(request.getPaymentPurchaseService().getUserId());
     }
 
-    public static PaymentStatus getPaymentStatus(String status) {
-        RequestPaymentStatus requestPaymentStatus = RequestPaymentStatus.getStatus(status);
-        return switch (requestPaymentStatus) {
-            case FAILED -> PaymentStatus.PAYMENT_STATUS_FAILED;
-            case UNKNOWN -> PaymentStatus.PAYMENT_STATUS_UNKNOWN;
-            case PENDING -> PaymentStatus.PAYMENT_STATUS_PENDING;
-            case CANCELED -> PaymentStatus.PAYMENT_STATUS_CANCELED;
-            case SUCCESS -> PaymentStatus.PAYMENT_STATUS_SUCCESS;
-        };
-    }
     public static RequestPaymentStatus getStatus(int status) {
         return switch (PaymentStatus.forNumber(status)) {
             case PAYMENT_STATUS_SUCCESS -> RequestPaymentStatus.SUCCESS;

@@ -17,7 +17,7 @@ public class Payment {
     @Id
     @Column(name = "payment_id")
     private String paymentId;
-    @Column(name = "user_id")
+    @Column(name = "user_id", insertable = false, updatable = false)
     private String userId;
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", referencedColumnName = "id")
@@ -48,6 +48,11 @@ public class Payment {
     private Long paidServiceId;
     @Column(name = "month_paid")
     private Long monthPaid;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "operation_type_id", referencedColumnName = "id")
+    private OperationType operationType;
+    @Column(name = "operation_type_id", insertable = false, updatable = false)
+    private Long operationTypeId;
     @CreatedDate
     @Column(name = "created")
     private LocalDateTime created;

@@ -16,10 +16,16 @@ public class PaymentServiceImpl extends PaymentServiceGrpc.PaymentServiceImplBas
     private final PaymentService paymentService;
     private final ProtoMapper protoMapper;
 
+    @Override
+    public void getExchangeRate(GetExchangeRateRequest request, StreamObserver<GetExchangeRateResponse> responseObserver) {
+        responseObserver.onNext(paymentService.getExchangeRate(request));
+        responseObserver.onCompleted();
+    }
 
     @Override
     public void createPromoCode(CreatePromoCodeRequest request, StreamObserver<CreatePromoCodeResponse> responseObserver) {
-        super.createPromoCode(request, responseObserver);
+        responseObserver.onNext(paymentService.createPromoCode(request));
+        responseObserver.onCompleted();
     }
 
     @Override

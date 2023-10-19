@@ -14,7 +14,7 @@ public class CurrencyService {
 
     private final NinjaClient client;
 
-    @Value("${app.integration.ninjas.api-key}")
+    @Value("${app.integration.ninja.api-key}")
     private String apiKey;
 
     @Cacheable("currency")
@@ -23,6 +23,7 @@ public class CurrencyService {
         return converted.getNewAmount();
     }
 
+    @Cacheable("exchangeRate")
     public ExchangeRateDto getExchangeRate(String pair) {
         return client.exchangeRate(apiKey, pair);
     }

@@ -1,10 +1,13 @@
 package dev.crashteam.charon.service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import dev.crashteam.charon.config.PromoCodeConfig;
 import dev.crashteam.charon.exception.DuplicateTransactionException;
 import dev.crashteam.charon.exception.NoSuchPaymentTypeException;
 import dev.crashteam.charon.exception.NoSuchSubscriptionTypeException;
 import dev.crashteam.charon.mapper.ProtoMapper;
+import dev.crashteam.charon.model.Operation;
+import dev.crashteam.charon.model.dto.ninja.ExchangeRateDto;
 import dev.crashteam.charon.model.dto.resolver.PaymentData;
 import dev.crashteam.charon.model.RequestPaymentStatus;
 import dev.crashteam.charon.model.domain.PaidService;
@@ -15,6 +18,7 @@ import dev.crashteam.charon.model.dto.yookassa.YkPaymentRefundResponseDTO;
 import dev.crashteam.charon.repository.PaymentRepository;
 import dev.crashteam.charon.repository.specification.PaymentSpecification;
 import dev.crashteam.charon.service.resolver.PaymentResolver;
+import dev.crashteam.charon.util.PromoCodeGenerator;
 import dev.crashteam.payment.*;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
@@ -28,6 +32,7 @@ import org.springframework.util.StringUtils;
 
 import javax.persistence.EntityNotFoundException;
 import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 import java.util.List;
 import java.util.UUID;
 
@@ -40,8 +45,18 @@ public class PaymentService {
     private final PaidServiceService paidService;
     private final PromoCodeService promoCodeService;
     private final UserService userService;
+    private final OperationTypeService operationTypeService;
     private final ProtoMapper protoMapper;
+    private final CurrencyService currencyService;
     private final List<PaymentResolver> paymentResolvers;
+
+    public GetExchangeRateResponse getExchangeRate(GetExchangeRateRequest request) {
+        ExchangeRateDto exchangeRate = currencyService.getExchangeRate("USD_" + request.getCurrency());
+        return GetExchangeRateResponse.newBuilder()
+                .setPair(exchangeRate.getCurrencyPair())
+                .setExchangeRate(exchangeRate.getExchangeRate())
+                .build();
+    }
 
     @Transactional(readOnly = true)
     public GetBalanceResponse getBalanceResponse(GetBalanceRequest request) {
@@ -80,6 +95,22 @@ public class PaymentService {
         return protoMapper.getPurchaseServiceResponse(paymentRepository.save(payment), user.getBalance());
     }
 
+    public CreatePromoCodeResponse createPromoCode(CreatePromoCodeRequest request) {
+        PromoCodeConfig codeConfig = new PromoCodeConfig(request.getSerializedSize(), null, request.getPrefix(), null);
+        String promoCodeValue = PromoCodeGenerator.getPromoCode(codeConfig);
+        PromoCode promoCode = new PromoCode();
+        promoCode.setCode(promoCodeValue);
+        promoCode.setDescription(request.getDescription());
+        promoCode.setUsageLimit((long) request.getUsageLimit());
+        LocalDateTime validUntil = LocalDateTime
+                .ofEpochSecond(request.getValidUntil().getSeconds(), request.getValidUntil().getNanos(), ZoneOffset.UTC);
+        promoCode.setValidUntil(validUntil);
+        //TODO: Добавить поддержку разных контекстов
+        promoCode.setDiscountPercentage(request.getPromoCodeContext().getDiscountPromocodeContext().getDiscountPercentage());
+        promoCodeService.save(promoCode);
+        return protoMapper.getPromoCodeResponse(promoCode);
+    }
+
     @Transactional(readOnly = true)
     public UserPayment getUserPaymentByPaymentId(PaymentQuery request) {
         Payment payment = paymentRepository.findByPaymentId(request.getPaymentId())
@@ -90,6 +121,11 @@ public class PaymentService {
     @Transactional(readOnly = true)
     public List<Payment> getPaymentByStatus(String status) {
         return paymentRepository.findAllByStatus(status);
+    }
+
+    @Transactional(readOnly = true)
+    public List<Payment> getBPaymentByStatusAndOperationType(String status, String operationType) {
+        return paymentRepository.findAllByStatusAndOperationType(status, operationType);
     }
 
     @Deprecated
@@ -148,6 +184,7 @@ public class PaymentService {
         payment.setCreated(response.getCreatedAt());
         payment.setUpdated(LocalDateTime.now());
         payment.setUser(user);
+        payment.setOperationType(operationTypeService.getOperationType(Operation.PURCHASE_SERVICE.getTitle()));
         payment.setPromoCode(promoCode);
         payment.setMonthPaid(paidServiceContext.getMultiply());
         payment.setPaymentSystem(protoMapper.getPaymentSystemType(purchaseService.getPaymentSystem()).getTitle());
@@ -182,6 +219,7 @@ public class PaymentService {
         payment.setCreated(response.getCreatedAt());
         payment.setUpdated(LocalDateTime.now());
         payment.setUser(user);
+        payment.setOperationType(operationTypeService.getOperationType(Operation.DEPOSIT_BALANCE.getTitle()));
         payment.setPaymentSystem(protoMapper.getPaymentSystemType(balanceRequest.getPaymentSystem()).getTitle());
         payment.setMetadata(objectMapper.writeValueAsString(request.getMetadataMap()));
 
@@ -222,5 +260,10 @@ public class PaymentService {
         };
         return paidService
                 .getPaidServiceByTypeAndPlan(String.valueOf(paidServiceContextType), String.valueOf(subscriptionType));
+    }
+
+    @Transactional
+    public void save(Payment payment) {
+        paymentRepository.save(payment);
     }
 }

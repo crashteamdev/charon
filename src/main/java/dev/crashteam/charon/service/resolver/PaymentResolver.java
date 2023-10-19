@@ -13,7 +13,7 @@ public interface PaymentResolver {
 
     /***
      * @param paymentId set null if payment system on callbacks
-     * @return RequestPaymentStatus.NOT_IMPLEMENTED if payment system on callbacks
+     * @return RequestPaymentStatus.NOT_ACCEPTABLE if payment system on callbacks
      */
     RequestPaymentStatus getPaymentStatus(String paymentId);
 }

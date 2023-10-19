@@ -26,6 +26,9 @@ public class PaidService {
     @Column(name = "amount")
     private Long amount;
 
+    @Column(name = "currency")
+    private String currency;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "subscription_type_id", referencedColumnName = "id")
     private SubscriptionType subscriptionType;

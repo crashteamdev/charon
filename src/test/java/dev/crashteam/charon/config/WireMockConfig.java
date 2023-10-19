@@ -8,7 +8,7 @@ import org.springframework.context.annotation.Bean;
 public class WireMockConfig {
 
     @Bean(initMethod = "start", destroyMethod = "stop")
-    public WireMockServer mockYookassaClient() {
+    public WireMockServer mockClient() {
         return new WireMockServer(8085);
     }
 }

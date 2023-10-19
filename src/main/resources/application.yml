@@ -20,11 +20,15 @@ spring:
 app:
   scheduler:
     exchange-rate:
-      cron: 0 0/60 * * * ?
+      cron: 0 0/50 * * * ?
     evict-currency:
-      cron: 0 0/60 * * * ?
+      cron: 0 0/50 * * * ?
+    balance-deposit:
+      cron: 0 0/1 * * * ?
+    purchase-service:
+      cron: 0 0/1 * * * ?
   integration:
-    ninjas:
+    ninja:
       url: https://api.api-ninjas.com/v1
       api-key:
     yookassa: https://api.yookassa.ru/v3

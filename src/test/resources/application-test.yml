@@ -15,7 +15,19 @@ spring:
   liquibase:
     change-log: classpath:db/changelog/db.changelog-master.xml
 app:
+  scheduler:
+    exchange-rate:
+      cron: 0 0/50 * * * ?
+    evict-currency:
+      cron: 0 0/50 * * * ?
+    balance-deposit:
+      cron: 0 0/1 * * * ?
+    purchase-service:
+      cron: 0 0/1 * * * ?
   integration:
+    ninja:
+      url: http://localhost:8085/v1
+      api-key: some-api-key
     yookassa: http://localhost:8085/v3
 org:
   jobrunr:

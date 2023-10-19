@@ -2,6 +2,7 @@ package dev.crashteam.charon.mapper;
 
 import com.google.protobuf.Timestamp;
 import dev.crashteam.charon.exception.NoConfirmationUrlException;
+import dev.crashteam.charon.model.domain.PromoCode;
 import dev.crashteam.charon.model.dto.resolver.PaymentData;
 import dev.crashteam.charon.model.PaymentSystemType;
 import dev.crashteam.charon.model.RequestPaymentStatus;
@@ -49,6 +50,24 @@ public class ProtoMapper {
                 .setUserId(payment.getUserId()).build();
     }
 
+    public CreatePromoCodeResponse getPromoCodeResponse(PromoCode promoCode) {
+        PromoCodeContext.Builder promocodeContext = PromoCodeContext.newBuilder()
+                .setDiscountPromocodeContext(DiscountPromoCodeContext.newBuilder()
+                        .setDiscountPercentage(promoCode.getDiscountPercentage())
+                        .build());
+        Instant instant = promoCode.getValidUntil().toInstant(ZoneOffset.UTC);
+        Timestamp validUntil = Timestamp.newBuilder().setSeconds(instant.getEpochSecond())
+                .setNanos(instant.getNano()).build();
+        var grpcPromoCode = dev.crashteam.payment.PromoCode.newBuilder()
+                .setCode(promoCode.getCode())
+                .setDescription(promoCode.getDescription())
+                .setUsageLimit(Math.toIntExact(promoCode.getUsageLimit()))
+                .setValidUntil(validUntil)
+                .setPromoCodeContext(promocodeContext)
+                .build();
+        return CreatePromoCodeResponse.newBuilder().setPromoCode(grpcPromoCode).build();
+    }
+
     public PaymentSystemType getPaymentSystemType(PaymentSystem paymentSystem) {
         return switch (paymentSystem) {
             case PAYMENT_SYSTEM_UNKNOWN -> PaymentSystemType.PAYMENT_SYSTEM_UNKNOWN;
@@ -67,6 +86,7 @@ public class ProtoMapper {
             case PENDING -> PaymentStatus.PAYMENT_STATUS_PENDING;
             case CANCELED -> PaymentStatus.PAYMENT_STATUS_CANCELED;
             case SUCCESS -> PaymentStatus.PAYMENT_STATUS_SUCCESS;
+            default -> throw new IllegalStateException("Unexpected value: " + requestPaymentStatus);
         };
     }
 
