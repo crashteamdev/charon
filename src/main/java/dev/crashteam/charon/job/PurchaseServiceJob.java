@@ -37,13 +37,16 @@ public class PurchaseServiceJob implements Job {
     public void execute(JobExecutionContext jobExecutionContext) throws JobExecutionException {
         var payments = paymentService
                 .getBPaymentByStatusAndOperationType(RequestPaymentStatus.PENDING.getTitle(),
-                        Operation.DEPOSIT_BALANCE.getTitle()).stream();
+                        Operation.PURCHASE_SERVICE.getTitle()).stream();
         payments.forEach(this::checkPaymentStatus);
     }
 
     @Transactional
     public void checkPaymentStatus(Payment payment) {
         PaymentSystemType systemType = PaymentSystemType.getByTitle(payment.getPaymentSystem());
+        if (systemType.isCallback()) {
+            return;
+        }
         PaymentResolver paymentResolver = resolvers.stream()
                 .filter(it -> it.getPaymentSystem().equals(PaymentSystem.forNumber(systemType.getNumberValue())))
                 .findFirst()

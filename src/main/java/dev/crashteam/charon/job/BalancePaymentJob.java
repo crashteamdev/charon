@@ -44,6 +44,9 @@ public class BalancePaymentJob implements Job {
     @Transactional
     public void checkPaymentStatus(Payment payment) {
         PaymentSystemType systemType = PaymentSystemType.getByTitle(payment.getPaymentSystem());
+        if (systemType.isCallback()) {
+            return;
+        }
         PaymentResolver paymentResolver = resolvers.stream()
                 .filter(it -> it.getPaymentSystem().equals(PaymentSystem.forNumber(systemType.getNumberValue())))
                 .findFirst()
