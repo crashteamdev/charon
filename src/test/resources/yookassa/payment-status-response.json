@@ -1,6 +1,6 @@
 {
   "id": "22e12f66-000f-5000-8000-18db351245c7",
-  "status": "waiting_for_capture",
+  "status": "succeeded",
   "paid": true,
   "amount": {
     "value": 2,

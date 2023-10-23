@@ -16,6 +16,7 @@ import dev.crashteam.payment.*;
 import org.springframework.stereotype.Service;
 
 import java.time.Instant;
+import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.util.Collections;
 import java.util.List;
@@ -68,6 +69,23 @@ public class ProtoMapper {
         return CreatePromoCodeResponse.newBuilder().setPromoCode(grpcPromoCode).build();
     }
 
+    public CheckPromoCodeResponse getCheckPromoCodeResponse(PromoCode promoCode) {
+        if (promoCode == null) {
+            return getErrorPromoCodeResponse(CheckPromoCodeResponse.ErrorResponse.ErrorCode.ERROR_CODE_NOT_FOUND);
+        }
+        if (LocalDateTime.now().isAfter(promoCode.getValidUntil())) {
+            return getErrorPromoCodeResponse(CheckPromoCodeResponse.ErrorResponse.ErrorCode.ERROR_CODE_EXPIRED_PROMO_CODE);
+        }
+        if (promoCode.getUsageLimit() <= 0) {
+            return getErrorPromoCodeResponse(CheckPromoCodeResponse.ErrorResponse.ErrorCode.ERROR_CODE_MAX_USAGE_LIMIT);
+        }
+        return CheckPromoCodeResponse.newBuilder()
+                .setSuccessResponse(CheckPromoCodeResponse.SuccessResponse.newBuilder()
+                        .setPromoCode(promoCode.getCode())
+                        .build())
+                .build();
+    }
+
     public PaymentSystemType getPaymentSystemType(PaymentSystem paymentSystem) {
         return switch (paymentSystem) {
             case PAYMENT_SYSTEM_UNKNOWN -> PaymentSystemType.PAYMENT_SYSTEM_UNKNOWN;
@@ -80,6 +98,10 @@ public class ProtoMapper {
 
     public PaymentStatus getPaymentStatus(String status) {
         RequestPaymentStatus requestPaymentStatus = RequestPaymentStatus.getStatus(status);
+        return getPaymentStatus(requestPaymentStatus);
+    }
+
+    public PaymentStatus getPaymentStatus(RequestPaymentStatus requestPaymentStatus) {
         return switch (requestPaymentStatus) {
             case FAILED -> PaymentStatus.PAYMENT_STATUS_FAILED;
             case UNKNOWN -> PaymentStatus.PAYMENT_STATUS_UNKNOWN;
@@ -90,16 +112,19 @@ public class ProtoMapper {
         };
     }
 
-    public PaymentCreateResponse getPaymentResponse(PaymentData response) {
+    public PaymentCreateResponse getPaymentResponse(PaymentData response, Payment payment) {
+        return getPaymentResponse(response, payment, payment.getAmount());
+    }
+
+    public PaymentCreateResponse getPaymentResponse(PaymentData response, Payment payment, long amount) {
         Instant instantCreated = response.getCreatedAt().toInstant(ZoneOffset.UTC);
         return PaymentCreateResponse.newBuilder()
-                .setAmount(getAmount(response.getCurrency(),
-                        Long.valueOf(response.getValue())))
+                .setAmount(getAmount("USD", amount))
                 .setDescription(response.getDescription())
                 .setCreatedAt(Timestamp.newBuilder().setSeconds(instantCreated.getEpochSecond())
                         .setNanos(instantCreated.getNano()).build())
-                .setPaymentId(response.getId())
-                .setStatus(getPaymentStatus(response.getStatus()))
+                .setPaymentId(payment.getPaymentId())
+                .setStatus(getPaymentStatus(payment.getStatus()))
                 .setConfirmationUrl(response.getConfirmationUrl())
                 .build();
     }
@@ -169,5 +194,14 @@ public class ProtoMapper {
         return payments.stream()
                 .map(this::getUserPayment)
                 .collect(Collectors.toList());
+    }
+
+    private CheckPromoCodeResponse getErrorPromoCodeResponse(CheckPromoCodeResponse.ErrorResponse.ErrorCode errorCode) {
+        CheckPromoCodeResponse.ErrorResponse errorResponse = CheckPromoCodeResponse.ErrorResponse.newBuilder()
+                .setErrorCode(errorCode)
+                .build();
+        return CheckPromoCodeResponse.newBuilder()
+                .setErrorResponse(errorResponse)
+                .build();
     }
 }

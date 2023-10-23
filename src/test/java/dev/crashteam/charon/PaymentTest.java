@@ -2,15 +2,22 @@ package dev.crashteam.charon;
 
 import com.github.tomakehurst.wiremock.WireMockServer;
 import com.google.protobuf.StringValue;
+import com.google.protobuf.Timestamp;
 import dev.crashteam.charon.config.WireMockConfig;
 import dev.crashteam.charon.grpc.PaymentServiceImpl;
+import dev.crashteam.charon.job.BalancePaymentJob;
+import dev.crashteam.charon.job.PurchaseServiceJob;
 import dev.crashteam.charon.mock.NinjaMock;
 import dev.crashteam.charon.mock.YookassaMock;
+import dev.crashteam.charon.model.RequestPaymentStatus;
 import dev.crashteam.charon.model.domain.Payment;
 import dev.crashteam.charon.repository.PaymentRepository;
+import dev.crashteam.charon.repository.PromoCodeRepository;
+import dev.crashteam.charon.repository.UserRepository;
 import dev.crashteam.charon.service.PaymentService;
 import dev.crashteam.payment.*;
 import io.grpc.internal.testing.StreamRecorder;
+import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -24,14 +31,19 @@ import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 
 import java.io.IOException;
+import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import java.util.Map;
+import java.util.Optional;
+import java.util.UUID;
 
 import static com.github.tomakehurst.wiremock.client.WireMock.equalTo;
 
 
+@Slf4j
 @SpringBootTest
 @ActiveProfiles({"test"})
 @EnableConfigurationProperties
@@ -51,6 +63,18 @@ public class PaymentTest {
     @Autowired
     PaymentRepository paymentRepository;
 
+    @Autowired
+    UserRepository userRepository;
+
+    @Autowired
+    BalancePaymentJob balancePaymentJob;
+
+    @Autowired
+    PurchaseServiceJob purchaseServiceJob;
+
+    @Autowired
+    PromoCodeRepository promoCodeRepository;
+
     @BeforeEach
     public void setup() throws IOException {
         YookassaMock.createPayment(mockServer);
@@ -58,6 +82,8 @@ public class PaymentTest {
         YookassaMock.paymentStatus(mockServer);
         NinjaMock.currencyResponse(mockServer, Map.of("have", equalTo("USD"),
                 "want", equalTo("RUB"), "amount", equalTo("30")));
+        NinjaMock.currencyResponse(mockServer, Map.of("have", equalTo("USD"),
+                "want", equalTo("RUB"), "amount", equalTo("21")));
     }
 
     @BeforeEach
@@ -65,10 +91,96 @@ public class PaymentTest {
         paymentRepository.deleteAll();
     }
 
+    @BeforeEach
+    public void clearUsers() {
+        userRepository.deleteAll();
+    }
+
+    @BeforeEach
+    public void clearPromoCodes() {
+        promoCodeRepository.deleteAll();
+    }
+
+    @Test
+    public void createPurchaseServicePaymentWithPromoCodeTest() {
+        String userId = UUID.randomUUID().toString();
+
+        DateTimeFormatter FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+        LocalDate ld = LocalDate.parse("2099-01-01", FORMATTER);
+
+        LocalDateTime ldt = LocalDateTime.of(ld, LocalDateTime.now().toLocalTime());
+        Instant instantCreated = ldt.toInstant(ZoneOffset.UTC);
+        CreatePromoCodeRequest promoCodeRequest = CreatePromoCodeRequest.newBuilder()
+                .setPromoCodeContext(PromoCodeContext.newBuilder()
+                        .setDiscountPromocodeContext(DiscountPromoCodeContext.newBuilder()
+                                .setDiscountPercentage(30).build()))
+                .setValidUntil(Timestamp.newBuilder().setSeconds(instantCreated.getEpochSecond())
+                        .setNanos(instantCreated.getNano()).build())
+                .setUsageLimit(1)
+                .build();
+        StreamRecorder<CreatePromoCodeResponse> promoCodeResponse = StreamRecorder.create();
+        grpcService.createPromoCode(promoCodeRequest, promoCodeResponse);
+        Assertions.assertNull(promoCodeResponse.getError());
+        String createdCode = promoCodeResponse.getValues().get(0).getPromoCode().getCode();
+        Optional<dev.crashteam.charon.model.domain.PromoCode> promoCode = promoCodeRepository.findByCode(createdCode);
+        Assertions.assertTrue(promoCode.isPresent());
+
+        var purchaseService = PaymentCreateRequest.PaymentPurchaseService.newBuilder()
+                .setUserId(userId)
+                .setPromoCode(promoCode.get().getCode())
+                .setPaidService(PaidService.newBuilder().setContext(PaidServiceContext.newBuilder()
+                        .setMultiply(2).setKeAnalyticsContext(KeAnalyticsContext.newBuilder()
+                                .setPlan(KeAnalyticsContext.KeAnalyticsPlan.newBuilder()
+                                        .setDefaultPlan(KeAnalyticsContext.KeAnalyticsPlan.KeAnalyticsDefaultPlan
+                                                .newBuilder().buildPartial()).build()).build())).build())
+                .setPaymentSystem(PaymentSystem.PAYMENT_SYSTEM_YOOKASSA)
+                .setReturnUrl("return-test.test")
+                .build();
+        PaymentCreateRequest paymentCreateRequest = PaymentCreateRequest.newBuilder()
+                .setPaymentPurchaseService(purchaseService)
+                .build();
+        StreamRecorder<PaymentCreateResponse> paymentCreateObserver = StreamRecorder.create();
+        grpcService.createPayment(paymentCreateRequest, paymentCreateObserver);
+        Assertions.assertNull(paymentCreateObserver.getError());
+
+        Assertions.assertTrue(promoCodeRepository.findByCodeAndUserId(promoCode.get().getCode(), userId).isPresent());
+    }
+
+    @Test
+    public void createPurchaseServicePaymentTest() {
+        String userId = UUID.randomUUID().toString();
+        var purchaseService = PaymentCreateRequest.PaymentPurchaseService.newBuilder()
+                .setUserId(userId)
+                .setPaidService(PaidService.newBuilder().setContext(PaidServiceContext.newBuilder()
+                        .setMultiply(2).setKeAnalyticsContext(KeAnalyticsContext.newBuilder()
+                                .setPlan(KeAnalyticsContext.KeAnalyticsPlan.newBuilder()
+                                        .setDefaultPlan(KeAnalyticsContext.KeAnalyticsPlan.KeAnalyticsDefaultPlan
+                                                .newBuilder().buildPartial()).build()).build())).build())
+                .setPaymentSystem(PaymentSystem.PAYMENT_SYSTEM_YOOKASSA)
+                .setReturnUrl("return-test.test")
+                .build();
+        PaymentCreateRequest paymentCreateRequest = PaymentCreateRequest.newBuilder()
+                .setPaymentPurchaseService(purchaseService)
+                .build();
+        StreamRecorder<PaymentCreateResponse> paymentCreateObserver = StreamRecorder.create();
+        grpcService.createPayment(paymentCreateRequest, paymentCreateObserver);
+        Assertions.assertNull(paymentCreateObserver.getError());
+
+        String paymentId = paymentCreateObserver.getValues().get(0).getPaymentId();
+        Optional<Payment> payment = paymentRepository.findByPaymentId(paymentId);
+        Assertions.assertTrue(payment.isPresent());
+
+        purchaseServiceJob.checkPaymentStatus(payment.get());
+
+        Optional<Payment> successPayment = paymentRepository.findByPaymentId(paymentId);
+        Assertions.assertEquals(successPayment.get().getStatus(), RequestPaymentStatus.SUCCESS);
+    }
+
     @Test
     public void createBalancePaymentTest() {
+        String userId = UUID.randomUUID().toString();
         var depositUserBalance = PaymentCreateRequest.PaymentDepositUserBalance.newBuilder()
-                .setUserId("test_user_id")
+                .setUserId(userId)
                 .setAmount(30)
                 .setCurrency(PaymentCurrency.PAYMENT_CURRENCY_USD)
                 .setPaymentSystem(PaymentSystem.PAYMENT_SYSTEM_YOOKASSA)
@@ -80,6 +192,16 @@ public class PaymentTest {
         StreamRecorder<PaymentCreateResponse> paymentCreateObserver = StreamRecorder.create();
         grpcService.createPayment(paymentCreateRequest, paymentCreateObserver);
         Assertions.assertNull(paymentCreateObserver.getError());
+
+        String paymentId = paymentCreateObserver.getValues().get(0).getPaymentId();
+        Optional<Payment> payment = paymentRepository.findByPaymentId(paymentId);
+        Assertions.assertTrue(payment.isPresent());
+
+        balancePaymentJob.checkPaymentStatus(payment.get());
+
+        Assertions.assertEquals(30L, (long) userRepository.getById(userId).getBalance());
+        Optional<Payment> successPayment = paymentRepository.findByPaymentId(paymentId);
+        Assertions.assertEquals(successPayment.get().getStatus(), RequestPaymentStatus.SUCCESS);
     }
 
     @Test
@@ -87,7 +209,7 @@ public class PaymentTest {
         Payment payment = new Payment();
         payment.setPaymentId("request_payment_id");
         payment.setExternalId("22e12f66-000f-5000-8000-18db351245c7");
-        payment.setStatus("pending");
+        payment.setStatus(RequestPaymentStatus.PENDING);
         payment.setCurrency("RUB");
         payment.setAmount(1000L);
         payment.setUserId("user_id");
@@ -110,7 +232,7 @@ public class PaymentTest {
         Payment payment = new Payment();
         payment.setPaymentId("request_payment_id");
         payment.setExternalId("22e12f66-000f-5000-8000-18db351245c7");
-        payment.setStatus("pending");
+        payment.setStatus(RequestPaymentStatus.PENDING);
         payment.setCurrency("RUB");
         payment.setAmount(1000L);
         payment.setUserId("user_id");
@@ -121,7 +243,7 @@ public class PaymentTest {
         Payment secondPayment = new Payment();
         secondPayment.setPaymentId("second_request_payment_id");
         secondPayment.setExternalId("23e12f62-000f-5000-8000-18db351245c7");
-        secondPayment.setStatus("pending");
+        secondPayment.setStatus(RequestPaymentStatus.PENDING);
         secondPayment.setCurrency("RUB");
         secondPayment.setAmount(1000L);
         secondPayment.setUserId("other_user_id");

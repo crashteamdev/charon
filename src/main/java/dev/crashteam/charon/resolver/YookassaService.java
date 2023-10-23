@@ -1,4 +1,4 @@
-package dev.crashteam.charon.service.resolver;
+package dev.crashteam.charon.resolver;
 
 import dev.crashteam.charon.mapper.integration.YookassaPaymentMapper;
 import dev.crashteam.charon.model.RequestPaymentStatus;
@@ -29,9 +29,9 @@ public class YookassaService implements PaymentResolver {
         PaymentData paymentData = new PaymentData();
         paymentData.setId(responseDTO.getId());
         paymentData.setCreatedAt(responseDTO.getCreatedAt());
-        paymentData.setStatus(responseDTO.getStatus());
+        paymentData.setStatus(yookassaPaymentMapper.getPaymentStatus(responseDTO.getStatus()));
         paymentData.setCurrency("RUB");
-        paymentData.setValue(responseDTO.getAmount().getValue());
+        paymentData.setAmount(responseDTO.getAmount().getValue());
         paymentData.setDescription(responseDTO.getDescription());
         paymentData.setConfirmationUrl(responseDTO.getConfirmation().getConfirmationUrl());
         return paymentData;

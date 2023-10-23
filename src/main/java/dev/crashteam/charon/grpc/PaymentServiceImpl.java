@@ -30,7 +30,8 @@ public class PaymentServiceImpl extends PaymentServiceGrpc.PaymentServiceImplBas
 
     @Override
     public void checkPromoCode(CheckPromoCodeRequest request, StreamObserver<CheckPromoCodeResponse> responseObserver) {
-        super.checkPromoCode(request, responseObserver);
+        responseObserver.onNext(paymentService.checkPromoCode(request));
+        responseObserver.onCompleted();
     }
 
     @Override

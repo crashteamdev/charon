@@ -16,7 +16,11 @@ public class PromoCodeService {
 
     @Transactional(readOnly = true)
     public PromoCode getPromoCode(String code) {
-        return promoCodeRepository.findByCode(code).orElseThrow(EntityExistsException::new);
+        return promoCodeRepository.findByCode(code).orElse(null);
+    }
+
+    public boolean existsByCodeAndUserId(String code, String userId ) {
+        return promoCodeRepository.findByCodeAndUserId(code, userId).isPresent();
     }
 
     public PromoCode save(PromoCode promoCode) {

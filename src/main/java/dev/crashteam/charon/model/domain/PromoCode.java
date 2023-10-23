@@ -5,6 +5,7 @@ import lombok.ToString;
 
 import javax.persistence.*;
 import java.time.LocalDateTime;
+import java.util.Set;
 
 @Data
 @Entity
@@ -25,5 +26,14 @@ public class PromoCode {
     private String description;
     @Column(name = "discount_percentage")
     private Integer discountPercentage;
+
+    @ManyToMany
+    @JoinTable(
+            name = "promo_code_app_user",
+            joinColumns = @JoinColumn(name = "promo_code_id"),
+            inverseJoinColumns = @JoinColumn(name = "user_id")
+    )
+    @ToString.Exclude
+    private Set<User> users;
 
 }

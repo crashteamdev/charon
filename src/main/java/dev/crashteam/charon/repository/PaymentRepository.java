@@ -1,5 +1,6 @@
 package dev.crashteam.charon.repository;
 
+import dev.crashteam.charon.model.RequestPaymentStatus;
 import dev.crashteam.charon.model.domain.Payment;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -18,13 +19,13 @@ public interface PaymentRepository extends JpaRepository<Payment, String>, JpaSp
 
     Optional<Payment> findByOperationId(String operationId);
 
-    @Query("select p from Payment p where p.paymentId = :userId")
-    Optional<Payment> findByPaymentId(String userId);
+    @Query("select p from Payment p where p.paymentId = :paymentId")
+    Optional<Payment> findByPaymentId(String paymentId);
 
     List<Payment> findAllByStatus(String status);
 
-    @Query(value = "SELECT pr.* FROM payment_repository pr " +
+    @Query(value = "SELECT pr.* FROM payment pr " +
             "INNER JOIN operation_type ot ON pr.operation_type_id = ot.id " +
             "WHERE pr.status = ?1 AND ot.type = ?2", nativeQuery = true)
-    List<Payment> findAllByStatusAndOperationType(String status, String operationType);
+    List<Payment> findAllByStatusAndOperationType(RequestPaymentStatus status, String operationType);
 }

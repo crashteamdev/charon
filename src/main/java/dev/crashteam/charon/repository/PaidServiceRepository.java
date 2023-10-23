@@ -10,7 +10,9 @@ import java.util.Optional;
 @Repository
 public interface PaidServiceRepository extends JpaRepository<PaidService, Long> {
 
-    @Query("SELECT ps FROM PaidService ps WHERE ps.type = ?1 and ps.subscriptionTypeId = ?2")
-    Optional<PaidService> findByTypeAndSubscriptionType(String type, String subscriptionType);
+    @Query("SELECT ps FROM PaidService ps INNER JOIN SubscriptionType s " +
+            "ON s.id = ps.subscriptionTypeId " +
+            "WHERE ps.type = ?1 and s.type = ?2")
+    Optional<PaidService> findByTypeAndSubscriptionType(Long type, Long subscriptionType);
 
 }

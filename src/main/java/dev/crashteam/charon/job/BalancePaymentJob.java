@@ -7,7 +7,7 @@ import dev.crashteam.charon.model.domain.Payment;
 import dev.crashteam.charon.model.domain.User;
 import dev.crashteam.charon.service.PaymentService;
 import dev.crashteam.charon.service.UserService;
-import dev.crashteam.charon.service.resolver.PaymentResolver;
+import dev.crashteam.charon.resolver.PaymentResolver;
 import dev.crashteam.payment.PaymentSystem;
 import lombok.extern.slf4j.Slf4j;
 import org.quartz.DisallowConcurrentExecution;
@@ -36,8 +36,7 @@ public class BalancePaymentJob implements Job {
     @Transactional
     public void execute(JobExecutionContext jobExecutionContext) throws JobExecutionException {
         var payments = paymentService
-                .getBPaymentByStatusAndOperationType(RequestPaymentStatus.PENDING.getTitle(),
-                        Operation.DEPOSIT_BALANCE.getTitle()).stream();
+                .getPaymentByStatusAndOperationType(RequestPaymentStatus.PENDING, Operation.DEPOSIT_BALANCE.getTitle()).stream();
         payments.forEach(this::checkPaymentStatus);
     }
 
@@ -59,7 +58,7 @@ public class BalancePaymentJob implements Job {
             user.setBalance(newBalance);
             userService.saveUser(user);
 
-            payment.setStatus(RequestPaymentStatus.SUCCESS.getTitle());
+            payment.setStatus(RequestPaymentStatus.SUCCESS);
             paymentService.save(payment);
         }
     }

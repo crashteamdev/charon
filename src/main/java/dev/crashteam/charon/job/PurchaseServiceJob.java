@@ -6,7 +6,7 @@ import dev.crashteam.charon.model.RequestPaymentStatus;
 import dev.crashteam.charon.model.domain.Payment;
 import dev.crashteam.charon.service.PaymentService;
 import dev.crashteam.charon.service.UserService;
-import dev.crashteam.charon.service.resolver.PaymentResolver;
+import dev.crashteam.charon.resolver.PaymentResolver;
 import dev.crashteam.payment.PaymentSystem;
 import lombok.extern.slf4j.Slf4j;
 import org.quartz.DisallowConcurrentExecution;
@@ -36,8 +36,7 @@ public class PurchaseServiceJob implements Job {
     @Transactional
     public void execute(JobExecutionContext jobExecutionContext) throws JobExecutionException {
         var payments = paymentService
-                .getBPaymentByStatusAndOperationType(RequestPaymentStatus.PENDING.getTitle(),
-                        Operation.PURCHASE_SERVICE.getTitle()).stream();
+                .getPaymentByStatusAndOperationType(RequestPaymentStatus.PENDING, Operation.PURCHASE_SERVICE.getTitle()).stream();
         payments.forEach(this::checkPaymentStatus);
     }
 
@@ -54,7 +53,7 @@ public class PurchaseServiceJob implements Job {
         RequestPaymentStatus paymentStatus = paymentResolver.getPaymentStatus(payment.getExternalId());
         if (RequestPaymentStatus.SUCCESS.equals(paymentStatus)) {
             log.info("Payment with id [{}] successful, purchasing service", payment.getPaymentId());
-            payment.setStatus(RequestPaymentStatus.SUCCESS.getTitle());
+            payment.setStatus(RequestPaymentStatus.SUCCESS);
             paymentService.save(payment);
         }
     }

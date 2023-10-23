@@ -4,15 +4,21 @@
                    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
                    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog-ext http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-ext.xsd http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.6.xsd">
 
+    <changeSet id="create_payment_status_type" author="sagefreke">
+        <sql>CREATE TYPE payment_status_type AS ENUM ('NOT_ACCEPTABLE', 'UNKNOWN', 'PENDING', 'SUCCESS', 'CANCELED', 'FAILED')</sql>
+    </changeSet>
+
     <changeSet id="create_payment_table" author="sagefreke">
         <createTable tableName="payment">
             <column name="payment_id" type="VARCHAR(255)">
                 <constraints primaryKey="true" primaryKeyName="payment_pkey"/>
             </column>
             <column name="user_id" type="VARCHAR(255)"/>
-            <column name="status" type="VARCHAR(64)"/>
+            <column name="status" type="payment_status_type"/>
             <column name="amount" type="BIGINT"/>
             <column name="currency" type="VARCHAR(32)"/>
+            <column name="provider_amount" type="BIGINT"/>
+            <column name="provider_currency" type="VARCHAR(32)"/>
             <column name="created" type="TIMESTAMP"/>
             <column name="updated" type="TIMESTAMP"/>
             <column name="external_id" type="VARCHAR(64)"/>
@@ -85,6 +91,9 @@
             <column name="code"/>
         </createIndex>
         <createSequence sequenceName="promo_code_id_seq" startValue="1" incrementBy="1"/>
+        <sql>
+            ALTER TABLE promo_code ADD CONSTRAINT promo_code_percentage_check CHECK (discount_percentage &gt;0 AND discount_percentage &lt;100)
+        </sql>
     </changeSet>
 
     <changeSet id="create_promo_code_foreign_key" author="sagefreke">
@@ -122,12 +131,11 @@
             <column name="id" type="BIGINT">
                 <constraints primaryKey="true" primaryKeyName="paid_service_id_pkey"/>
             </column>
-            <column name="plan" type="TIMESTAMP"/>
             <column name="name" type="VARCHAR(255)"/>
-            <column name="type" type="VARCHAR(255)"/>
+            <column name="type" type="BIGINT"/>
             <column name="amount" type="BIGINT"/>
             <column name="currency" type="VARCHAR(32)"/>
-            <column name="subscription_id" type="BIGINT"/>
+            <column name="subscription_type_id" type="BIGINT"/>
         </createTable>
         <createIndex tableName="paid_service" indexName="idx_paid_service_type">
             <column name="type"/>
@@ -150,7 +158,7 @@
             <column name="id" type="BIGINT">
                 <constraints primaryKey="true" primaryKeyName="subscription_type_id_pkey"/>
             </column>
-            <column name="type" type="VARCHAR(255)"/>
+            <column name="type" type="BIGINT"/>
             <column name="name" type="VARCHAR(255)"/>
         </createTable>
         <createSequence sequenceName="subscription_type_id_seq" startValue="1" incrementBy="1"/>
@@ -161,7 +169,7 @@
 
     <changeSet id="create_subscription_type_foreign_key" author="sagefreke">
         <addForeignKeyConstraint baseTableName="paid_service"
-                                 baseColumnNames="subscription_id"
+                                 baseColumnNames="subscription_type_id"
                                  constraintName="paid_service_subscription_type_fkey"
                                  onDelete="NO ACTION"
                                  onUpdate="NO ACTION"
@@ -192,7 +200,7 @@
             <column name="type" value="10"/>
             <column name="amount" value="15"/>
             <column name="currency" value="USD"/>
-            <column name="subscription_id" valueComputed="SELECT id FROM subscription_type WHERE name='default'"/>
+            <column name="subscription_type_id" valueComputed="(SELECT id FROM subscription_type WHERE name='default')"/>
         </insert>
         <insert tableName="paid_service">
             <column name="id" valueSequenceNext="paid_service_id_seq"/>
@@ -200,7 +208,7 @@
             <column name="type" value="10"/>
             <column name="amount" value="25"/>
             <column name="currency" value="USD"/>
-            <column name="subscription_id" valueComputed="SELECT id FROM subscription_type WHERE name='advanced'"/>
+            <column name="subscription_type_id" valueComputed="(SELECT id FROM subscription_type WHERE name='advanced')"/>
         </insert>
         <insert tableName="paid_service">
             <column name="id" valueSequenceNext="paid_service_id_seq"/>
@@ -208,7 +216,7 @@
             <column name="type" value="10"/>
             <column name="amount" value="49"/>
             <column name="currency" value="USD"/>
-            <column name="subscription_id" valueComputed="SELECT id FROM subscription_type WHERE name='pro'"/>
+            <column name="subscription_type_id" valueComputed="(SELECT id FROM subscription_type WHERE name='pro')"/>
         </insert>
 
         <insert tableName="paid_service">
@@ -217,7 +225,7 @@
             <column name="type" value="11"/>
             <column name="amount" value="15"/>
             <column name="currency" value="USD"/>
-            <column name="subscription_id" valueComputed="SELECT id FROM subscription_type WHERE name='default'"/>
+            <column name="subscription_type_id" valueComputed="(SELECT id FROM subscription_type WHERE name='default')"/>
         </insert>
         <insert tableName="paid_service">
             <column name="id" valueSequenceNext="paid_service_id_seq"/>
@@ -225,7 +233,7 @@
             <column name="type" value="11"/>
             <column name="amount" value="25"/>
             <column name="currency" value="USD"/>
-            <column name="subscription_id" valueComputed="SELECT id FROM subscription_type WHERE name='advanced'"/>
+            <column name="subscription_type_id" valueComputed="(SELECT id FROM subscription_type WHERE name='advanced')"/>
         </insert>
         <insert tableName="paid_service">
             <column name="id" valueSequenceNext="paid_service_id_seq"/>
@@ -233,7 +241,7 @@
             <column name="type" value="11"/>
             <column name="amount" value="49"/>
             <column name="currency" value="USD"/>
-            <column name="subscription_id" valueComputed="SELECT id FROM subscription_type WHERE name='pro'"/>
+            <column name="subscription_type_id" valueComputed="(SELECT id FROM subscription_type WHERE name='pro')"/>
         </insert>
 
         <insert tableName="paid_service">
@@ -242,8 +250,53 @@
             <column name="type" value="12"/>
             <column name="amount" value="30"/>
             <column name="currency" value="USD"/>
-            <column name="subscription_id" valueComputed="SELECT id FROM subscription_type WHERE name='default'"/>
+            <column name="subscription_type_id" valueComputed="(SELECT id FROM subscription_type WHERE name='default')"/>
         </insert>
 
+        <insert tableName="paid_service">
+            <column name="id" valueSequenceNext="paid_service_id_seq"/>
+            <column name="name" value="ke_repricer"/>
+            <column name="type" value="13"/>
+            <column name="amount" value="30"/>
+            <column name="currency" value="USD"/>
+            <column name="subscription_type_id" valueComputed="(SELECT id FROM subscription_type WHERE name='default')"/>
+        </insert>
+
+    </changeSet>
+
+    <changeSet id="create-promo-code-user-table" author="sagefreke">
+        <createTable tableName="promo_code_app_user">
+            <column name="user_id" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="promo_code_id" type="bigint">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+
+        <addPrimaryKey tableName="promo_code_app_user" columnNames="user_id,promo_code_id"
+                       constraintName="pk_promo_code_app_user"/>
+
+        <createIndex tableName="promo_code_app_user" indexName="idx_promo_code_app_user_user">
+            <column name="user_id" type="VARCHAR(255)"/>
+        </createIndex>
+
+        <createIndex tableName="promo_code_app_user" indexName="idx_promo_code_app_user_promo_code">
+            <column name="promo_code_id" type="bigint"/>
+        </createIndex>
+
+        <addForeignKeyConstraint baseTableName="promo_code_app_user"
+                                 baseColumnNames="user_id"
+                                 constraintName="fk_promo_code_app_user_user"
+                                 referencedTableName="app_user"
+                                 referencedColumnNames="id"
+                                 deleteCascade="true"/>
+
+        <addForeignKeyConstraint baseTableName="promo_code_app_user"
+                                 baseColumnNames="promo_code_id"
+                                 constraintName="fk_promo_code_app_user_promo_code"
+                                 referencedTableName="promo_code"
+                                 referencedColumnNames="id"
+                                 deleteCascade="true"/>
     </changeSet>
 </databaseChangeLog>

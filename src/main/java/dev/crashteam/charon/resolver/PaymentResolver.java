@@ -1,4 +1,4 @@
-package dev.crashteam.charon.service.resolver;
+package dev.crashteam.charon.resolver;
 
 import dev.crashteam.charon.model.RequestPaymentStatus;
 import dev.crashteam.charon.model.dto.resolver.PaymentData;

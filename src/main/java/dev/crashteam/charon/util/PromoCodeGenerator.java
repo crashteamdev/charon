@@ -13,9 +13,9 @@ public class PromoCodeGenerator {
         if (promoCodeConfig.getPrefix() != null) {
             sb.append(promoCodeConfig.getPrefix());
         }
-        for (int i = 0; i < chars.length; i++) {
+        for (int i = 0; i < pattern.length - 1; i++) {
             if (pattern[i] == PromoCodeConfig.PATTERN_PLACEHOLDER) {
-                sb.append(chars[random.nextInt(chars.length)]);
+                sb.append(chars[random.nextInt(chars.length - 1)]);
             } else {
                 sb.append(pattern[i]);
             }

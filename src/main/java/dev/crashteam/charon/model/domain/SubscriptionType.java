@@ -20,5 +20,5 @@ public class SubscriptionType {
     private String name;
 
     @Column(name = "type")
-    private String type;
+    private Long type;
 }

@@ -62,7 +62,7 @@ public class YookassaPaymentMapper {
 
     public RequestPaymentStatus getPaymentStatus(String status) {
         return switch (status) {
-            case "pending" -> RequestPaymentStatus.PENDING;
+            case "waiting_for_capture", "pending" -> RequestPaymentStatus.PENDING;
             case "succeeded" -> RequestPaymentStatus.SUCCESS;
             case "canceled" -> RequestPaymentStatus.CANCELED;
             default -> throw new IllegalArgumentException("No such status - %s".formatted(status));

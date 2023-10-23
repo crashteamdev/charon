@@ -18,7 +18,7 @@ public class PaidService {
     private Long id;
 
     @Column(name = "type")
-    private String type;
+    private Long type;
 
     @Column(name = "name")
     private String name;
