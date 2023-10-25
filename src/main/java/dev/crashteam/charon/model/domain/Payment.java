@@ -56,6 +56,8 @@ public class Payment {
     private Long paidServiceId;
     @Column(name = "month_paid")
     private Long monthPaid;
+    @Column(name = "email")
+    private String email;
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "operation_type_id", referencedColumnName = "id")
     private OperationType operationType;

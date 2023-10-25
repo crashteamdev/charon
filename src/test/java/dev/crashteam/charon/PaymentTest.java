@@ -11,9 +11,12 @@ import dev.crashteam.charon.mock.NinjaMock;
 import dev.crashteam.charon.mock.YookassaMock;
 import dev.crashteam.charon.model.RequestPaymentStatus;
 import dev.crashteam.charon.model.domain.Payment;
+import dev.crashteam.charon.model.domain.User;
+import dev.crashteam.charon.model.dto.FkCallbackData;
 import dev.crashteam.charon.repository.PaymentRepository;
 import dev.crashteam.charon.repository.PromoCodeRepository;
 import dev.crashteam.charon.repository.UserRepository;
+import dev.crashteam.charon.service.CallbackService;
 import dev.crashteam.charon.service.PaymentService;
 import dev.crashteam.payment.*;
 import io.grpc.internal.testing.StreamRecorder;
@@ -75,40 +78,25 @@ public class PaymentTest {
     @Autowired
     PromoCodeRepository promoCodeRepository;
 
+    @Autowired
+    CallbackService callbackService;
+
     @BeforeEach
     public void setup() throws IOException {
         YookassaMock.createPayment(mockServer);
         YookassaMock.createRefundPayment(mockServer);
         YookassaMock.paymentStatus(mockServer);
         NinjaMock.currencyResponse(mockServer, Map.of("have", equalTo("USD"),
-                "want", equalTo("RUB"), "amount", equalTo("30")));
+                "want", equalTo("RUB"), "amount", equalTo("30.00")));
         NinjaMock.currencyResponse(mockServer, Map.of("have", equalTo("USD"),
-                "want", equalTo("RUB"), "amount", equalTo("21")));
-    }
-
-    @BeforeEach
-    public void clearPayments() {
-        paymentRepository.deleteAll();
-    }
-
-    @BeforeEach
-    public void clearUsers() {
-        userRepository.deleteAll();
-    }
-
-    @BeforeEach
-    public void clearPromoCodes() {
-        promoCodeRepository.deleteAll();
+                "want", equalTo("RUB"), "amount", equalTo("21.00")));
     }
 
     @Test
     public void createPurchaseServicePaymentWithPromoCodeTest() {
         String userId = UUID.randomUUID().toString();
 
-        DateTimeFormatter FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd");
-        LocalDate ld = LocalDate.parse("2099-01-01", FORMATTER);
-
-        LocalDateTime ldt = LocalDateTime.of(ld, LocalDateTime.now().toLocalTime());
+        LocalDateTime ldt = LocalDate.parse("2099-01-01", DateTimeFormatter.ofPattern("yyyy-MM-dd")).atStartOfDay();
         Instant instantCreated = ldt.toInstant(ZoneOffset.UTC);
         CreatePromoCodeRequest promoCodeRequest = CreatePromoCodeRequest.newBuilder()
                 .setPromoCodeContext(PromoCodeContext.newBuilder()
@@ -147,6 +135,40 @@ public class PaymentTest {
     }
 
     @Test
+    public void createPurchaseServiceFreeKassaPaymentTest() {
+        String userId = UUID.randomUUID().toString();
+        var purchaseService = PaymentCreateRequest.PaymentPurchaseService.newBuilder()
+                .setUserId(userId)
+                .setPaidService(PaidService.newBuilder().setContext(PaidServiceContext.newBuilder()
+                        .setMultiply(2).setKeAnalyticsContext(KeAnalyticsContext.newBuilder()
+                                .setPlan(KeAnalyticsContext.KeAnalyticsPlan.newBuilder()
+                                        .setDefaultPlan(KeAnalyticsContext.KeAnalyticsPlan.KeAnalyticsDefaultPlan
+                                                .newBuilder().buildPartial()).build()).build())).build())
+                .setPaymentSystem(PaymentSystem.PAYMENT_SYSTEM_FREEKASSA)
+                .setReturnUrl("return-test.test")
+                .build();
+        PaymentCreateRequest paymentCreateRequest = PaymentCreateRequest.newBuilder()
+                .setPaymentPurchaseService(purchaseService)
+                .build();
+        StreamRecorder<PaymentCreateResponse> paymentCreateObserver = StreamRecorder.create();
+        grpcService.createPayment(paymentCreateRequest, paymentCreateObserver);
+        Assertions.assertNull(paymentCreateObserver.getError());
+
+        String paymentId = paymentCreateObserver.getValues().get(0).getPaymentId();
+        Optional<Payment> payment = paymentRepository.findByPaymentId(paymentId);
+        Assertions.assertTrue(payment.isPresent());
+
+        purchaseServiceJob.checkPaymentStatus(payment.get());
+        Optional<Payment> paymentAfterJob = paymentRepository.findByPaymentId(paymentId);
+        Assertions.assertEquals(paymentAfterJob.get().getStatus(), RequestPaymentStatus.PENDING);
+
+        callbackService.freeKassaCallback(new FkCallbackData("", "2904.3", "order-id", paymentId, "cur"));
+
+        Optional<Payment> successPayment = paymentRepository.findByPaymentId(paymentId);
+        Assertions.assertEquals(successPayment.get().getStatus(), RequestPaymentStatus.SUCCESS);
+    }
+
+    @Test
     public void createPurchaseServicePaymentTest() {
         String userId = UUID.randomUUID().toString();
         var purchaseService = PaymentCreateRequest.PaymentPurchaseService.newBuilder()
@@ -181,7 +203,7 @@ public class PaymentTest {
         String userId = UUID.randomUUID().toString();
         var depositUserBalance = PaymentCreateRequest.PaymentDepositUserBalance.newBuilder()
                 .setUserId(userId)
-                .setAmount(30)
+                .setAmount(3000)
                 .setCurrency(PaymentCurrency.PAYMENT_CURRENCY_USD)
                 .setPaymentSystem(PaymentSystem.PAYMENT_SYSTEM_YOOKASSA)
                 .setReturnUrl("return-test.test")
@@ -199,7 +221,7 @@ public class PaymentTest {
 
         balancePaymentJob.checkPaymentStatus(payment.get());
 
-        Assertions.assertEquals(30L, (long) userRepository.getById(userId).getBalance());
+        Assertions.assertEquals(3000L, (long) userRepository.getById(userId).getBalance());
         Optional<Payment> successPayment = paymentRepository.findByPaymentId(paymentId);
         Assertions.assertEquals(successPayment.get().getStatus(), RequestPaymentStatus.SUCCESS);
     }
@@ -212,7 +234,13 @@ public class PaymentTest {
         payment.setStatus(RequestPaymentStatus.PENDING);
         payment.setCurrency("RUB");
         payment.setAmount(1000L);
-        payment.setUserId("user_id");
+
+        User user = new User();
+        user.setId(UUID.randomUUID().toString());
+        user.setBalance(0L);
+        user.setCurrency("USD");
+
+        payment.setUser(userRepository.save(user));
         payment.setCreated(LocalDateTime.now());
         payment.setUpdated(LocalDateTime.now());
         paymentRepository.save(payment);
@@ -235,7 +263,12 @@ public class PaymentTest {
         payment.setStatus(RequestPaymentStatus.PENDING);
         payment.setCurrency("RUB");
         payment.setAmount(1000L);
-        payment.setUserId("user_id");
+        User user = new User();
+        user.setId(UUID.randomUUID().toString());
+        user.setBalance(0L);
+        user.setCurrency("USD");
+
+        payment.setUser(userRepository.save(user));
         payment.setCreated(LocalDate.parse("2022-07-20", DateTimeFormatter.ofPattern("yyyy-MM-dd")).atStartOfDay());
         payment.setUpdated(LocalDateTime.now());
         paymentRepository.save(payment);
@@ -246,7 +279,12 @@ public class PaymentTest {
         secondPayment.setStatus(RequestPaymentStatus.PENDING);
         secondPayment.setCurrency("RUB");
         secondPayment.setAmount(1000L);
-        secondPayment.setUserId("other_user_id");
+        User user2 = new User();
+        user2.setId(UUID.randomUUID().toString());
+        user2.setBalance(0L);
+        user2.setCurrency("USD");
+
+        secondPayment.setUser(userRepository.save(user2));
         secondPayment.setCreated(LocalDate.parse("2022-07-20", DateTimeFormatter.ofPattern("yyyy-MM-dd")).atStartOfDay());
         secondPayment.setUpdated(LocalDateTime.now());
         paymentRepository.save(secondPayment);
@@ -257,7 +295,7 @@ public class PaymentTest {
 
         PaymentsQuery datePaymentsQuery = PaymentsQuery.newBuilder()
                 .setPagination(LimitOffsetPagination.newBuilder().setLimit(100L).setOffset(0).build())
-                .setDateTo(StringValue.newBuilder().setValue("2022-07-19").build())
+                .setDateTo(StringValue.newBuilder().setValue("2019-07-19").build())
                 .build();
 
         StreamRecorder<PaymentsResponse> paymentsResponseObserver = StreamRecorder.create();

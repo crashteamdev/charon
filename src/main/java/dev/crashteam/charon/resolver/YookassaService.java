@@ -9,9 +9,13 @@ import dev.crashteam.charon.model.dto.yookassa.YkPaymentRefundResponseDTO;
 import dev.crashteam.charon.model.dto.yookassa.YkPaymentResponseDTO;
 import dev.crashteam.charon.service.CurrencyService;
 import dev.crashteam.charon.service.feign.YookassaClient;
+import dev.crashteam.charon.util.PaymentProtoUtils;
 import dev.crashteam.payment.*;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+
+import java.math.BigDecimal;
+import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
@@ -27,11 +31,13 @@ public class YookassaService implements PaymentResolver {
                 .getCreatePaymentRequestDto(request, convertedAmount);
         YkPaymentResponseDTO responseDTO = kassaClient.createPayment(paymentRequestDto);
         PaymentData paymentData = new PaymentData();
-        paymentData.setId(responseDTO.getId());
+        paymentData.setPaymentId(UUID.randomUUID().toString());
+        paymentData.setProviderId(responseDTO.getId());
         paymentData.setCreatedAt(responseDTO.getCreatedAt());
         paymentData.setStatus(yookassaPaymentMapper.getPaymentStatus(responseDTO.getStatus()));
         paymentData.setCurrency("RUB");
-        paymentData.setAmount(responseDTO.getAmount().getValue());
+        BigDecimal moneyAmount = PaymentProtoUtils.getMinorMoneyAmount(responseDTO.getAmount().getValue());
+        paymentData.setProviderAmount(String.valueOf(moneyAmount));
         paymentData.setDescription(responseDTO.getDescription());
         paymentData.setConfirmationUrl(responseDTO.getConfirmation().getConfirmationUrl());
         return paymentData;

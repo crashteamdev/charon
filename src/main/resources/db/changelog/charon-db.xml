@@ -29,6 +29,7 @@
             <column name="paid_service_id" type="BIGINT"/>
             <column name="operation_type_id" type="BIGINT"/>
             <column name="month_paid" type="BIGINT"/>
+            <column name="email" type="VARCHAR(255)"/>
             <column name="meta_data" type="TEXT"/>
         </createTable>
         <createIndex tableName="payment" indexName="idx_payment_user_id">
@@ -198,7 +199,7 @@
             <column name="id" valueSequenceNext="paid_service_id_seq"/>
             <column name="name" value="uzum_analytics"/>
             <column name="type" value="10"/>
-            <column name="amount" value="15"/>
+            <column name="amount" value="1500"/>
             <column name="currency" value="USD"/>
             <column name="subscription_type_id" valueComputed="(SELECT id FROM subscription_type WHERE name='default')"/>
         </insert>
@@ -206,7 +207,7 @@
             <column name="id" valueSequenceNext="paid_service_id_seq"/>
             <column name="name" value="uzum_analytics"/>
             <column name="type" value="10"/>
-            <column name="amount" value="25"/>
+            <column name="amount" value="2500"/>
             <column name="currency" value="USD"/>
             <column name="subscription_type_id" valueComputed="(SELECT id FROM subscription_type WHERE name='advanced')"/>
         </insert>
@@ -214,7 +215,7 @@
             <column name="id" valueSequenceNext="paid_service_id_seq"/>
             <column name="name" value="uzum_analytics"/>
             <column name="type" value="10"/>
-            <column name="amount" value="49"/>
+            <column name="amount" value="4900"/>
             <column name="currency" value="USD"/>
             <column name="subscription_type_id" valueComputed="(SELECT id FROM subscription_type WHERE name='pro')"/>
         </insert>
@@ -223,7 +224,7 @@
             <column name="id" valueSequenceNext="paid_service_id_seq"/>
             <column name="name" value="ke_analytics"/>
             <column name="type" value="11"/>
-            <column name="amount" value="15"/>
+            <column name="amount" value="1500"/>
             <column name="currency" value="USD"/>
             <column name="subscription_type_id" valueComputed="(SELECT id FROM subscription_type WHERE name='default')"/>
         </insert>
@@ -231,7 +232,7 @@
             <column name="id" valueSequenceNext="paid_service_id_seq"/>
             <column name="name" value="ke_analytics"/>
             <column name="type" value="11"/>
-            <column name="amount" value="25"/>
+            <column name="amount" value="2500"/>
             <column name="currency" value="USD"/>
             <column name="subscription_type_id" valueComputed="(SELECT id FROM subscription_type WHERE name='advanced')"/>
         </insert>
@@ -239,7 +240,7 @@
             <column name="id" valueSequenceNext="paid_service_id_seq"/>
             <column name="name" value="ke_analytics"/>
             <column name="type" value="11"/>
-            <column name="amount" value="49"/>
+            <column name="amount" value="4900"/>
             <column name="currency" value="USD"/>
             <column name="subscription_type_id" valueComputed="(SELECT id FROM subscription_type WHERE name='pro')"/>
         </insert>
@@ -248,7 +249,7 @@
             <column name="id" valueSequenceNext="paid_service_id_seq"/>
             <column name="name" value="uzum_repricer"/>
             <column name="type" value="12"/>
-            <column name="amount" value="30"/>
+            <column name="amount" value="3000"/>
             <column name="currency" value="USD"/>
             <column name="subscription_type_id" valueComputed="(SELECT id FROM subscription_type WHERE name='default')"/>
         </insert>
@@ -257,7 +258,7 @@
             <column name="id" valueSequenceNext="paid_service_id_seq"/>
             <column name="name" value="ke_repricer"/>
             <column name="type" value="13"/>
-            <column name="amount" value="30"/>
+            <column name="amount" value="3000"/>
             <column name="currency" value="USD"/>
             <column name="subscription_type_id" valueComputed="(SELECT id FROM subscription_type WHERE name='default')"/>
         </insert>

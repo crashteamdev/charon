@@ -18,6 +18,7 @@ import dev.crashteam.charon.model.dto.yookassa.YkPaymentRefundResponseDTO;
 import dev.crashteam.charon.repository.PaymentRepository;
 import dev.crashteam.charon.repository.specification.PaymentSpecification;
 import dev.crashteam.charon.resolver.PaymentResolver;
+import dev.crashteam.charon.util.PaymentProtoUtils;
 import dev.crashteam.charon.util.PromoCodeGenerator;
 import dev.crashteam.payment.*;
 import lombok.RequiredArgsConstructor;
@@ -32,6 +33,7 @@ import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
 
 import javax.persistence.EntityNotFoundException;
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.util.*;
@@ -126,11 +128,6 @@ public class PaymentService {
     }
 
     @Transactional(readOnly = true)
-    public List<Payment> getPaymentByStatus(String status) {
-        return paymentRepository.findAllByStatus(status);
-    }
-
-    @Transactional(readOnly = true)
     public List<Payment> getPaymentByStatusAndOperationType(RequestPaymentStatus status, String operationType) {
         return paymentRepository.findAllByStatusAndOperationType(status, operationType);
     }
@@ -182,17 +179,17 @@ public class PaymentService {
             long discount = (long) (amount * ((double) promoCode.getDiscountPercentage() / 100));
             amount = amount - discount;
         }
-        PaymentData response = paymentResolver.createPayment(request, String.valueOf(amount));
+        BigDecimal moneyAmount = PaymentProtoUtils.getMajorMoneyAmount(amount);
+        PaymentData response = paymentResolver.createPayment(request, String.valueOf(moneyAmount));
 
         ObjectMapper objectMapper = new ObjectMapper();
         Payment payment = new Payment();
-        String paymentId = UUID.randomUUID().toString();
-        payment.setPaymentId(paymentId);
-        payment.setExternalId(response.getId());
+        payment.setPaymentId(response.getPaymentId());
+        payment.setExternalId(response.getProviderId());
         payment.setStatus(RequestPaymentStatus.PENDING);
         payment.setCurrency("USD");
         payment.setAmount(servicePlan.getAmount());
-        payment.setProviderAmount(Long.valueOf(response.getAmount()));
+        payment.setProviderAmount(Long.valueOf(response.getProviderAmount()));
         payment.setProviderCurrency(response.getCurrency());
         payment.setUser(userService.saveUser(user));
         payment.setCreated(response.getCreatedAt());
@@ -200,6 +197,7 @@ public class PaymentService {
         payment.setOperationType(operationTypeService.getOperationType(Operation.PURCHASE_SERVICE.getTitle()));
         payment.setPromoCode(promoCode);
         payment.setMonthPaid(paidServiceContext.getMultiply());
+        payment.setEmail(response.getEmail());
         payment.setPaymentSystem(protoMapper.getPaymentSystemType(purchaseService.getPaymentSystem()).getTitle());
         payment.setMetadata(objectMapper.writeValueAsString(request.getMetadataMap()));
 
@@ -217,24 +215,25 @@ public class PaymentService {
                         .equals(balanceRequest.getPaymentSystem()))
                 .findFirst()
                 .orElseThrow(IllegalArgumentException::new);
-        PaymentData response = paymentResolver.createPayment(request, String.valueOf(balanceRequest.getAmount()));
+        BigDecimal actualAmount = BigDecimal.valueOf(balanceRequest.getAmount()).movePointLeft(2);
+        PaymentData response = paymentResolver.createPayment(request, String.valueOf(actualAmount));
 
         User user = getUser(balanceRequest.getUserId());
 
         ObjectMapper objectMapper = new ObjectMapper();
         Payment payment = new Payment();
-        String paymentId = UUID.randomUUID().toString();
-        payment.setPaymentId(paymentId);
-        payment.setExternalId(response.getId());
+        payment.setPaymentId(response.getPaymentId());
+        payment.setExternalId(response.getProviderId());
         payment.setStatus(RequestPaymentStatus.PENDING);
         payment.setCurrency("USD");
         payment.setAmount(balanceRequest.getAmount());
-        payment.setProviderAmount(Long.valueOf(response.getAmount()));
+        payment.setProviderAmount(Long.valueOf(response.getProviderAmount()));
         payment.setProviderCurrency(response.getCurrency());
         payment.setUser(userService.saveUser(user));
         payment.setCreated(response.getCreatedAt());
         payment.setUpdated(LocalDateTime.now());
         payment.setUser(user);
+        payment.setEmail(response.getEmail());
         payment.setOperationType(operationTypeService.getOperationType(Operation.DEPOSIT_BALANCE.getTitle()));
         payment.setPaymentSystem(protoMapper.getPaymentSystemType(balanceRequest.getPaymentSystem()).getTitle());
         payment.setMetadata(objectMapper.writeValueAsString(request.getMetadataMap()));
@@ -276,6 +275,11 @@ public class PaymentService {
             case CONTEXT_NOT_SET -> throw new NoSuchSubscriptionTypeException();
         };
         return paidService.getPaidServiceByTypeAndPlan((long) paidServiceContextType, (long) subscriptionType);
+    }
+
+    @Transactional(readOnly = true)
+    public Payment findByPaymentId(String paymentId) {
+        return paymentRepository.findByPaymentId(paymentId).orElseThrow(EntityNotFoundException::new);
     }
 
     @Transactional

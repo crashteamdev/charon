@@ -48,7 +48,7 @@ public class ProtoMapper {
                         .setNanos(instantUpdated.getNano()).build())
                 .setPaymentId(payment.getPaymentId())
                 .setStatus(getPaymentStatus(payment.getStatus()))
-                .setUserId(payment.getUserId()).build();
+                .setUserId(payment.getUser().getId()).build();
     }
 
     public CreatePromoCodeResponse getPromoCodeResponse(PromoCode promoCode) {
@@ -120,7 +120,7 @@ public class ProtoMapper {
         Instant instantCreated = response.getCreatedAt().toInstant(ZoneOffset.UTC);
         return PaymentCreateResponse.newBuilder()
                 .setAmount(getAmount("USD", amount))
-                .setDescription(response.getDescription())
+                .setDescription(Optional.ofNullable(response.getDescription()).orElse(""))
                 .setCreatedAt(Timestamp.newBuilder().setSeconds(instantCreated.getEpochSecond())
                         .setNanos(instantCreated.getNano()).build())
                 .setPaymentId(payment.getPaymentId())
