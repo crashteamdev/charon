@@ -1,9 +1,16 @@
 spring:
+  test:
+    context:
+      cache:
+        maxSize: 1
   datasource:
-    driver-class-name: org.h2.Driver
-    url: jdbc:h2:mem:db;DB_CLOSE_DELAY=-1
-    username: sa
-    password: sa
+    url: jdbc:postgresql://0.0.0.0:5432/snatcher_db
+    username: postgres
+    password: password
+    type: org.springframework.jdbc.datasource.SimpleDriverDataSource
+    hikari:
+      minimum-idle: 5
+      maximum-pool-size: 12
   jpa:
     hibernate:
       ddl-auto: none
@@ -15,6 +22,13 @@ spring:
   liquibase:
     change-log: classpath:db/changelog/db.changelog-master.xml
 app:
+  aws-stream:
+    endpoint: 'yds.serverless.yandexcloud.net'
+    accessKey: fake-access-key
+    secretKey: fake-secret-key
+    region: ru-central-1
+    uzum-stream:
+      name: '/ru-central1/b1gtojcphtuae1n9siie/etnvck8jo3kuh0vilc57/payment'
   scheduler:
     exchange-rate:
       cron: 0 0/50 * * * ?

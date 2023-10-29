@@ -7,6 +7,7 @@ import dev.crashteam.charon.model.domain.Payment;
 import dev.crashteam.charon.service.PaymentService;
 import dev.crashteam.charon.service.UserService;
 import dev.crashteam.charon.resolver.PaymentResolver;
+import dev.crashteam.charon.stream.StreamService;
 import dev.crashteam.payment.PaymentSystem;
 import lombok.extern.slf4j.Slf4j;
 import org.quartz.DisallowConcurrentExecution;
@@ -28,6 +29,8 @@ public class PurchaseServiceJob implements Job {
     @Autowired
     PaymentService paymentService;
     @Autowired
+    StreamService streamService;
+    @Autowired
     UserService userService;
     @Autowired
     List<PaymentResolver> resolvers;
@@ -36,7 +39,7 @@ public class PurchaseServiceJob implements Job {
     @Transactional
     public void execute(JobExecutionContext jobExecutionContext) throws JobExecutionException {
         var payments = paymentService
-                .getPaymentByStatusAndOperationType(RequestPaymentStatus.PENDING, Operation.PURCHASE_SERVICE.getTitle()).stream();
+                .getPaymentByPendingStatusAndOperationType(Operation.PURCHASE_SERVICE.getTitle()).stream();
         payments.forEach(this::checkPaymentStatus);
     }
 
@@ -55,6 +58,7 @@ public class PurchaseServiceJob implements Job {
             log.info("Payment with id [{}] successful, purchasing service", payment.getPaymentId());
             payment.setStatus(RequestPaymentStatus.SUCCESS);
             paymentService.save(payment);
+            streamService.publishPaymentStatusChangeAwsMessage(payment);
         }
     }
 }

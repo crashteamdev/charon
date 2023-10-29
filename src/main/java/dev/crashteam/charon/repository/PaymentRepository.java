@@ -8,6 +8,7 @@ import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
 
+import java.time.LocalDateTime;
 import java.util.Date;
 import java.util.List;
 import java.util.Optional;
@@ -28,13 +29,13 @@ public interface PaymentRepository extends JpaRepository<Payment, String>, JpaSp
 
     @Query(value = "SELECT pr.* FROM payment pr " +
             "INNER JOIN operation_type ot ON pr.operation_type_id = ot.id " +
-            "WHERE pr.status = ?1 AND ot.type = ?2", nativeQuery = true)
-    List<Payment> findAllByStatusAndOperationType(RequestPaymentStatus status, String operationType);
+            "WHERE pr.status = 'PENDING' AND ot.type = ?1", nativeQuery = true)
+    List<Payment> findAllByPendingStatusAndOperationType(String operationType);
 
     @Query(value = "SELECT pr.* FROM payment pr " +
             "INNER JOIN operation_type ot ON pr.operation_type_id = ot.id " +
             "WHERE (pr.status = ?1 AND ot.type = ?2) " +
             "AND (p.created >= ?3 AND p.created <= ?4)", nativeQuery = true)
     List<Payment> findAllByStatusAndOperationTypeAndCreatedBetween(RequestPaymentStatus status, String operationType,
-                                                                   Date from, Date to);
+                                                                   LocalDateTime from, LocalDateTime to);
 }

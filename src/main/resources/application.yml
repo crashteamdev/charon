@@ -18,6 +18,9 @@ spring:
     url: jdbc:postgresql://postgres:5432/charon
     username: postgres
     password: 5053
+    hikari:
+      minimum-idle: 5
+      maximum-pool-size: 12
   jpa:
     hibernate:
       ddl-auto: none
@@ -28,6 +31,13 @@ spring:
   liquibase:
     change-log: classpath:db/changelog/db.changelog-master.xml
 app:
+  aws-stream:
+    endpoint: 'yds.serverless.yandexcloud.net'
+    accessKey: fake-access-key
+    secretKey: fake-secret-key
+    region: ru-central-1
+    uzum-stream:
+      name: '/ru-central1/b1gtojcphtuae1n9siie/etnvck8jo3kuh0vilc57/payment'
   scheduler:
     exchange-rate:
       cron: 0 0/50 * * * ?

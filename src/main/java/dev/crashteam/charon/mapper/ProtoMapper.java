@@ -3,6 +3,7 @@ package dev.crashteam.charon.mapper;
 import com.google.protobuf.Timestamp;
 import dev.crashteam.charon.exception.NoConfirmationUrlException;
 import dev.crashteam.charon.model.domain.PromoCode;
+import dev.crashteam.charon.model.domain.SubscriptionType;
 import dev.crashteam.charon.model.dto.resolver.PaymentData;
 import dev.crashteam.charon.model.PaymentSystemType;
 import dev.crashteam.charon.model.RequestPaymentStatus;
@@ -21,10 +22,101 @@ import java.time.ZoneOffset;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 @Service
 public class ProtoMapper {
+
+    public PaymentEvent getCreatedPaymentEvent(Payment payment) {
+        PaymentEvent.EventSource eventSource = PaymentEvent.EventSource.newBuilder()
+                .setPaymentId(payment.getPaymentId())
+                .build();
+
+        Instant instantCreated = payment.getCreated().toInstant(ZoneOffset.UTC);
+        Timestamp timestampCreated = Timestamp.newBuilder().setSeconds(instantCreated.getEpochSecond())
+                .setNanos(instantCreated.getNano()).build();
+        var paymentPaidService = payment.getPaidService();
+
+        PaidServiceContext paidServiceContext = null;
+        if (paymentPaidService != null) {
+            paidServiceContext = switch (String.valueOf(paymentPaidService.getType())) {
+                case "10" -> PaidServiceContext.newBuilder().setMultiply(payment.getMonthPaid())
+                        .setUzumAnalyticsContext(UzumAnalyticsContext.newBuilder()
+                                .setPlan(getUzumAnalyticsPlan(paymentPaidService.getSubscriptionType())).build()).build();
+                case "11" -> PaidServiceContext.newBuilder().setMultiply(payment.getMonthPaid())
+                        .setKeAnalyticsContext(KeAnalyticsContext.newBuilder()
+                                .setPlan(getKeAnalyticsPlan(paymentPaidService.getSubscriptionType())).build()).build();
+                case "12" -> PaidServiceContext.newBuilder().setMultiply(payment.getMonthPaid())
+                        .setUzumRepricerContext(UzumRepricerContext.newBuilder()
+                                .setPlan(getUzumRepricerPlan(paymentPaidService.getSubscriptionType())).build()).build();
+                case "13" -> PaidServiceContext.newBuilder().setMultiply(payment.getMonthPaid())
+                        .setKeRepricerContext(KeRepricerContext.newBuilder()
+                                .setPlan(getKeRepricerPlan(paymentPaidService.getSubscriptionType())).build()).build();
+                default -> throw new IllegalStateException("Unexpected value: " + paymentPaidService.getType());
+            };
+        }
+
+        PaidService paidService = PaidService.newBuilder()
+                .setContext(paidServiceContext)
+                .build();
+
+        UserPaidService userPaidService = UserPaidService.newBuilder()
+                .setUserId(payment.getUser().getId())
+                .setPaidService(paidService)
+                .build();
+
+        PaymentCreated paymentCreated = PaymentCreated.newBuilder()
+                .setPaymentId(payment.getPaymentId())
+                .setCreatedAt(timestampCreated)
+                .setAmount(Amount.newBuilder().setValue(payment.getAmount()).setCurrency(payment.getCurrency()).build())
+                .setStatus(getPaymentStatus(payment.getStatus()))
+                .setUserPaidService(userPaidService)
+                .build();
+
+        PaymentChange paymentChange = PaymentChange.newBuilder()
+                .setPaymentCreated(paymentCreated)
+                .build();
+
+        PaymentEvent.EventPayload eventPayload = PaymentEvent.EventPayload.newBuilder()
+                .setPaymentChange(paymentChange)
+                .build();
+
+        return PaymentEvent.newBuilder()
+                .setEventId(UUID.randomUUID().toString())
+                .setEventSource(eventSource)
+                .setPayload(eventPayload)
+                .build();
+    }
+
+    public PaymentEvent getPaymentStatusChangeEvent(Payment payment) {
+        PaymentEvent.EventSource eventSource = PaymentEvent.EventSource.newBuilder()
+                .setPaymentId(payment.getPaymentId())
+                .build();
+
+        Instant updated = payment.getUpdated().toInstant(ZoneOffset.UTC);
+        Timestamp timestampUpdated = Timestamp.newBuilder().setSeconds(updated.getEpochSecond())
+                .setNanos(updated.getNano()).build();
+
+        PaymentStatusChange paymentStatusChange = PaymentStatusChange.newBuilder()
+                .setPaymentId(payment.getPaymentId())
+                .setStatus(getPaymentStatus(payment.getStatus()))
+                .setUpdatedAt(timestampUpdated).build();
+
+        PaymentChange paymentChange = PaymentChange.newBuilder()
+                .setPaymentStatusChanged(paymentStatusChange)
+                .build();
+
+        PaymentEvent.EventPayload eventPayload = PaymentEvent.EventPayload.newBuilder()
+                .setPaymentChange(paymentChange)
+                .build();
+
+        return PaymentEvent.newBuilder()
+                .setEventId(UUID.randomUUID().toString())
+                .setEventSource(eventSource)
+                .setPayload(eventPayload)
+                .build();
+    }
 
     public GetBalanceResponse getBalanceResponse(User user) {
         return GetBalanceResponse.newBuilder()
@@ -203,5 +295,51 @@ public class ProtoMapper {
         return CheckPromoCodeResponse.newBuilder()
                 .setErrorResponse(errorResponse)
                 .build();
+    }
+
+    public UzumAnalyticsContext.UzumAnalyticsPlan getUzumAnalyticsPlan(SubscriptionType subscriptionType) {
+        return switch (String.valueOf(subscriptionType.getType())) {
+            case "10" -> UzumAnalyticsContext.UzumAnalyticsPlan.newBuilder()
+                    .setDefaultPlan(UzumAnalyticsContext.UzumAnalyticsPlan.UzumAnalyticsDefaultPlan.newBuilder().build())
+                    .build();
+            case "11" -> UzumAnalyticsContext.UzumAnalyticsPlan.newBuilder()
+                    .setAdvancedPlan(UzumAnalyticsContext.UzumAnalyticsPlan.UzumAnalyticsAdvancedPlan.newBuilder().build())
+                    .build();
+            case "12" -> UzumAnalyticsContext.UzumAnalyticsPlan.newBuilder()
+                    .setProPlan(UzumAnalyticsContext.UzumAnalyticsPlan.UzumAnalyticsProPlan.newBuilder().build()).build();
+            default -> throw new IllegalStateException("Unexpected value: " + subscriptionType.getType());
+        };
+    }
+
+    public KeAnalyticsContext.KeAnalyticsPlan getKeAnalyticsPlan(SubscriptionType subscriptionType) {
+        return switch (String.valueOf(subscriptionType.getType())) {
+            case "10" -> KeAnalyticsContext.KeAnalyticsPlan.newBuilder()
+                    .setDefaultPlan(KeAnalyticsContext.KeAnalyticsPlan.KeAnalyticsDefaultPlan.newBuilder().build())
+                    .build();
+            case "11" -> KeAnalyticsContext.KeAnalyticsPlan.newBuilder()
+                    .setAdvancedPlan(KeAnalyticsContext.KeAnalyticsPlan.KeAnalyticsAdvancedPlan.newBuilder().build())
+                    .build();
+            case "12" -> KeAnalyticsContext.KeAnalyticsPlan.newBuilder()
+                    .setProPlan(KeAnalyticsContext.KeAnalyticsPlan.KeAnalyticsProPlan.newBuilder().build()).build();
+            default -> throw new IllegalStateException("Unexpected value: " + subscriptionType.getType());
+        };
+    }
+
+    public UzumRepricerContext.UzumRepricerPlan getUzumRepricerPlan(SubscriptionType subscriptionType) {
+        return switch (String.valueOf(subscriptionType.getType())) {
+            case "10" -> UzumRepricerContext.UzumRepricerPlan.newBuilder()
+                    .setDefaultPlan(UzumRepricerContext.UzumRepricerPlan.UzumRepricerDefaultPlan.newBuilder().build())
+                    .build();
+            default -> throw new IllegalStateException("Unexpected value: " + subscriptionType.getType());
+        };
+    }
+
+    public KeRepricerContext.KeRepricerPlan getKeRepricerPlan(SubscriptionType subscriptionType) {
+        return switch (String.valueOf(subscriptionType.getType())) {
+            case "10" -> KeRepricerContext.KeRepricerPlan.newBuilder()
+                    .setDefaultPlan(KeRepricerContext.KeRepricerPlan.KeRepricerDefaultPlan.newBuilder().build())
+                    .build();
+            default -> throw new IllegalStateException("Unexpected value: " + subscriptionType.getType());
+        };
     }
 }

@@ -8,6 +8,7 @@ import dev.crashteam.charon.model.domain.User;
 import dev.crashteam.charon.service.PaymentService;
 import dev.crashteam.charon.service.UserService;
 import dev.crashteam.charon.resolver.PaymentResolver;
+import dev.crashteam.charon.stream.StreamService;
 import dev.crashteam.payment.PaymentSystem;
 import lombok.extern.slf4j.Slf4j;
 import org.quartz.DisallowConcurrentExecution;
@@ -19,6 +20,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.stream.Stream;
 
 @Slf4j
 @Service
@@ -28,6 +30,8 @@ public class BalancePaymentJob implements Job {
     @Autowired
     PaymentService paymentService;
     @Autowired
+    StreamService streamService;
+    @Autowired
     UserService userService;
     @Autowired
     List<PaymentResolver> resolvers;
@@ -36,7 +40,7 @@ public class BalancePaymentJob implements Job {
     @Transactional
     public void execute(JobExecutionContext jobExecutionContext) throws JobExecutionException {
         var payments = paymentService
-                .getPaymentByStatusAndOperationType(RequestPaymentStatus.PENDING, Operation.DEPOSIT_BALANCE.getTitle()).stream();
+                .getPaymentByPendingStatusAndOperationType(Operation.DEPOSIT_BALANCE.getTitle()).stream();
         payments.forEach(this::checkPaymentStatus);
     }
 
@@ -60,6 +64,7 @@ public class BalancePaymentJob implements Job {
 
             payment.setStatus(RequestPaymentStatus.SUCCESS);
             paymentService.save(payment);
+            streamService.publishPaymentStatusChangeAwsMessage(payment);
         }
     }
 }

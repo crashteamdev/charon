@@ -2,6 +2,7 @@ package dev.crashteam.charon;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.tomakehurst.wiremock.WireMockServer;
+import dev.crashteam.charon.config.ContainerConfiguration;
 import dev.crashteam.charon.config.WireMockConfig;
 import dev.crashteam.charon.mock.YookassaMock;
 import dev.crashteam.charon.model.dto.yookassa.YkPaymentCreateRequestDTO;
@@ -14,6 +15,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
@@ -24,11 +26,12 @@ import static java.nio.charset.Charset.defaultCharset;
 import static org.springframework.util.StreamUtils.copyToString;
 
 @SpringBootTest
+@DirtiesContext
 @ActiveProfiles({"test"})
 @EnableConfigurationProperties
 @ExtendWith(SpringExtension.class)
 @ContextConfiguration(classes = {WireMockConfig.class})
-public class YookassaIntegrationTest {
+public class YookassaIntegrationTest extends ContainerConfiguration {
 
     @Autowired
     WireMockServer mockYookassaClient;

@@ -39,8 +39,7 @@ public class PaymentController {
         String paymentId = (String) attributes.get("us_paymentid");
         String curId = (String) attributes.get("CUR_ID");
         log.info("Callback freekassa payment. Body={}", attributes);
-        if (merchantId == null || amount == null || orderId == null || curId == null || paymentId == null
-        ) {
+        if (merchantId == null || amount == null || orderId == null || curId == null || paymentId == null) {
             log.warn("Callback payment. Bad request. Body={}", attributes);
             return ResponseEntity.badRequest().build();
         }

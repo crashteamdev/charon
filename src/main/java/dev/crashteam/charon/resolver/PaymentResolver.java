@@ -9,6 +9,12 @@ public interface PaymentResolver {
 
     PaymentSystem getPaymentSystem();
 
+    /***
+     *
+     * @param request gepc request
+     * @param amount major value of initial amount
+     * @return
+     */
     PaymentData createPayment(PaymentCreateRequest request, String amount);
 
     /***
