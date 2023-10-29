@@ -1,9 +1,16 @@
 spring:
+  test:
+    context:
+      cache:
+        maxSize: 1
   datasource:
-    driver-class-name: org.h2.Driver
-    url: jdbc:h2:mem:db;DB_CLOSE_DELAY=-1
-    username: sa
-    password: sa
+    url: jdbc:postgresql://0.0.0.0:5432/snatcher_db
+    username: postgres
+    password: password
+    type: org.springframework.jdbc.datasource.SimpleDriverDataSource
+    hikari:
+      minimum-idle: 5
+      maximum-pool-size: 12
   jpa:
     hibernate:
       ddl-auto: none
@@ -15,7 +22,26 @@ spring:
   liquibase:
     change-log: classpath:db/changelog/db.changelog-master.xml
 app:
+  aws-stream:
+    endpoint: 'yds.serverless.yandexcloud.net'
+    accessKey: fake-access-key
+    secretKey: fake-secret-key
+    region: ru-central-1
+    uzum-stream:
+      name: '/ru-central1/b1gtojcphtuae1n9siie/etnvck8jo3kuh0vilc57/payment'
+  scheduler:
+    exchange-rate:
+      cron: 0 0/50 * * * ?
+    evict-currency:
+      cron: 0 0/50 * * * ?
+    balance-deposit:
+      cron: 0 0/1 * * * ?
+    purchase-service:
+      cron: 0 0/1 * * * ?
   integration:
+    ninja:
+      url: http://localhost:8085/v1
+      api-key: some-api-key
     yookassa: http://localhost:8085/v3
 org:
   jobrunr:
@@ -23,3 +49,29 @@ org:
       enabled: false
     dashboard:
       enabled: false
+freekassa:
+  baseUrl: https://api.freekassa.ru
+  shopId: 26248
+  apiKey: 3359c65680927f67661345031fb0b738
+  secretWordFirst: 'mHPoH9jB_BZe%lL'
+  secretWordSecond: '{v5T0IKN93p4fKx'
+
+management:
+  security:
+    flag: false
+  server:
+    port: 8023
+  metrics:
+    prometheus:
+      enabled: true
+  endpoint:
+    health:
+      show-details: always
+    metrics:
+      enabled: true
+    prometheus:
+      enabled: true
+  endpoints:
+    web:
+      exposure:
+        include: health,info,prometheus

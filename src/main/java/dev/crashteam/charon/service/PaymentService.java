@@ -1,83 +1,289 @@
 package dev.crashteam.charon.service;
 
-import dev.crashteam.charon.mapper.YookassaPaymentMapper;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import dev.crashteam.charon.config.PromoCodeConfig;
+import dev.crashteam.charon.exception.DuplicateTransactionException;
+import dev.crashteam.charon.exception.NoSuchPaymentTypeException;
+import dev.crashteam.charon.exception.NoSuchSubscriptionTypeException;
+import dev.crashteam.charon.mapper.ProtoMapper;
+import dev.crashteam.charon.model.Operation;
+import dev.crashteam.charon.model.RequestPaymentStatus;
+import dev.crashteam.charon.model.domain.PaidService;
 import dev.crashteam.charon.model.domain.Payment;
-import dev.crashteam.charon.model.dto.yookassa.PaymentRefundResponseDTO;
-import dev.crashteam.charon.model.dto.yookassa.PaymentResponseDTO;
+import dev.crashteam.charon.model.domain.PromoCode;
+import dev.crashteam.charon.model.domain.User;
+import dev.crashteam.charon.model.dto.ninja.ExchangeRateDto;
+import dev.crashteam.charon.model.dto.resolver.PaymentData;
+import dev.crashteam.charon.model.dto.yookassa.YkPaymentRefundResponseDTO;
 import dev.crashteam.charon.repository.PaymentRepository;
 import dev.crashteam.charon.repository.specification.PaymentSpecification;
+import dev.crashteam.charon.resolver.PaymentResolver;
+import dev.crashteam.charon.stream.StreamService;
+import dev.crashteam.charon.util.PaymentProtoUtils;
+import dev.crashteam.charon.util.PromoCodeGenerator;
 import dev.crashteam.payment.*;
 import lombok.RequiredArgsConstructor;
+import lombok.SneakyThrows;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.CollectionUtils;
+import org.springframework.util.StringUtils;
 
 import javax.persistence.EntityNotFoundException;
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.time.ZoneOffset;
+import java.util.HashSet;
 import java.util.List;
-import java.util.Optional;
+import java.util.Set;
+import java.util.UUID;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class PaymentService {
 
     private final PaymentRepository paymentRepository;
-    private final YookassaPaymentMapper paymentMapper;
+    private final PaidServiceService paidServiceService;
+    private final PromoCodeService promoCodeService;
+    private final UserService userService;
+    private final OperationTypeService operationTypeService;
+    private final ProtoMapper protoMapper;
+    private final CurrencyService currencyService;
+    private final StreamService streamService;
+    private final List<PaymentResolver> paymentResolvers;
 
+    public GetExchangeRateResponse getExchangeRate(GetExchangeRateRequest request) {
+        ExchangeRateDto exchangeRate = currencyService.getExchangeRate("USD_" + request.getCurrency());
+        return GetExchangeRateResponse.newBuilder()
+                .setPair(exchangeRate.getCurrencyPair())
+                .setExchangeRate(exchangeRate.getExchangeRate())
+                .build();
+    }
+
+    @Transactional(readOnly = true)
+    public GetBalanceResponse getBalanceResponse(GetBalanceRequest request) {
+        User user = userService.getUser(request.getUserId());
+        return protoMapper.getBalanceResponse(user);
+    }
+
+    public CheckPromoCodeResponse checkPromoCode(CheckPromoCodeRequest request) {
+        PromoCode promoCode = promoCodeService.getPromoCode(request.getPromoCode());
+        return protoMapper.getCheckPromoCodeResponse(promoCode);
+    }
+
+    @Transactional
+    public PurchaseServiceResponse purchaseService(PurchaseServiceRequest request) {
+        log.info("Trying to purchase service by user - {}", request.getUserId());
+        if (paymentRepository.findByOperationId(request.getOperationId()).isPresent())
+            throw new DuplicateTransactionException("Transaction with operation id %s already exists"
+                    .formatted(request.getOperationId()));
+
+        User user = userService.getUser(request.getUserId());
+        PaidServiceContext context = request.getPaidService().getContext();
+        PaidService paidService = getPaidServiceFromContext(context);
+        log.info("Purchasing service - {} by user - {}", paidService.getName(), user.getId());
+        if (context.getMultiply() == 0) throw new IllegalArgumentException("Month multiply value can't be zero");
+
+        long multipliedAmount = paidService.getAmount() * context.getMultiply();
+        long balanceAfterPurchase = user.getBalance() - multipliedAmount;
+        Payment payment = new Payment();
+        String paymentId = UUID.randomUUID().toString();
+        payment.setPaymentId(paymentId);
+        payment.setOperationId(request.getOperationId());
+        payment.setCurrency("USD");
+        payment.setAmount(multipliedAmount);
+        payment.setCreated(LocalDateTime.now());
+        payment.setUpdated(LocalDateTime.now());
+        payment.setMonthPaid(context.getMultiply());
+        payment.setPaidService(paidService);
+        payment.setOperationType(operationTypeService.getOperationType(Operation.PURCHASE_SERVICE.getTitle()));
+        if (balanceAfterPurchase < 0) {
+            payment.setStatus(RequestPaymentStatus.FAILED);
+            payment.setUser(user);
+            protoMapper.getCreatedPaymentEvent(payment);
+            Payment savedPayment = paymentRepository.save(payment);
+
+            streamService.publishPaymentCreatedAwsMessage(savedPayment);
+
+            return protoMapper.getPurchaseServiceResponse(savedPayment, user.getBalance());
+        }
+        payment.setStatus(RequestPaymentStatus.SUCCESS);
+        user.setBalance(balanceAfterPurchase);
+        User saveUser = userService.saveUser(user);
+        payment.setUser(saveUser);
+        protoMapper.getCreatedPaymentEvent(payment);
+
+        Payment savedPayment = paymentRepository.save(payment);
+
+        streamService.publishPaymentCreatedAwsMessage(savedPayment);
+
+        return protoMapper.getPurchaseServiceResponse(savedPayment, user.getBalance());
+    }
+
+    public CreatePromoCodeResponse createPromoCode(CreatePromoCodeRequest request) {
+        PromoCodeConfig codeConfig = new PromoCodeConfig(request.getSerializedSize(), null, request.getPrefix(), null);
+        String promoCodeValue = PromoCodeGenerator.getPromoCode(codeConfig);
+        PromoCode promoCode = new PromoCode();
+        promoCode.setCode(promoCodeValue);
+        promoCode.setDescription(request.getDescription());
+        promoCode.setUsageLimit((long) request.getUsageLimit());
+        LocalDateTime validUntil = LocalDateTime
+                .ofEpochSecond(request.getValidUntil().getSeconds(), request.getValidUntil().getNanos(), ZoneOffset.UTC);
+        promoCode.setValidUntil(validUntil);
+        //TODO: Добавить поддержку разных контекстов
+        promoCode.setDiscountPercentage(request.getPromoCodeContext().getDiscountPromocodeContext().getDiscountPercentage());
+        promoCodeService.save(promoCode);
+        return protoMapper.getPromoCodeResponse(promoCode);
+    }
+
+    @Transactional(readOnly = true)
     public UserPayment getUserPaymentByPaymentId(PaymentQuery request) {
-        Payment payment = getPaymentByPaymentId(request);
-        return paymentMapper.getUserPayment(payment);
+        Payment payment = paymentRepository.findByPaymentId(request.getPaymentId())
+                .orElseThrow(EntityNotFoundException::new);
+        return protoMapper.getUserPayment(payment);
     }
 
-    public List<Payment> getPaymentByStatus(String status) {
-        return paymentRepository.findAllByStatus(status);
+    @Transactional(readOnly = true)
+    public List<Payment> getPaymentByPendingStatusAndOperationType(String operationType) {
+        return paymentRepository.findAllByPendingStatusAndOperationType(operationType);
     }
 
-    public Payment saveFromRefundResponse(PaymentRefundResponseDTO refundResponse, String userId, String id) {
-
+    @Deprecated
+    @Transactional
+    public Payment refundPayment(YkPaymentRefundResponseDTO refundResponse, String userId, String id) {
         Payment payment = paymentRepository.findByPaymentId(id).orElseThrow(EntityNotFoundException::new);
         payment.setPaymentId(id);
         payment.setExternalId(refundResponse.getId());
-        payment.setStatus(refundResponse.getStatus());
+        //payment.setStatus(refundResponse.getStatus());
         payment.setCurrency(refundResponse.getAmount().getCurrency());
-        payment.setValue(Double.valueOf(refundResponse.getAmount().getValue()).longValue());
+        payment.setAmount(Double.valueOf(refundResponse.getAmount().getValue()).longValue());
         payment.setUserId(userId);
         payment.setCreated(refundResponse.getCreatedAt());
         payment.setUpdated(LocalDateTime.now());
-        return savePayment(payment);
+        return paymentRepository.save(payment);
     }
 
-    public Payment saveFromPaymentResponse(PaymentResponseDTO paymentResponse, String userId, String id) {
+    @Transactional
+    public PaymentCreateResponse createPayment(PaymentCreateRequest request) {
+        return switch (request.getPaymentCase()) {
+            case PAYMENT_DEPOSIT_USER_BALANCE -> createBalanceDepositPayment(request);
+            case PAYMENT_PURCHASE_SERVICE -> createPurchaseServicePayment(request);
+            case PAYMENT_NOT_SET -> throw new NoSuchPaymentTypeException();
+        };
+    }
+
+    @Transactional
+    @SneakyThrows
+    public PaymentCreateResponse createPurchaseServicePayment(PaymentCreateRequest request) {
+        PaymentCreateRequest.PaymentPurchaseService purchaseService = request.getPaymentPurchaseService();
+        log.info("Processing service purchase request for user - {}", purchaseService.getUserId());
+        PaymentResolver paymentResolver = paymentResolvers.stream().filter(it -> it.getPaymentSystem()
+                        .equals(purchaseService.getPaymentSystem()))
+                .findFirst()
+                .orElseThrow(IllegalArgumentException::new);
+
+        PromoCode promoCode = StringUtils.hasText(purchaseService.getPromoCode())
+                ? promoCodeService.getPromoCode(purchaseService.getPromoCode()) : null;
+
+        PaidServiceContext paidServiceContext = purchaseService.getPaidService().getContext();
+        PaidService paidService = getPaidServiceFromContext(paidServiceContext);
+        log.info("Purchasing service - {} by user - {}", paidService.getName(), purchaseService.getUserId());
+        if (paidServiceContext.getMultiply() == 0) throw new IllegalArgumentException("Month multiply value can't be zero");
+
+        User user = getUser(purchaseService.getUserId());
+
+        long amount = paidService.getAmount() * paidServiceContext.getMultiply();
+        if (promoCodeValidAndUnusedByUser(promoCode, user.getId())) {
+            long discount = (long) (amount * ((double) promoCode.getDiscountPercentage() / 100));
+            amount = amount - discount;
+        }
+        BigDecimal moneyAmount = PaymentProtoUtils.getMajorMoneyAmount(amount);
+        PaymentData response = paymentResolver.createPayment(request, String.valueOf(moneyAmount));
+
+        ObjectMapper objectMapper = new ObjectMapper();
         Payment payment = new Payment();
-        payment.setPaymentId(id);
-        payment.setExternalId(paymentResponse.getId());
-        payment.setStatus(paymentResponse.getStatus());
-        payment.setCurrency(paymentResponse.getAmount().getCurrency());
-        payment.setValue(Double.valueOf(paymentResponse.getAmount().getValue()).longValue());
-        payment.setUserId(userId);
-        payment.setCreated(paymentResponse.getCreatedAt());
+        payment.setPaymentId(response.getPaymentId());
+        payment.setExternalId(response.getProviderId());
+        payment.setStatus(RequestPaymentStatus.PENDING);
+        payment.setCurrency("USD");
+        payment.setAmount(amount);
+        payment.setProviderAmount(Long.valueOf(response.getProviderAmount()));
+        payment.setProviderCurrency(response.getCurrency());
+        payment.setUser(userService.saveUser(user));
+        payment.setCreated(response.getCreatedAt());
         payment.setUpdated(LocalDateTime.now());
-        return savePayment(payment);
+        payment.setOperationType(operationTypeService.getOperationType(Operation.PURCHASE_SERVICE.getTitle()));
+        payment.setPromoCode(promoCode);
+        payment.setMonthPaid(paidServiceContext.getMultiply());
+        payment.setEmail(response.getEmail());
+        payment.setPaymentSystem(protoMapper.getPaymentSystemType(purchaseService.getPaymentSystem()).getTitle());
+        payment.setMetadata(objectMapper.writeValueAsString(request.getMetadataMap()));
+        payment.setPaidService(paidService);
+        paymentRepository.save(payment);
+
+        streamService.publishPaymentCreatedAwsMessage(payment);
+
+        savePromoCodeRestrictions(promoCode, user);
+        return protoMapper.getPaymentResponse(response, payment, amount);
+
     }
 
-    public Payment saveFromRecurrentPaymentResponse(PaymentResponseDTO paymentResponse, String userId, String id) {
+    @Transactional
+    @SneakyThrows
+    public PaymentCreateResponse createBalanceDepositPayment(PaymentCreateRequest request) {
+        PaymentCreateRequest.PaymentDepositUserBalance balanceRequest = request.getPaymentDepositUserBalance();
+        log.info("Processing balance deposit request for user - {}", balanceRequest.getUserId());
+        PaymentResolver paymentResolver = paymentResolvers.stream().filter(it -> it.getPaymentSystem()
+                        .equals(balanceRequest.getPaymentSystem()))
+                .findFirst()
+                .orElseThrow(IllegalArgumentException::new);
+        BigDecimal actualAmount = PaymentProtoUtils.getMajorMoneyAmount(balanceRequest.getAmount());
+        PaymentData response = paymentResolver.createPayment(request, String.valueOf(actualAmount));
+
+        User user = getUser(balanceRequest.getUserId());
+
+        ObjectMapper objectMapper = new ObjectMapper();
         Payment payment = new Payment();
-        payment.setPaymentId(id);
-        payment.setExternalId(paymentResponse.getId());
-        payment.setStatus(paymentResponse.getStatus());
-        payment.setCurrency(paymentResponse.getAmount().getCurrency());
-        payment.setValue(Double.valueOf(paymentResponse.getAmount().getValue()).longValue());
-        payment.setUserId(userId);
-        payment.setCreated(paymentResponse.getCreatedAt());
+        payment.setPaymentId(response.getPaymentId());
+        payment.setExternalId(response.getProviderId());
+        payment.setStatus(RequestPaymentStatus.PENDING);
+        payment.setCurrency("USD");
+        payment.setAmount(balanceRequest.getAmount());
+        payment.setProviderAmount(Long.valueOf(response.getProviderAmount()));
+        payment.setProviderCurrency(response.getCurrency());
+        payment.setUser(userService.saveUser(user));
+        payment.setCreated(response.getCreatedAt());
         payment.setUpdated(LocalDateTime.now());
-        return savePayment(payment);
+        payment.setUser(user);
+        payment.setEmail(response.getEmail());
+        payment.setOperationType(operationTypeService.getOperationType(Operation.DEPOSIT_BALANCE.getTitle()));
+        payment.setPaymentSystem(protoMapper.getPaymentSystemType(balanceRequest.getPaymentSystem()).getTitle());
+        payment.setMetadata(objectMapper.writeValueAsString(request.getMetadataMap()));
+        paymentRepository.save(payment);
+
+        streamService.publishPaymentCreatedAwsMessage(payment);
+
+        return protoMapper.getPaymentResponse(response, payment);
     }
 
-    private Payment savePayment(Payment history) {
-        return paymentRepository.save(history);
+    private User getUser(String id) {
+        if (userService.userExists(id)) {
+            return userService.getUser(id);
+        }
+        log.info("Creating new user with id - {}", id);
+        User user = new User();
+        user.setId(id);
+        user.setBalance(0L);
+        user.setCurrency("USD");
+        return user;
     }
 
+    @Transactional(readOnly = true)
     public Page<Payment> getPayments(PaymentsQuery paymentsQuery) {
         LimitOffsetPagination pagination = paymentsQuery.getPagination();
         Pageable pageable = PageRequest.of((int) (pagination.getOffset()
@@ -85,8 +291,49 @@ public class PaymentService {
         return paymentRepository.findAll(new PaymentSpecification(paymentsQuery), pageable);
     }
 
-    private Payment getPaymentByPaymentId(PaymentQuery request) {
-        return paymentRepository.findByPaymentId(request.getPaymentId())
-                .orElseThrow(EntityNotFoundException::new);
+    public PaidService getPaidServiceFromContext(PaidServiceContext paidServiceContext) {
+        var paidServiceContextType = paidServiceContext.getContextCase().getNumber();
+
+        var subscriptionType = switch (paidServiceContext.getContextCase()) {
+            case UZUM_ANALYTICS_CONTEXT ->
+                    paidServiceContext.getUzumAnalyticsContext().getPlan().getPlanCase().getNumber();
+            case KE_ANALYTICS_CONTEXT -> paidServiceContext.getKeAnalyticsContext().getPlan().getPlanCase().getNumber();
+            case UZUM_REPRICER_CONTEXT ->
+                    paidServiceContext.getUzumRepricerContext().getPlan().getPlanCase().getNumber();
+            case KE_REPRICER_CONTEXT -> paidServiceContext.getKeRepricerContext().getPlan().getPlanCase().getNumber();
+            case CONTEXT_NOT_SET -> throw new NoSuchSubscriptionTypeException();
+        };
+        return paidServiceService.getPaidServiceByTypeAndPlan((long) paidServiceContextType, (long) subscriptionType);
+    }
+
+    @Transactional(readOnly = true)
+    public Payment findByPaymentId(String paymentId) {
+        return paymentRepository.findByPaymentId(paymentId).orElseThrow(EntityNotFoundException::new);
+    }
+
+    @Transactional
+    public void save(Payment payment) {
+        paymentRepository.save(payment);
+    }
+
+
+    @Transactional
+    public void savePromoCodeRestrictions(PromoCode promoCode, User user) {
+        if (promoCode == null) return;
+        promoCode.setUsageLimit(promoCode.getUsageLimit() - 1);
+        if (CollectionUtils.isEmpty(promoCode.getUsers())) {
+            Set<User> users = new HashSet<>();
+            users.add(user);
+            promoCode.setUsers(users);
+        } else {
+            promoCode.getUsers().add(user);
+        }
+        promoCodeService.save(promoCode);
+    }
+
+    private boolean promoCodeValidAndUnusedByUser(PromoCode promoCode, String userId) {
+        return promoCode != null && !promoCodeService.existsByCodeAndUserId(promoCode.getCode(), userId)
+                && LocalDateTime.now().isBefore(promoCode.getValidUntil())
+                && promoCode.getUsageLimit() > 0;
     }
 }

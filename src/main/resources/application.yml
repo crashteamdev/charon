@@ -1,6 +1,16 @@
 server:
   port: '@server.port@'
 spring:
+  quartz:
+    properties:
+      org:
+        quartz:
+          threadPool:
+            threadCount: 30
+            class: org.quartz.simpl.SimpleThreadPool
+          jobStore:
+            misfireThreshold: 60000
+            class: org.quartz.simpl.RAMJobStore
   application:
     name: '@project.name@'
   datasource:
@@ -8,6 +18,9 @@ spring:
     url: jdbc:postgresql://postgres:5432/charon
     username: postgres
     password: 5053
+    hikari:
+      minimum-idle: 5
+      maximum-pool-size: 12
   jpa:
     hibernate:
       ddl-auto: none
@@ -18,7 +31,26 @@ spring:
   liquibase:
     change-log: classpath:db/changelog/db.changelog-master.xml
 app:
+  aws-stream:
+    endpoint: 'yds.serverless.yandexcloud.net'
+    accessKey: fake-access-key
+    secretKey: fake-secret-key
+    region: ru-central-1
+    uzum-stream:
+      name: '/ru-central1/b1gtojcphtuae1n9siie/etnvck8jo3kuh0vilc57/payment'
+  scheduler:
+    exchange-rate:
+      cron: 0 0/50 * * * ?
+    evict-currency:
+      cron: 0 0/50 * * * ?
+    balance-deposit:
+      cron: 0 0/1 * * * ?
+    purchase-service:
+      cron: 0 0/1 * * * ?
   integration:
+    ninja:
+      url: https://api.api-ninjas.com/v1
+      api-key:
     yookassa: https://api.yookassa.ru/v3
 org:
   jobrunr:
@@ -26,3 +58,30 @@ org:
       enabled: true
     dashboard:
       enabled: false
+
+freekassa:
+  baseUrl: https://api.freekassa.ru
+  shopId: 26248
+  apiKey: 3359c65680927f67661345031fb0b738
+  secretWordFirst: 'mHPoH9jB_BZe%lL'
+  secretWordSecond: '{v5T0IKN93p4fKx'
+
+management:
+  security:
+    flag: false
+  server:
+    port: '@management.port@'
+  metrics:
+    prometheus:
+      enabled: true
+  endpoint:
+    health:
+      show-details: always
+    metrics:
+      enabled: true
+    prometheus:
+      enabled: true
+  endpoints:
+    web:
+      exposure:
+        include: health,info,prometheus

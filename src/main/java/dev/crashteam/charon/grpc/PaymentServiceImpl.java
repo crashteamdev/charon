@@ -1,8 +1,7 @@
 package dev.crashteam.charon.grpc;
 
-import dev.crashteam.charon.mapper.YookassaPaymentMapper;
+import dev.crashteam.charon.mapper.ProtoMapper;
 import dev.crashteam.charon.service.PaymentService;
-import dev.crashteam.charon.service.YookassaService;
 import dev.crashteam.payment.*;
 import io.grpc.stub.StreamObserver;
 import lombok.RequiredArgsConstructor;
@@ -14,9 +13,38 @@ import java.util.List;
 @RequiredArgsConstructor
 public class PaymentServiceImpl extends PaymentServiceGrpc.PaymentServiceImplBase {
 
-    private final YookassaService paymentService;
-    private final PaymentService historyService;
-    private final YookassaPaymentMapper paymentMapper;
+    private final PaymentService paymentService;
+    private final ProtoMapper protoMapper;
+
+    @Override
+    public void getExchangeRate(GetExchangeRateRequest request, StreamObserver<GetExchangeRateResponse> responseObserver) {
+        responseObserver.onNext(paymentService.getExchangeRate(request));
+        responseObserver.onCompleted();
+    }
+
+    @Override
+    public void createPromoCode(CreatePromoCodeRequest request, StreamObserver<CreatePromoCodeResponse> responseObserver) {
+        responseObserver.onNext(paymentService.createPromoCode(request));
+        responseObserver.onCompleted();
+    }
+
+    @Override
+    public void checkPromoCode(CheckPromoCodeRequest request, StreamObserver<CheckPromoCodeResponse> responseObserver) {
+        responseObserver.onNext(paymentService.checkPromoCode(request));
+        responseObserver.onCompleted();
+    }
+
+    @Override
+    public void getBalance(GetBalanceRequest request, StreamObserver<GetBalanceResponse> responseObserver) {
+        responseObserver.onNext(paymentService.getBalanceResponse(request));
+        responseObserver.onCompleted();
+    }
+
+    @Override
+    public void purchaseService(PurchaseServiceRequest request, StreamObserver<PurchaseServiceResponse> responseObserver) {
+       responseObserver.onNext(paymentService.purchaseService(request));
+       responseObserver.onCompleted();
+    }
 
     @Override
     public void createPayment(PaymentCreateRequest request, StreamObserver<PaymentCreateResponse> responseObserver) {
@@ -27,8 +55,8 @@ public class PaymentServiceImpl extends PaymentServiceGrpc.PaymentServiceImplBas
 
     @Override
     public void getPayments(PaymentsQuery request, StreamObserver<PaymentsResponse> responseObserver) {
-        var payments = historyService.getPayments(request);
-        List<UserPayment> userPayments = paymentMapper.getUserPaymentResponse(payments.getContent());
+        var payments = paymentService.getPayments(request);
+        List<UserPayment> userPayments = protoMapper.getUserPaymentResponse(payments.getContent());
         LimitOffsetPaginationResult paginationResult = LimitOffsetPaginationResult.newBuilder()
                 .setLimit(request.getPagination().getLimit())
                 .setOffset(request.getPagination().getOffset())
@@ -46,7 +74,7 @@ public class PaymentServiceImpl extends PaymentServiceGrpc.PaymentServiceImplBas
 
     @Override
     public void getPayment(PaymentQuery request, StreamObserver<PaymentResponse> responseObserver) {
-        var userPayment = historyService.getUserPaymentByPaymentId(request);
+        var userPayment = paymentService.getUserPaymentByPaymentId(request);
         PaymentResponse paymentResponse = PaymentResponse.newBuilder()
                 .setUserPayment(userPayment)
                 .build();
@@ -54,18 +82,4 @@ public class PaymentServiceImpl extends PaymentServiceGrpc.PaymentServiceImplBas
         responseObserver.onCompleted();
     }
 
-
-    @Override
-    public void createRecurrentPayment(RecurrentPaymentCreateRequest request, StreamObserver<PaymentRecurrentResponse> responseObserver) {
-        var payment = paymentService.createRecurrentPayment(request);
-        responseObserver.onNext(payment);
-        responseObserver.onCompleted();
-    }
-
-    @Override
-    public void refundPayment(PaymentRefundRequest request, StreamObserver<PaymentRefundResponse> responseObserver) {
-        var payment = paymentService.refundPayment(request);
-        responseObserver.onNext(payment);
-        responseObserver.onCompleted();
-    }
 }
