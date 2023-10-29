@@ -55,3 +55,23 @@ freekassa:
   apiKey: 3359c65680927f67661345031fb0b738
   secretWordFirst: 'mHPoH9jB_BZe%lL'
   secretWordSecond: '{v5T0IKN93p4fKx'
+
+management:
+  security:
+    flag: false
+  server:
+    port: 8023
+  metrics:
+    prometheus:
+      enabled: true
+  endpoint:
+    health:
+      show-details: always
+    metrics:
+      enabled: true
+    prometheus:
+      enabled: true
+  endpoints:
+    web:
+      exposure:
+        include: health,info,prometheus
