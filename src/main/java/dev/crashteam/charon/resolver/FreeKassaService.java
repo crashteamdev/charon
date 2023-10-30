@@ -9,7 +9,6 @@ import dev.crashteam.payment.PaymentCreateRequest;
 import dev.crashteam.payment.PaymentSystem;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.codec.digest.DigestUtils;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
@@ -62,7 +61,7 @@ public class FreeKassaService implements PaymentResolver {
         paymentData.setCreatedAt(LocalDateTime.now());
         paymentData.setProviderId("");
         paymentData.setStatus(RequestPaymentStatus.PENDING);
-        paymentData.setCurrency("RUB");
+        paymentData.setProviderCurrency("RUB");
         paymentData.setDescription("");
         paymentData.setProviderAmount(String.valueOf(moneyAmount));
         paymentData.setConfirmationUrl(sb.toString());

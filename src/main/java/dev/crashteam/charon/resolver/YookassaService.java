@@ -35,7 +35,7 @@ public class YookassaService implements PaymentResolver {
         paymentData.setProviderId(responseDTO.getId());
         paymentData.setCreatedAt(responseDTO.getCreatedAt());
         paymentData.setStatus(yookassaPaymentMapper.getPaymentStatus(responseDTO.getStatus()));
-        paymentData.setCurrency("RUB");
+        paymentData.setProviderCurrency("RUB");
         BigDecimal moneyAmount = PaymentProtoUtils.getMinorMoneyAmount(responseDTO.getAmount().getValue());
         paymentData.setProviderAmount(String.valueOf(moneyAmount));
         paymentData.setDescription(responseDTO.getDescription());

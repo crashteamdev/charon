@@ -213,7 +213,7 @@ public class PaymentService {
         payment.setCurrency("USD");
         payment.setAmount(amount);
         payment.setProviderAmount(Long.valueOf(response.getProviderAmount()));
-        payment.setProviderCurrency(response.getCurrency());
+        payment.setProviderCurrency(response.getProviderCurrency());
         payment.setUser(userService.saveUser(user));
         payment.setCreated(response.getCreatedAt());
         payment.setUpdated(LocalDateTime.now());
@@ -255,7 +255,7 @@ public class PaymentService {
         payment.setCurrency("USD");
         payment.setAmount(balanceRequest.getAmount());
         payment.setProviderAmount(Long.valueOf(response.getProviderAmount()));
-        payment.setProviderCurrency(response.getCurrency());
+        payment.setProviderCurrency(response.getProviderCurrency());
         payment.setUser(userService.saveUser(user));
         payment.setCreated(response.getCreatedAt());
         payment.setUpdated(LocalDateTime.now());

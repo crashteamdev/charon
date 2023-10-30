@@ -11,9 +11,9 @@ public interface PaymentResolver {
 
     /***
      *
-     * @param request gepc request
+     * @param request grpc request
      * @param amount major value of initial amount
-     * @return
+     * @return PaymentData - object will be mapped to Payment entity
      */
     PaymentData createPayment(PaymentCreateRequest request, String amount);
 

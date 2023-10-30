@@ -52,12 +52,6 @@ app:
       url: https://api.api-ninjas.com/v1
       api-key:
     yookassa: https://api.yookassa.ru/v3
-org:
-  jobrunr:
-    background-job-server:
-      enabled: true
-    dashboard:
-      enabled: false
 
 freekassa:
   baseUrl: https://api.freekassa.ru

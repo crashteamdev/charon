@@ -12,7 +12,7 @@ public class PaymentData {
     private String providerId;
     private RequestPaymentStatus status;
     private String providerAmount;
-    private String currency;
+    private String providerCurrency;
     private LocalDateTime createdAt;
     private String description;
     private String confirmationUrl;
