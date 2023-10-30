@@ -29,7 +29,7 @@ public class PaymentController {
 
     private final CallbackService callbackService;
 
-    @PostMapping(value = "/freekassa/callback",
+    @PostMapping(value = "/callback/freekassa",
             consumes = {MediaType.APPLICATION_FORM_URLENCODED_VALUE, MediaType.MULTIPART_FORM_DATA_VALUE})
     public ResponseEntity<String> callbackFreekassa(ServerWebExchange exchange) {
         Map<String, Object> attributes = exchange.getAttributes();
