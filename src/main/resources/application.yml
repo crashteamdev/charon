@@ -4,6 +4,7 @@ server:
     context-path: /charon
 spring:
   quartz:
+    job-store-type: jdbc
     properties:
       org:
         quartz:
@@ -12,7 +13,11 @@ spring:
             class: org.quartz.simpl.SimpleThreadPool
           jobStore:
             misfireThreshold: 60000
-            class: org.quartz.simpl.RAMJobStore
+            driverDelegateClass: org.quartz.impl.jdbcjobstore.PostgreSQLDelegate
+            isClustered: true
+            useProperties: true
+    jdbc:
+      initialize-schema: always
   application:
     name: '@project.name@'
   datasource:
