@@ -1,4 +1,7 @@
 spring:
+  quartz:
+    jdbc:
+      initialize-schema: always
   test:
     context:
       cache:
