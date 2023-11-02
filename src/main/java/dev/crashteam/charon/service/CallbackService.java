@@ -3,6 +3,8 @@ package dev.crashteam.charon.service;
 import dev.crashteam.charon.model.RequestPaymentStatus;
 import dev.crashteam.charon.model.domain.Payment;
 import dev.crashteam.charon.model.dto.FkCallbackData;
+import dev.crashteam.charon.model.dto.click.ClickRequest;
+import dev.crashteam.charon.model.dto.click.ClickResponse;
 import dev.crashteam.charon.stream.StreamService;
 import dev.crashteam.charon.util.PaymentProtoUtils;
 import lombok.RequiredArgsConstructor;
@@ -19,6 +21,12 @@ public class CallbackService {
     private final StreamService streamService;
 
     @Transactional
+    public ClickResponse clickResponse(ClickRequest request) {
+        ClickResponse clickResponse = new ClickResponse();
+        return clickResponse;
+    }
+
+    @Transactional
     public void freeKassaCallback(FkCallbackData callbackData) {
         Payment payment = paymentService.findByPaymentId(callbackData.getPaymentId());
         BigDecimal callbackAmount = PaymentProtoUtils.getMinorMoneyAmount(callbackData.getAmount());
@@ -29,7 +37,7 @@ public class CallbackService {
             return;
         }
         payment.setStatus(RequestPaymentStatus.SUCCESS);
-        streamService.publishPaymentCreatedAwsMessage(payment);
+        streamService.publishPaymentStatusChangeAwsMessage(payment);
         paymentService.save(payment);
 
     }

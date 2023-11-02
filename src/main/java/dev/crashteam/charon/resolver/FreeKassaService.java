@@ -37,6 +37,7 @@ public class FreeKassaService implements PaymentResolver {
         String paymentId = UUID.randomUUID().toString();
         String convertedAmount = currencyService.getConvertedAmount("USD", "RUB", amount);
         String email = PaymentProtoUtils.getEmailFromRequest(request);
+        String phone = PaymentProtoUtils.getPhoneFromRequest(request);
         String sign;
         if (StringUtils.hasText(email)) {
             sign = DigestUtils.md5Hex("%s:%s:%s:%s:%s".formatted(freeKassaProperties.getShopId(),
@@ -63,6 +64,8 @@ public class FreeKassaService implements PaymentResolver {
         paymentData.setStatus(RequestPaymentStatus.PENDING);
         paymentData.setProviderCurrency("RUB");
         paymentData.setDescription("");
+        paymentData.setPhone(phone);
+        paymentData.setEmail(email);
         paymentData.setProviderAmount(String.valueOf(moneyAmount));
         paymentData.setConfirmationUrl(sb.toString());
         return paymentData;

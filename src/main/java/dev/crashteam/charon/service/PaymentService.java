@@ -87,10 +87,10 @@ public class PaymentService {
         PaidServiceContext context = request.getPaidService().getContext();
         PaidService paidService = getPaidServiceFromContext(context);
         log.info("Purchasing service - {} by user - {}", paidService.getName(), user.getId());
-        if (context.getMultiply() == 0) throw new IllegalArgumentException("Month multiply value can't be zero");
-
-        long multipliedAmount = paidService.getAmount() * context.getMultiply();
+        long multiply = context.getMultiply() == 0 ? 1 : context.getMultiply();
+        long multipliedAmount = paidService.getAmount() * multiply;
         long balanceAfterPurchase = user.getBalance() - multipliedAmount;
+
         Payment payment = new Payment();
         String paymentId = UUID.randomUUID().toString();
         payment.setPaymentId(paymentId);
@@ -193,11 +193,12 @@ public class PaymentService {
         PaidServiceContext paidServiceContext = purchaseService.getPaidService().getContext();
         PaidService paidService = getPaidServiceFromContext(paidServiceContext);
         log.info("Purchasing service - {} by user - {}", paidService.getName(), purchaseService.getUserId());
-        if (paidServiceContext.getMultiply() == 0) throw new IllegalArgumentException("Month multiply value can't be zero");
+        long multiply = paidServiceContext.getMultiply() == 0 ? 1 : paidServiceContext.getMultiply();
 
         User user = getUser(purchaseService.getUserId());
+        long multiplyAmount = paidService.getAmount() * multiply;
+        long amount = multiplyDiscount(multiplyAmount, multiply);
 
-        long amount = paidService.getAmount() * paidServiceContext.getMultiply();
         if (promoCodeValidAndUnusedByUser(promoCode, user.getId())) {
             long discount = (long) (amount * ((double) promoCode.getDiscountPercentage() / 100));
             amount = amount - discount;
@@ -221,6 +222,7 @@ public class PaymentService {
         payment.setPromoCode(promoCode);
         payment.setMonthPaid(paidServiceContext.getMultiply());
         payment.setEmail(response.getEmail());
+        payment.setPhone(response.getPhone());
         payment.setPaymentSystem(protoMapper.getPaymentSystemType(purchaseService.getPaymentSystem()).getTitle());
         payment.setMetadata(objectMapper.writeValueAsString(request.getMetadataMap()));
         payment.setPaidService(paidService);
@@ -261,6 +263,7 @@ public class PaymentService {
         payment.setUpdated(LocalDateTime.now());
         payment.setUser(user);
         payment.setEmail(response.getEmail());
+        payment.setPhone(response.getPhone());
         payment.setOperationType(operationTypeService.getOperationType(Operation.DEPOSIT_BALANCE.getTitle()));
         payment.setPaymentSystem(protoMapper.getPaymentSystemType(balanceRequest.getPaymentSystem()).getTitle());
         payment.setMetadata(objectMapper.writeValueAsString(request.getMetadataMap()));
@@ -329,6 +332,22 @@ public class PaymentService {
             promoCode.getUsers().add(user);
         }
         promoCodeService.save(promoCode);
+    }
+
+    private long multiplyDiscount(long amount, long multiply) {
+        if (multiply > 1) {
+            BigDecimal discount;
+            if (multiply <= 3) {
+                discount = new BigDecimal("0.10");
+            } else if (multiply >= 6) {
+                discount = new BigDecimal("0.30");
+            } else {
+                discount = new BigDecimal("0.10");
+            }
+            return BigDecimal.valueOf(amount).subtract(BigDecimal.valueOf(amount).multiply(discount)).longValue();
+        }
+        return amount;
+
     }
 
     private boolean promoCodeValidAndUnusedByUser(PromoCode promoCode, String userId) {

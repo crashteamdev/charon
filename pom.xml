@@ -17,7 +17,7 @@
         <payment-proto.version>0.0.1</payment-proto.version>
         <grpc-server.version>2.13.1.RELEASE</grpc-server.version>
         <spring-cloud.version>2021.0.1</spring-cloud.version>
-        <payment-proto.version>0.0.35</payment-proto.version>
+        <payment-proto.version>0.0.37</payment-proto.version>
         <spring-data-jpa.version>2.6.4</spring-data-jpa.version>
         <grpc-testing.version>1.46.0</grpc-testing.version>
         <wiremock.version>2.27.2</wiremock.version>

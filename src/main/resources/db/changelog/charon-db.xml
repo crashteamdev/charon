@@ -300,4 +300,10 @@
                                  referencedColumnNames="id"
                                  deleteCascade="true"/>
     </changeSet>
+
+    <changeSet id="add_phone_column" author="sagefreke">
+        <addColumn tableName="payment">
+            <column name="phone" type="VARCHAR(64)"/>
+        </addColumn>
+    </changeSet>
 </databaseChangeLog>

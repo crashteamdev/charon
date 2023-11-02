@@ -17,4 +17,5 @@ public class PaymentData {
     private String description;
     private String confirmationUrl;
     private String email;
+    private String phone;
 }
