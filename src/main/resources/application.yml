@@ -17,7 +17,7 @@ spring:
             isClustered: true
             useProperties: true
     jdbc:
-      initialize-schema: always
+      initialize-schema: never
   application:
     name: '@project.name@'
   datasource:
