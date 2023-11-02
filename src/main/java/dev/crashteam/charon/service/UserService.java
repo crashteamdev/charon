@@ -18,7 +18,7 @@ public class UserService {
     }
 
     public User getUser(String id) {
-        return userRepository.findById(id).orElseThrow(EntityNotFoundException::new);
+        return userRepository.findById(id).orElse(null);
     }
 
     public User saveUser(User user) {

@@ -120,8 +120,8 @@ public class ProtoMapper {
 
     public GetBalanceResponse getBalanceResponse(User user) {
         return GetBalanceResponse.newBuilder()
-                .setAmount(BalanceAmount.newBuilder().setValue(user.getBalance()).build())
-                .setUserId(user.getId())
+                .setAmount(BalanceAmount.newBuilder().setValue(user != null ? user.getBalance() : 0).build())
+                .setUserId(user != null ? user.getId() : "")
                 .build();
     }
 
@@ -221,23 +221,24 @@ public class ProtoMapper {
                 .build();
     }
 
+    public PurchaseServiceResponse getErrorPurchaseServiceResponse(Long amount) {
+        BalanceAmount balanceAmount = BalanceAmount.newBuilder().setValue(amount).build();
+        PurchaseServiceResponse.ErrorResponse errorResponse = PurchaseServiceResponse.ErrorResponse.newBuilder()
+                .setErrorCode(PurchaseServiceResponse.ErrorResponse.ErrorCode.ERROR_CODE_INSUFFICIENT_FUNDS)
+                .setDescription("Not enough money")
+                .setUserBalanceAmount(balanceAmount).build();
+        return PurchaseServiceResponse.newBuilder().setErrorResponse(errorResponse).build();
+    }
+
     public PurchaseServiceResponse getPurchaseServiceResponse(Payment payment, Long amount) {
         BalanceAmount balanceAmount = BalanceAmount.newBuilder().setValue(amount).build();
-        if (payment.getStatus().equals(RequestPaymentStatus.FAILED.getTitle())) {
-            PurchaseServiceResponse.ErrorResponse errorResponse = PurchaseServiceResponse.ErrorResponse.newBuilder()
-                    .setErrorCode(PurchaseServiceResponse.ErrorResponse.ErrorCode.ERROR_CODE_INSUFFICIENT_FUNDS)
-                    .setDescription("Not enough money")
-                    .setUserBalanceAmount(balanceAmount).build();
-            return PurchaseServiceResponse.newBuilder().setErrorResponse(errorResponse).build();
-        } else {
-            PurchaseServiceResponse.SuccessResponse successResponse = PurchaseServiceResponse.SuccessResponse.newBuilder()
-                    .setUserBalanceAmount(balanceAmount)
-                    .setOperationId(payment.getOperationId())
-                    .build();
-            return PurchaseServiceResponse.newBuilder()
-                    .setSuccessResponse(successResponse)
-                    .build();
-        }
+        PurchaseServiceResponse.SuccessResponse successResponse = PurchaseServiceResponse.SuccessResponse.newBuilder()
+                .setUserBalanceAmount(balanceAmount)
+                .setOperationId(payment.getOperationId())
+                .build();
+        return PurchaseServiceResponse.newBuilder()
+                .setSuccessResponse(successResponse)
+                .build();
     }
 
     @Deprecated

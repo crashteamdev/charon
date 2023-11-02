@@ -58,6 +58,10 @@ public class BalancePaymentJob implements Job {
         if (RequestPaymentStatus.SUCCESS.equals(paymentStatus)) {
             log.info("Payment with id [{}] successful, processing balance deposit", payment.getPaymentId());
             User user = userService.getUser(payment.getUser().getId());
+            if (user == null) {
+                log.warn("User with id {} not found", payment.getUser().getId());
+                return;
+            }
             long newBalance = user.getBalance() + payment.getAmount();
             user.setBalance(newBalance);
             userService.saveUser(user);
