@@ -84,13 +84,16 @@ public class PaymentService {
                     .formatted(request.getOperationId()));
 
         User user = userService.getUser(request.getUserId());
+        if (user == null) return protoMapper.getErrorPurchaseServiceResponse(0L);
         PaidServiceContext context = request.getPaidService().getContext();
         PaidService paidService = getPaidServiceFromContext(context);
         log.info("Purchasing service - {} by user - {}", paidService.getName(), user.getId());
         long multiply = context.getMultiply() == 0 ? 1 : context.getMultiply();
         long multipliedAmount = paidService.getAmount() * multiply;
         long balanceAfterPurchase = user.getBalance() - multipliedAmount;
-
+        if (balanceAfterPurchase < 0) {
+            return protoMapper.getErrorPurchaseServiceResponse(user.getBalance());
+        }
         Payment payment = new Payment();
         String paymentId = UUID.randomUUID().toString();
         payment.setPaymentId(paymentId);
@@ -102,21 +105,10 @@ public class PaymentService {
         payment.setMonthPaid(context.getMultiply());
         payment.setPaidService(paidService);
         payment.setOperationType(operationTypeService.getOperationType(Operation.PURCHASE_SERVICE.getTitle()));
-        if (balanceAfterPurchase < 0) {
-            payment.setStatus(RequestPaymentStatus.FAILED);
-            payment.setUser(user);
-            protoMapper.getCreatedPaymentEvent(payment);
-            Payment savedPayment = paymentRepository.save(payment);
-
-            streamService.publishPaymentCreatedAwsMessage(savedPayment);
-
-            return protoMapper.getPurchaseServiceResponse(savedPayment, user.getBalance());
-        }
         payment.setStatus(RequestPaymentStatus.SUCCESS);
         user.setBalance(balanceAfterPurchase);
         User saveUser = userService.saveUser(user);
         payment.setUser(saveUser);
-        protoMapper.getCreatedPaymentEvent(payment);
 
         Payment savedPayment = paymentRepository.save(payment);
 
