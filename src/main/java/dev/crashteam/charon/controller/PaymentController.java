@@ -57,6 +57,7 @@ public class PaymentController {
 
     @PostMapping(value = "/callback/click")
     public ResponseEntity<ClickResponse> callbackClick(@RequestBody ClickRequest request) {
+        //TODO: not implemented yet
         return ResponseEntity.ok().build();
     }
 }
