@@ -38,7 +38,7 @@ public class ProtoMapper {
                 .setNanos(instantCreated.getNano()).build();
         var paymentPaidService = payment.getPaidService();
 
-        PaidServiceContext paidServiceContext = null;
+        PaidServiceContext paidServiceContext = PaidServiceContext.newBuilder().build();
         if (paymentPaidService != null) {
             paidServiceContext = switch (String.valueOf(paymentPaidService.getType())) {
                 case "10" -> PaidServiceContext.newBuilder().setMultiply(payment.getMonthPaid())
