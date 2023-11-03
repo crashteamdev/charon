@@ -3,6 +3,8 @@ package dev.crashteam.charon.controller;
 import dev.crashteam.charon.component.FreeKassaProperties;
 import dev.crashteam.charon.model.PromoCodeType;
 import dev.crashteam.charon.model.dto.FkCallbackData;
+import dev.crashteam.charon.model.dto.click.ClickRequest;
+import dev.crashteam.charon.model.dto.click.ClickResponse;
 import dev.crashteam.charon.model.web.CallbackPaymentAdditionalInfo;
 import dev.crashteam.charon.service.CallbackService;
 import dev.crashteam.charon.service.PaymentService;
@@ -13,6 +15,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ServerWebExchange;
@@ -49,6 +52,12 @@ public class PaymentController {
             return ResponseEntity.badRequest().build();
         }
         callbackService.freeKassaCallback(new FkCallbackData(merchantId, amount, orderId, paymentId, curId));
+        return ResponseEntity.ok().build();
+    }
+
+    @PostMapping(value = "/callback/click")
+    public ResponseEntity<ClickResponse> callbackClick(@RequestBody ClickRequest request) {
+        //TODO: not implemented yet
         return ResponseEntity.ok().build();
     }
 }

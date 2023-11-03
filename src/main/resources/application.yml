@@ -67,6 +67,12 @@ freekassa:
   secretWordFirst: 'mHPoH9jB_BZe%lL'
   secretWordSecond: '{v5T0IKN93p4fKx'
 
+click:
+  baseUrl: https://my.click.uz/services/pay
+  merchantId: someId
+  serviceId: someId
+  secretKey: someKey
+
 management:
   security:
     flag: false

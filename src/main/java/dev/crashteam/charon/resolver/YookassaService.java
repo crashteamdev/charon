@@ -30,7 +30,13 @@ public class YookassaService implements PaymentResolver {
         YkPaymentCreateRequestDTO paymentRequestDto = yookassaPaymentMapper
                 .getCreatePaymentRequestDto(request, convertedAmount);
         YkPaymentResponseDTO responseDTO = kassaClient.createPayment(paymentRequestDto);
+
+        String phone = PaymentProtoUtils.getPhoneFromRequest(request);
+        String email = PaymentProtoUtils.getEmailFromRequest(request);
+
         PaymentData paymentData = new PaymentData();
+        paymentData.setPhone(phone);
+        paymentData.setEmail(email);
         paymentData.setPaymentId(UUID.randomUUID().toString());
         paymentData.setProviderId(responseDTO.getId());
         paymentData.setCreatedAt(responseDTO.getCreatedAt());

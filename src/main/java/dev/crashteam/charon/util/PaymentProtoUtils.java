@@ -19,6 +19,12 @@ public class PaymentProtoUtils {
         return Optional.of(request.getPaymentDepositUserBalance().getUserEmail())
                 .orElse(request.getPaymentPurchaseService().getUserEmail());
     }
+
+    public static String getPhoneFromRequest(PaymentCreateRequest request) {
+        return Optional.of(request.getPaymentDepositUserBalance().getUserPhone())
+                .orElse(request.getPaymentPurchaseService().getUserPhone());
+    }
+
     public static String getDescriptionFromRequest(PaymentCreateRequest request) {
         return Optional.of(request.getPaymentDepositUserBalance().getDescription())
                 .orElse(request.getPaymentPurchaseService().getDescription());

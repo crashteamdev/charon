@@ -110,7 +110,9 @@ public class PaymentTest extends ContainerConfiguration {
         NinjaMock.currencyResponse(mockServer, Map.of("have", equalTo("USD"),
                 "want", equalTo("RUB"), "amount", equalTo("30.00")));
         NinjaMock.currencyResponse(mockServer, Map.of("have", equalTo("USD"),
-                "want", equalTo("RUB"), "amount", equalTo("21.00")));
+                "want", equalTo("RUB"), "amount", equalTo("27.00")));
+        NinjaMock.currencyResponse(mockServer, Map.of("have", equalTo("USD"),
+                "want", equalTo("RUB"), "amount", equalTo("18.90")));
     }
 
     @Test
