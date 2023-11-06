@@ -16,6 +16,9 @@ import java.util.Optional;
 @Repository
 public interface PaymentRepository extends JpaRepository<Payment, String>, JpaSpecificationExecutor<Payment> {
 
+    @Query(value = "SELECT nextval('operation_id_seq')", nativeQuery = true)
+    Long operationIdSeq();
+
     @Query("select p from Payment p where p.userId = :userId")
     List<Payment> findByUserId(String userId, Pageable pageable);
 

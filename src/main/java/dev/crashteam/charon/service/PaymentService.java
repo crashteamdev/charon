@@ -342,6 +342,15 @@ public class PaymentService {
 
     }
 
+    @Transactional(readOnly = true)
+    public Long getOperationIdSeq() {
+        return paymentRepository.operationIdSeq();
+    }
+
+    public Payment findByOperationId(String operationId) {
+        return paymentRepository.findByOperationId(operationId).orElse(null);
+    }
+
     private boolean promoCodeValidAndUnusedByUser(PromoCode promoCode, String userId) {
         return promoCode != null && !promoCodeService.existsByCodeAndUserId(promoCode.getCode(), userId)
                 && LocalDateTime.now().isBefore(promoCode.getValidUntil())

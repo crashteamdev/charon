@@ -32,6 +32,7 @@ public class ClickRequest {
     @JsonProperty("sign_time")
     @JsonFormat(pattern = "YYYY-MM-DD HH:mm:ss")
     private LocalDateTime signTime;
+    private String rawSignTime;
     @JsonProperty("sign_string")
     private String signString;
 }

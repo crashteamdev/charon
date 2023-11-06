@@ -50,11 +50,13 @@ public class FreeKassaService implements PaymentResolver {
         sb.append(FREEKASSA_BASE_URL).append("/?m=").append(freeKassaProperties.getShopId())
                 .append("&oa=").append(convertedAmount)
                 .append("&currency=RUB")
-                .append("&o=").append(email)
+                .append("&o=").append(paymentId)
                 .append("&pay=PAY")
                 .append("&s=").append(sign)
-                .append("&em=").append(email)
                 .append("&us_paymentid=").append(paymentId);
+        if (StringUtils.hasText(email)) {
+            sb.append("&em=").append(email);
+        }
 
         BigDecimal moneyAmount = PaymentProtoUtils.getMinorMoneyAmount(convertedAmount);
         PaymentData paymentData = new PaymentData();

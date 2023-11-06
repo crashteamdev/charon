@@ -20,6 +20,9 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ServerWebExchange;
 
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.Map;
 
 @Slf4j
@@ -55,9 +58,40 @@ public class PaymentController {
         return ResponseEntity.ok().build();
     }
 
-    @PostMapping(value = "/callback/click")
-    public ResponseEntity<ClickResponse> callbackClick(@RequestBody ClickRequest request) {
-        //TODO: not implemented yet
+    @PostMapping(value = "/callback/click",
+            consumes = {MediaType.APPLICATION_FORM_URLENCODED_VALUE, MediaType.MULTIPART_FORM_DATA_VALUE},
+            produces = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<ClickResponse> callbackClick(ServerWebExchange exchange) {
+        Map<String, Object> attributes = exchange.getAttributes();
+        Long clickTransId = (Long) attributes.get("click_trans_id");
+        Long serviceId = (Long) attributes.get("service_id");
+        Long clickPaydocId = (Long) attributes.get("click_paydoc_id");
+        String merchantTransId = (String) attributes.get("merchant_trans_id");
+        Long merchantPrepareId = (Long) attributes.get("merchant_prepare_id");
+        BigDecimal amount = (BigDecimal) attributes.get("amount");
+        Long action = (Long) attributes.get("action");
+        Long error = (Long) attributes.get("error");
+        String errorNote = (String) attributes.get("error_note");
+        String signTime = (String) attributes.get("sign_time");
+        String signString = (String) attributes.get("sign_string");
+        log.info("Callback CLICK payment. Body={}", attributes);
+
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+        LocalDateTime signTimeFormatted = LocalDateTime.parse(signTime, formatter);
+
+        ClickRequest clickRequest = new ClickRequest();
+        clickRequest.setClickTransId(clickTransId);
+        clickRequest.setClickPaydocId(clickPaydocId);
+        clickRequest.setAmount(amount);
+        clickRequest.setError(error);
+        clickRequest.setAction(action);
+        clickRequest.setErrorNote(errorNote);
+        clickRequest.setServiceId(serviceId);
+        clickRequest.setMerchantTransId(merchantTransId);
+        clickRequest.setMerchantPrepareId(merchantPrepareId);
+        clickRequest.setSignString(signString);
+        clickRequest.setSignTime(signTimeFormatted);
+        clickRequest.setRawSignTime(signTime);
         return ResponseEntity.ok().build();
     }
 }

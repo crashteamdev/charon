@@ -306,4 +306,15 @@
             <column name="phone" type="VARCHAR(64)"/>
         </addColumn>
     </changeSet>
+
+    <changeSet id="create_operation_id_sequence_and_index" author="sagefreke">
+        <createIndex tableName="payment" indexName="idx_payment_operation_id">
+            <column name="operation_id"/>
+        </createIndex>
+        <createSequence sequenceName="operation_id_seq" startValue="1" incrementBy="1"/>
+    </changeSet>
+
+    <changeSet id="add_operation_id_unique_constraint" author="sagefreke">
+        <addUniqueConstraint tableName="payment" columnNames="operation_id"/>
+    </changeSet>
 </databaseChangeLog>

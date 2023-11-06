@@ -14,6 +14,7 @@ import dev.crashteam.charon.model.dto.yookassa.YkConfirmationDTO;
 import dev.crashteam.charon.model.dto.yookassa.YkPaymentRefundResponseDTO;
 import dev.crashteam.charon.model.dto.yookassa.YkPaymentResponseDTO;
 import dev.crashteam.payment.*;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.time.Instant;
@@ -25,6 +26,7 @@ import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
+@Slf4j
 @Service
 public class ProtoMapper {
 
@@ -211,6 +213,8 @@ public class ProtoMapper {
 
     public PaymentCreateResponse getPaymentResponse(PaymentData response, Payment payment, long amount) {
         Instant instantCreated = response.getCreatedAt().toInstant(ZoneOffset.UTC);
+        log.info("Returning payment response with type - {}, url - {}",
+                payment.getPaymentSystem(), response.getConfirmationUrl());
         return PaymentCreateResponse.newBuilder()
                 .setAmount(getAmount("USD", amount))
                 .setDescription(Optional.ofNullable(response.getDescription()).orElse(""))

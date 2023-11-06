@@ -10,9 +10,3 @@ spring:
     password: 5053
   jpa:
     show-sql: true
-org:
-  jobrunr:
-    background-job-server:
-      enabled: true
-    dashboard:
-      enabled: false
