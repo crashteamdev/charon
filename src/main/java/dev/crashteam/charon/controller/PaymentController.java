@@ -92,7 +92,7 @@ public class PaymentController {
         clickRequest.setSignString(signString);
         clickRequest.setSignTime(signTimeFormatted);
         clickRequest.setRawSignTime(signTime);
-        return ResponseEntity.ok().build();
+        return ResponseEntity.ok(callbackService.clickResponse(clickRequest));
     }
 }
 
