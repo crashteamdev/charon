@@ -38,14 +38,8 @@ public class FreeKassaService implements PaymentResolver {
         String convertedAmount = currencyService.getConvertedAmount("USD", "RUB", amount);
         String email = PaymentProtoUtils.getEmailFromRequest(request);
         String phone = PaymentProtoUtils.getPhoneFromRequest(request);
-        String sign;
-        if (StringUtils.hasText(email)) {
-            sign = DigestUtils.md5Hex("%s:%s:%s:%s:%s".formatted(freeKassaProperties.getShopId(),
-                    convertedAmount, freeKassaProperties.getSecretWordFirst(), "RUB", email));
-        } else {
-            sign = DigestUtils.md5Hex("%s:%s:%s:%s".formatted(freeKassaProperties.getShopId(), convertedAmount,
-                    freeKassaProperties.getSecretWordFirst(), "RUB"));
-        }
+        String sign = DigestUtils.md5Hex("%s:%s:%s:%s:%s".formatted(freeKassaProperties.getShopId(), convertedAmount,
+                freeKassaProperties.getSecretWordFirst(), "RUB", paymentId));
 
         sb.append(FREEKASSA_BASE_URL).append("/?m=").append(freeKassaProperties.getShopId())
                 .append("&oa=").append(convertedAmount)
