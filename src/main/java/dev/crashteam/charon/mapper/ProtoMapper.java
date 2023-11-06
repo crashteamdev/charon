@@ -213,8 +213,8 @@ public class ProtoMapper {
 
     public PaymentCreateResponse getPaymentResponse(PaymentData response, Payment payment, long amount) {
         Instant instantCreated = response.getCreatedAt().toInstant(ZoneOffset.UTC);
-        log.info("Returning payment response with type - {}, url - {}",
-                payment.getPaymentSystem(), response.getConfirmationUrl());
+        log.info("Returning payment response with type - {}, url - {}, id - {}",
+                payment.getPaymentSystem(), response.getConfirmationUrl(), payment.getPaymentId());
         return PaymentCreateResponse.newBuilder()
                 .setAmount(getAmount("USD", amount))
                 .setDescription(Optional.ofNullable(response.getDescription()).orElse(""))
