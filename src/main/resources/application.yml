@@ -69,10 +69,10 @@ freekassa:
 
 click:
   baseUrl: https://my.click.uz/services/pay
-  merchantId: someId
-  serviceId: someId
+  merchantId: 22733
+  serviceId: 30232
   secretKey: someKey
-  merchantUserId: someId
+  merchantUserId: 36242
 
 management:
   security:
