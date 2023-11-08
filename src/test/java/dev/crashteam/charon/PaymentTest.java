@@ -17,12 +17,15 @@ import dev.crashteam.charon.model.RequestPaymentStatus;
 import dev.crashteam.charon.model.domain.Payment;
 import dev.crashteam.charon.model.domain.User;
 import dev.crashteam.charon.model.dto.FkCallbackData;
+import dev.crashteam.charon.model.dto.ninja.ConversionDto;
+import dev.crashteam.charon.model.dto.ninja.ExchangeRateDto;
 import dev.crashteam.charon.repository.PaymentRepository;
 import dev.crashteam.charon.repository.PromoCodeRepository;
 import dev.crashteam.charon.repository.UserRepository;
 import dev.crashteam.charon.service.CallbackService;
 import dev.crashteam.charon.service.OperationTypeService;
 import dev.crashteam.charon.service.PaymentService;
+import dev.crashteam.charon.service.feign.NinjaClient;
 import dev.crashteam.charon.stream.StreamService;
 import dev.crashteam.payment.*;
 import io.grpc.internal.testing.StreamRecorder;
@@ -98,21 +101,22 @@ public class PaymentTest extends ContainerConfiguration {
     @MockBean
     StreamService streamService;
 
+    @MockBean
+    NinjaClient ninjaClient;
+
     @BeforeEach
     public void setup() throws IOException {
         Mockito.when(streamService.publishPaymentCreatedAwsMessage(Mockito.any())).thenReturn(new PutRecordsResult());
         Mockito.when(streamService.publishPaymentStatusChangeAwsMessage(Mockito.any())).thenReturn(new PutRecordsResult());
 
+        Mockito.when(ninjaClient.convert(Mockito.any(), Mockito.any(), Mockito.any(), Mockito.any()))
+                .thenReturn(new ConversionDto("1500.00", "RUB", "USD", "15.00"));
+        Mockito.when(ninjaClient.exchangeRate(Mockito.any(), Mockito.any()))
+                .thenReturn(new ExchangeRateDto("USD_RUB", "92.027499"));
+
         YookassaMock.createPayment(mockServer);
         YookassaMock.createRefundPayment(mockServer);
         YookassaMock.paymentStatus(mockServer);
-
-        NinjaMock.currencyResponse(mockServer, Map.of("have", equalTo("USD"),
-                "want", equalTo("RUB"), "amount", equalTo("30.00")));
-        NinjaMock.currencyResponse(mockServer, Map.of("have", equalTo("USD"),
-                "want", equalTo("RUB"), "amount", equalTo("27.00")));
-        NinjaMock.currencyResponse(mockServer, Map.of("have", equalTo("USD"),
-                "want", equalTo("RUB"), "amount", equalTo("18.90")));
     }
 
     @Test
@@ -254,7 +258,7 @@ public class PaymentTest extends ContainerConfiguration {
         Optional<Payment> paymentAfterJob = paymentRepository.findByPaymentId(paymentId);
         Assertions.assertEquals(paymentAfterJob.get().getStatus(), RequestPaymentStatus.PENDING);
 
-        callbackService.freeKassaCallback(new FkCallbackData("", "2904.3", "order-id", paymentId, "cur"));
+        callbackService.freeKassaCallback(new FkCallbackData("", "1500.0", "order-id", paymentId, "cur"));
 
         Optional<Payment> successPayment = paymentRepository.findByPaymentId(paymentId);
         Assertions.assertEquals(successPayment.get().getStatus(), RequestPaymentStatus.SUCCESS);

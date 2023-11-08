@@ -11,4 +11,5 @@ public class ClickProperties {
     private String merchantId;
     private String serviceId;
     private String secretKey;
+    private String merchantUserId;
 }

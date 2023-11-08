@@ -39,7 +39,9 @@ public class ClickService implements PaymentResolver {
                 .append("?service_id=").append(clickProperties.getServiceId())
                 .append("&merchant_id=").append(clickProperties.getMerchantId())
                 .append("&amount=").append(convertedAmount)
-                .append("&transaction_param=").append(paymentId).toString();
+                .append("&transaction_param=").append(paymentId)
+                .append("&merchant_user_id=").append(clickProperties.getMerchantUserId())
+                .toString();
 
         BigDecimal moneyAmount = PaymentProtoUtils.getMinorMoneyAmount(convertedAmount);
 
