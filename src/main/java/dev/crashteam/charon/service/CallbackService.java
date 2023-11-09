@@ -88,6 +88,12 @@ public class CallbackService {
         response.setClickTransId(clickTransId);
         response.setMerchantTransId(merchantTransId);
 
+        if (amount == null) {
+            response.setError(-2L);
+            response.setErrorNote("Incorrect parameter amount");
+            return response;
+        }
+
         String md5Hex = DigestUtils.md5Hex("%s%s%s%s%s%s%s%s".formatted(clickTransId, serviceId, clickProperties.getSecretKey(),
                 merchantTransId, merchantPrepareId, amount.toString(), action, signTime));
 
@@ -114,7 +120,7 @@ public class CallbackService {
             return response;
         }
 
-        if (error == -5017) {
+        if (error != null && error == -5017) {
             response.setError(-9L);
             response.setErrorNote("Transaction cancelled");
             response.setMerchantPrepareId(merchantPrepareId);
@@ -126,17 +132,23 @@ public class CallbackService {
             return response;
         }
 
-        if (!amount.equals(BigDecimal.valueOf(payment.getProviderAmount()).movePointLeft(2))) {
+        BigDecimal paymentProviderAmount = BigDecimal.valueOf(payment.getProviderAmount()).movePointLeft(2);
+        log.info("Comparing amount - ours: [{}] ; click - [{}]", paymentProviderAmount, amount);
+        if (!amount.equals(paymentProviderAmount)) {
             response.setError(-2L);
             response.setErrorNote("Incorrect parameter amount");
-            response.setMerchantPrepareId(Long.valueOf(payment.getOperationId()));
+            if (payment.getOperationId() != null) {
+                response.setMerchantPrepareId(Long.valueOf(payment.getOperationId()));
+            }
             return response;
         }
 
         if (!request.getSignString().equals(md5Hex)) {
             response.setError(-1L);
             response.setErrorNote("SIGN CHECK FAILED!");
-            response.setMerchantPrepareId(Long.valueOf(payment.getOperationId()));
+            if (payment.getOperationId() != null) {
+                response.setMerchantPrepareId(Long.valueOf(payment.getOperationId()));
+            }
             return response;
         }
 
@@ -170,20 +182,25 @@ public class CallbackService {
             return response;
         }
 
-        String md5Hex = DigestUtils.md5Hex("%s%s%s%s%s%s%s".formatted(clickTransId, serviceId, clickProperties.getSecretKey(),
-                merchantTransId, amount.toString(), action, signTime));
-
-        if (!amount.equals(BigDecimal.valueOf(payment.getProviderAmount()).movePointLeft(2))) {
+        if (amount == null) {
             response.setError(-2L);
             response.setErrorNote("Incorrect parameter amount");
-            response.setMerchantPrepareId(Long.valueOf(payment.getOperationId()));
+            return response;
+        }
+
+        String md5Hex = DigestUtils.md5Hex("%s%s%s%s%s%s%s".formatted(clickTransId, serviceId, clickProperties.getSecretKey(),
+                merchantTransId, amount.toString(), action, signTime));
+        BigDecimal paymentProviderAmount = BigDecimal.valueOf(payment.getProviderAmount()).movePointLeft(2);
+        log.info("Comparing amount - ours: [{}] ; click - [{}]", paymentProviderAmount, amount);
+        if (!amount.equals(paymentProviderAmount)) {
+            response.setError(-2L);
+            response.setErrorNote("Incorrect parameter amount");
             return response;
         }
 
         if (!request.getSignString().equals(md5Hex)) {
             response.setError(-1L);
             response.setErrorNote("SIGN CHECK FAILED!");
-            response.setMerchantPrepareId(Long.valueOf(payment.getOperationId()));
             return response;
         }
 
@@ -192,8 +209,9 @@ public class CallbackService {
             response.setMerchantPrepareId(prepareId);
             payment.setOperationId(String.valueOf(prepareId));
         }
-
-        payment.setExternalId(String.valueOf(clickTransId));
+        if (clickTransId != null) {
+            payment.setExternalId(String.valueOf(clickTransId));
+        }
         paymentService.save(payment);
 
         response.setError(0L);
