@@ -81,7 +81,7 @@ public class CallbackService {
         Long merchantPrepareId = request.getMerchantPrepareId();
         BigDecimal amount = request.getAmount();
         Long action = request.getAction();
-        String signTime = request.getRawSignTime();
+        String signTime = request.getSignTime();
         Long error = request.getError();
 
         ClickResponse response = new ClickResponse();
@@ -156,7 +156,7 @@ public class CallbackService {
         String merchantTransId = request.getMerchantTransId();
         BigDecimal amount = request.getAmount();
         Long action = request.getAction();
-        String signTime = request.getRawSignTime();
+        String signTime = request.getSignTime();
         log.info("Got PREPARE action from CLICK");
 
         ClickResponse response = new ClickResponse();

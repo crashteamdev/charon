@@ -1,28 +1,21 @@
 package dev.crashteam.charon.controller;
 
 import dev.crashteam.charon.component.FreeKassaProperties;
-import dev.crashteam.charon.model.PromoCodeType;
 import dev.crashteam.charon.model.dto.FkCallbackData;
 import dev.crashteam.charon.model.dto.click.ClickRequest;
 import dev.crashteam.charon.model.dto.click.ClickResponse;
-import dev.crashteam.charon.model.web.CallbackPaymentAdditionalInfo;
 import dev.crashteam.charon.service.CallbackService;
-import dev.crashteam.charon.service.PaymentService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.codec.digest.DigestUtils;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
-import org.springframework.web.server.ServerWebExchange;
 
 import java.math.BigDecimal;
-import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
 import java.util.Map;
 
 @Slf4j
@@ -37,13 +30,12 @@ public class PaymentController {
 
     @PostMapping(value = "/callback/freekassa",
             consumes = {MediaType.APPLICATION_FORM_URLENCODED_VALUE, MediaType.MULTIPART_FORM_DATA_VALUE})
-    public ResponseEntity<String> callbackFreekassa(ServerWebExchange exchange) {
-        Map<String, Object> attributes = exchange.getAttributes();
-        String merchantId = (String) attributes.get("MERCHANT_ID");
-        String amount = (String) attributes.get("AMOUNT");
-        String orderId = (String) attributes.get("MERCHANT_ORDER_ID");
-        String paymentId = (String) attributes.get("us_paymentid");
-        String curId = (String) attributes.get("CUR_ID");
+    public ResponseEntity<String> callbackFreekassa(@RequestParam Map<String, String> attributes) {
+        String merchantId = attributes.get("MERCHANT_ID");
+        String amount = attributes.get("AMOUNT");
+        String orderId = attributes.get("MERCHANT_ORDER_ID");
+        String paymentId = attributes.get("us_paymentid");
+        String curId = attributes.get("CUR_ID");
         log.info("Callback freekassa payment. Body={}", attributes);
         if (merchantId == null || amount == null || orderId == null || curId == null || paymentId == null) {
             log.warn("Callback payment. Bad request. Body={}", attributes);
@@ -61,23 +53,20 @@ public class PaymentController {
     @PostMapping(value = "/callback/click",
             consumes = {MediaType.APPLICATION_FORM_URLENCODED_VALUE, MediaType.MULTIPART_FORM_DATA_VALUE},
             produces = MediaType.APPLICATION_JSON_VALUE)
-    public ResponseEntity<ClickResponse> callbackClick(ServerWebExchange exchange) {
-        Map<String, Object> attributes = exchange.getAttributes();
-        Long clickTransId = (Long) attributes.get("click_trans_id");
-        Long serviceId = (Long) attributes.get("service_id");
-        Long clickPaydocId = (Long) attributes.get("click_paydoc_id");
-        String merchantTransId = (String) attributes.get("merchant_trans_id");
-        Long merchantPrepareId = (Long) attributes.get("merchant_prepare_id");
-        BigDecimal amount = (BigDecimal) attributes.get("amount");
-        Long action = (Long) attributes.get("action");
-        Long error = (Long) attributes.get("error");
-        String errorNote = (String) attributes.get("error_note");
-        String signTime = (String) attributes.get("sign_time");
-        String signString = (String) attributes.get("sign_string");
-        log.info("Callback CLICK payment. Body={}", attributes);
+    public ResponseEntity<ClickResponse> callbackClick(@RequestParam Map<String, String> attributes) {
 
-        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
-        LocalDateTime signTimeFormatted = LocalDateTime.parse(signTime, formatter);
+        log.info("Callback CLICK payment. Body={}", attributes);
+        Long clickTransId = Long.valueOf(attributes.get("click_trans_id"));
+        Long serviceId = Long.valueOf(attributes.get("service_id"));
+        Long clickPaydocId = Long.valueOf(attributes.get("click_paydoc_id"));
+        String merchantTransId = attributes.get("merchant_trans_id");
+        Long merchantPrepareId = Long.valueOf(attributes.get("merchant_prepare_id"));
+        BigDecimal amount = BigDecimal.valueOf(Double.parseDouble(attributes.get("amount")));
+        Long action = Long.valueOf(attributes.get("action"));
+        Long error = Long.valueOf(attributes.get("error"));
+        String errorNote = attributes.get("error_note");
+        String signTime = attributes.get("sign_time");
+        String signString = attributes.get("sign_string");
 
         ClickRequest clickRequest = new ClickRequest();
         clickRequest.setClickTransId(clickTransId);
@@ -90,8 +79,7 @@ public class PaymentController {
         clickRequest.setMerchantTransId(merchantTransId);
         clickRequest.setMerchantPrepareId(merchantPrepareId);
         clickRequest.setSignString(signString);
-        clickRequest.setSignTime(signTimeFormatted);
-        clickRequest.setRawSignTime(signTime);
+        clickRequest.setSignTime(signTime);
         return ResponseEntity.ok(callbackService.clickResponse(clickRequest));
     }
 }

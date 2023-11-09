@@ -1,6 +1,5 @@
 package dev.crashteam.charon.model.dto.click;
 
-import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -9,7 +8,6 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
-import java.time.LocalDateTime;
 
 @Data
 @JsonIgnoreProperties(ignoreUnknown = true)
@@ -34,9 +32,7 @@ public class ClickRequest {
     @JsonProperty("error_note")
     private String errorNote;
     @JsonProperty("sign_time")
-    @JsonFormat(pattern = "YYYY-MM-DD HH:mm:ss")
-    private LocalDateTime signTime;
-    private String rawSignTime;
+    private String signTime;
     @JsonProperty("sign_string")
     private String signString;
 }
