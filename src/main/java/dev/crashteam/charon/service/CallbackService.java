@@ -65,12 +65,6 @@ public class CallbackService {
 
     }
 
-    private boolean checkClickRequestOnError(ClickRequest request, Payment payment, String hex) {
-        BigDecimal amount = request.getAmount();
-        return !amount.equals(BigDecimal.valueOf(payment.getProviderAmount()).movePointLeft(2)) ||
-                !request.getSignString().equals(hex);
-    }
-
     @Transactional
     public ClickResponse getCompleteClickAction(ClickRequest request) {
         log.info("Got COMPLETE action from CLICK");
@@ -132,9 +126,10 @@ public class CallbackService {
             return response;
         }
 
-        BigDecimal paymentProviderAmount = BigDecimal.valueOf(payment.getProviderAmount()).movePointLeft(2);
-        log.info("Comparing amount - ours: [{}] ; click - [{}]", paymentProviderAmount, amount);
-        if (!amount.equals(paymentProviderAmount)) {
+        BigDecimal amountClick = amount.movePointRight(2);
+        BigDecimal providerAmount = BigDecimal.valueOf(payment.getProviderAmount());
+        log.info("Comparing amount - ours: [{}] ; click - [{}]", providerAmount, amountClick);
+        if (!amountClick.equals(providerAmount)) {
             response.setError(-2L);
             response.setErrorNote("Incorrect parameter amount");
             if (payment.getOperationId() != null) {
@@ -190,9 +185,11 @@ public class CallbackService {
 
         String md5Hex = DigestUtils.md5Hex("%s%s%s%s%s%s%s".formatted(clickTransId, serviceId, clickProperties.getSecretKey(),
                 merchantTransId, amount.toString(), action, signTime));
-        BigDecimal paymentProviderAmount = BigDecimal.valueOf(payment.getProviderAmount()).movePointLeft(2);
-        log.info("Comparing amount - ours: [{}] ; click - [{}]", paymentProviderAmount, amount);
-        if (!amount.equals(paymentProviderAmount)) {
+
+        BigDecimal amountClick = amount.movePointRight(2);
+        BigDecimal providerAmount = BigDecimal.valueOf(payment.getProviderAmount());
+        log.info("Comparing amount - ours: [{}] ; click - [{}]", providerAmount, amountClick);
+        if (!amountClick.equals(providerAmount)) {
             response.setError(-2L);
             response.setErrorNote("Incorrect parameter amount");
             return response;
