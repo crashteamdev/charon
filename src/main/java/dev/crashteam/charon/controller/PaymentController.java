@@ -60,7 +60,7 @@ public class PaymentController {
         Long serviceId = Long.valueOf(attributes.get("service_id"));
         Long clickPaydocId = Long.valueOf(attributes.get("click_paydoc_id"));
         String merchantTransId = attributes.get("merchant_trans_id");
-        Long merchantPrepareId = Long.valueOf(attributes.get("merchant_prepare_id"));
+        String prepareId = attributes.get("merchant_prepare_id");
         BigDecimal amount = BigDecimal.valueOf(Double.parseDouble(attributes.get("amount")));
         Long action = Long.valueOf(attributes.get("action"));
         Long error = Long.valueOf(attributes.get("error"));
@@ -77,7 +77,7 @@ public class PaymentController {
         clickRequest.setErrorNote(errorNote);
         clickRequest.setServiceId(serviceId);
         clickRequest.setMerchantTransId(merchantTransId);
-        clickRequest.setMerchantPrepareId(merchantPrepareId);
+        clickRequest.setMerchantPrepareId(prepareId != null ? Long.valueOf(prepareId) : null);
         clickRequest.setSignString(signString);
         clickRequest.setSignTime(signTime);
         return ResponseEntity.ok(callbackService.clickResponse(clickRequest));
