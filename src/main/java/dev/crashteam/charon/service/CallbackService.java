@@ -29,57 +29,17 @@ public class CallbackService {
     @Transactional
     public ClickResponse clickResponse(ClickRequest request) {
         Long clickTransId = request.getClickTransId();
-        Long serviceId = request.getServiceId();
         String merchantTransId = request.getMerchantTransId();
-        Long merchantPrepareId = request.getMerchantPrepareId();
-        BigDecimal amount = request.getAmount();
         Long action = request.getAction();
-        String signTime = request.getRawSignTime();
 
+        if (action == 0) {
+            return getPrepareClickAction(request);
+        } else if (action == 1) {
+            return getCompleteClickAction(request);
+        }
         ClickResponse response = new ClickResponse();
         response.setClickTransId(clickTransId);
         response.setMerchantTransId(merchantTransId);
-        if (action == 0) {
-            log.info("Got PREPARE action from CLICK");
-            Payment payment = paymentService.findByPaymentId(merchantTransId);
-            String md5Hex = DigestUtils.md5Hex("%s%s%s%s%s%s%s".formatted(clickTransId, serviceId, clickProperties.getSecretKey(),
-                    merchantTransId, amount.toString(), action, signTime));
-            if (payment.getOperationId() == null) {
-                Long prepareId = paymentService.getOperationIdSeq();
-                response.setMerchantPrepareId(prepareId);
-                payment.setOperationId(String.valueOf(prepareId));
-            }
-            if (checkClickRequestOnError(request, payment, md5Hex)) {
-                return getClickErrorResponse(request, payment, md5Hex);
-            }
-
-            payment.setExternalId(String.valueOf(clickTransId));
-            paymentService.save(payment);
-
-            response.setError(0L);
-            response.setErrorNote("Success");
-            return response;
-        } else if (action == 1) {
-            log.info("Got COMPLETE action from CLICK");
-            String md5Hex = DigestUtils.md5Hex("%s%s%s%s%s%s%s%s".formatted(clickTransId, serviceId, clickProperties.getSecretKey(),
-                    merchantTransId, merchantPrepareId, amount.toString(), action, signTime));
-
-            Payment payment = paymentService.findByOperationId(String.valueOf(merchantPrepareId));
-            if (payment == null) {
-                throw new EntityNotFoundException();
-            }
-            if (checkClickRequestOnError(request, payment, md5Hex)) {
-                return getClickErrorResponse(request, payment, md5Hex);
-            }
-
-            payment.setStatus(RequestPaymentStatus.SUCCESS);
-            paymentService.save(payment);
-            streamService.publishPaymentStatusChangeAwsMessage(payment);
-            response.setError(0L);
-            response.setErrorNote("Success");
-            response.setMerchantConfirmId(null);
-            return response;
-        }
         response.setError(-3L);
         response.setErrorNote("Action not found");
         response.setMerchantPrepareId(null);
@@ -90,6 +50,8 @@ public class CallbackService {
     public void freeKassaCallback(FkCallbackData callbackData) {
 
         Payment payment = paymentService.findByPaymentId(callbackData.getPaymentId());
+        if (payment == null) throw new EntityNotFoundException("Payment with id - %s not found"
+                .formatted(callbackData.getPaymentId()));
         BigDecimal callbackAmount = PaymentProtoUtils.getMinorMoneyAmount(callbackData.getAmount());
         if (!payment.getProviderAmount().equals(callbackAmount.longValue())) {
             payment.setStatus(RequestPaymentStatus.FAILED);
@@ -110,31 +72,133 @@ public class CallbackService {
     }
 
     @Transactional
-    public ClickResponse getClickErrorResponse(ClickRequest request, Payment payment, String hex) {
-        ClickResponse response = new ClickResponse();
+    public ClickResponse getCompleteClickAction(ClickRequest request) {
+        log.info("Got COMPLETE action from CLICK");
 
-        BigDecimal amount = request.getAmount();
-        log.warn("Error while trying to process click request");
         Long clickTransId = request.getClickTransId();
+        Long serviceId = request.getServiceId();
         String merchantTransId = request.getMerchantTransId();
+        Long merchantPrepareId = request.getMerchantPrepareId();
+        BigDecimal amount = request.getAmount();
+        Long action = request.getAction();
+        String signTime = request.getRawSignTime();
+        Long error = request.getError();
+
+        ClickResponse response = new ClickResponse();
         response.setClickTransId(clickTransId);
         response.setMerchantTransId(merchantTransId);
+
+        String md5Hex = DigestUtils.md5Hex("%s%s%s%s%s%s%s%s".formatted(clickTransId, serviceId, clickProperties.getSecretKey(),
+                merchantTransId, merchantPrepareId, amount.toString(), action, signTime));
+
+        Payment payment = paymentService.findByOperationId(String.valueOf(merchantPrepareId));
+
+        if (payment == null) {
+            response.setError(-6L);
+            response.setErrorNote("Transaction does not exist");
+            response.setMerchantPrepareId(merchantPrepareId);
+            return response;
+        }
+
+        if (payment.getStatus().equals(RequestPaymentStatus.SUCCESS)) {
+            response.setError(-4L);
+            response.setErrorNote("Already paid");
+            response.setMerchantPrepareId(merchantPrepareId);
+            return response;
+        }
+
+        if (payment.getStatus().equals(RequestPaymentStatus.CANCELED)) {
+            response.setError(-9L);
+            response.setErrorNote("Transaction cancelled");
+            response.setMerchantPrepareId(merchantPrepareId);
+            return response;
+        }
+
+        if (error == -5017) {
+            response.setError(-9L);
+            response.setErrorNote("Transaction cancelled");
+            response.setMerchantPrepareId(merchantPrepareId);
+            if (!payment.getStatus().equals(RequestPaymentStatus.CANCELED)) {
+                payment.setStatus(RequestPaymentStatus.CANCELED);
+                paymentService.save(payment);
+            }
+            streamService.publishPaymentStatusChangeAwsMessage(payment);
+            return response;
+        }
 
         if (!amount.equals(BigDecimal.valueOf(payment.getProviderAmount()).movePointLeft(2))) {
             response.setError(-2L);
             response.setErrorNote("Incorrect parameter amount");
             response.setMerchantPrepareId(Long.valueOf(payment.getOperationId()));
-            paymentService.save(payment);
             return response;
         }
-        if (!request.getSignString().equals(hex)) {
+
+        if (!request.getSignString().equals(md5Hex)) {
             response.setError(-1L);
             response.setErrorNote("SIGN CHECK FAILED!");
             response.setMerchantPrepareId(Long.valueOf(payment.getOperationId()));
-            paymentService.save(payment);
             return response;
         }
-        return null;
+
+        payment.setStatus(RequestPaymentStatus.SUCCESS);
+        paymentService.save(payment);
+        streamService.publishPaymentStatusChangeAwsMessage(payment);
+        response.setError(0L);
+        response.setErrorNote("Success");
+        response.setMerchantConfirmId(null);
+        return response;
+    }
+
+    @Transactional
+    public ClickResponse getPrepareClickAction(ClickRequest request) {
+        Long clickTransId = request.getClickTransId();
+        Long serviceId = request.getServiceId();
+        String merchantTransId = request.getMerchantTransId();
+        BigDecimal amount = request.getAmount();
+        Long action = request.getAction();
+        String signTime = request.getRawSignTime();
+        log.info("Got PREPARE action from CLICK");
+
+        ClickResponse response = new ClickResponse();
+        response.setClickTransId(clickTransId);
+        response.setMerchantTransId(merchantTransId);
+
+        Payment payment = paymentService.findByPaymentId(merchantTransId);
+        if (payment == null) {
+            response.setError(-5L);
+            response.setErrorNote("User does not exist");
+            return response;
+        }
+
+        String md5Hex = DigestUtils.md5Hex("%s%s%s%s%s%s%s".formatted(clickTransId, serviceId, clickProperties.getSecretKey(),
+                merchantTransId, amount.toString(), action, signTime));
+
+        if (!amount.equals(BigDecimal.valueOf(payment.getProviderAmount()).movePointLeft(2))) {
+            response.setError(-2L);
+            response.setErrorNote("Incorrect parameter amount");
+            response.setMerchantPrepareId(Long.valueOf(payment.getOperationId()));
+            return response;
+        }
+
+        if (!request.getSignString().equals(md5Hex)) {
+            response.setError(-1L);
+            response.setErrorNote("SIGN CHECK FAILED!");
+            response.setMerchantPrepareId(Long.valueOf(payment.getOperationId()));
+            return response;
+        }
+
+        if (payment.getOperationId() == null) {
+            Long prepareId = paymentService.getOperationIdSeq();
+            response.setMerchantPrepareId(prepareId);
+            payment.setOperationId(String.valueOf(prepareId));
+        }
+
+        payment.setExternalId(String.valueOf(clickTransId));
+        paymentService.save(payment);
+
+        response.setError(0L);
+        response.setErrorNote("Success");
+        return response;
     }
 
 }

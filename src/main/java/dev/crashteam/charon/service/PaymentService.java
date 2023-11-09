@@ -303,7 +303,7 @@ public class PaymentService {
 
     @Transactional(readOnly = true)
     public Payment findByPaymentId(String paymentId) {
-        return paymentRepository.findByPaymentId(paymentId).orElseThrow(EntityNotFoundException::new);
+        return paymentRepository.findByPaymentId(paymentId).orElse(null);
     }
 
     @Transactional

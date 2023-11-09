@@ -10,7 +10,6 @@ import dev.crashteam.charon.exception.DuplicateTransactionException;
 import dev.crashteam.charon.grpc.PaymentServiceImpl;
 import dev.crashteam.charon.job.BalancePaymentJob;
 import dev.crashteam.charon.job.PurchaseServiceJob;
-import dev.crashteam.charon.mock.NinjaMock;
 import dev.crashteam.charon.mock.YookassaMock;
 import dev.crashteam.charon.model.Operation;
 import dev.crashteam.charon.model.RequestPaymentStatus;
@@ -52,11 +51,8 @@ import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
-
-import static com.github.tomakehurst.wiremock.client.WireMock.equalTo;
 
 
 @Slf4j
