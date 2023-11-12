@@ -266,7 +266,8 @@ public class PaymentService {
         return protoMapper.getPaymentResponse(response, payment);
     }
 
-    private User getUser(String id) {
+    @Transactional
+    public User getUser(String id) {
         if (userService.userExists(id)) {
             return userService.getUser(id);
         }
@@ -275,7 +276,7 @@ public class PaymentService {
         user.setId(id);
         user.setBalance(0L);
         user.setCurrency("USD");
-        return user;
+        return userService.saveUser(user);
     }
 
     @Transactional(readOnly = true)
