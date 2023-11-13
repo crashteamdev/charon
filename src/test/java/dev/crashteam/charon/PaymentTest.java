@@ -43,6 +43,7 @@ import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
+import org.springframework.util.CollectionUtils;
 
 import java.io.IOException;
 import java.time.Instant;
@@ -373,12 +374,27 @@ public class PaymentTest extends ContainerConfiguration {
         payment.setStatus(RequestPaymentStatus.PENDING);
         payment.setCurrency("RUB");
         payment.setAmount(1000L);
+
+        Payment paymentSuccess = new Payment();
+        paymentSuccess.setPaymentId("22e12f66-000f-5000-8000-18db351245c4");
+        paymentSuccess.setExternalId("22e12f66-000f-5000-8000-18db351245c7");
+        paymentSuccess.setStatus(RequestPaymentStatus.SUCCESS);
+        paymentSuccess.setCurrency("RUB");
+        paymentSuccess.setAmount(1000L);
+
         User user = new User();
         user.setId(UUID.randomUUID().toString());
         user.setBalance(0L);
         user.setCurrency("USD");
 
-        payment.setUser(userRepository.save(user));
+        User saved = userRepository.save(user);
+
+        paymentSuccess.setUser(user);
+        paymentSuccess.setCreated(LocalDate.parse("2022-07-20", DateTimeFormatter.ofPattern("yyyy-MM-dd")).atStartOfDay());
+        paymentSuccess.setUpdated(LocalDateTime.now());
+        paymentRepository.save(paymentSuccess);
+
+        payment.setUser(saved);
         payment.setCreated(LocalDate.parse("2022-07-20", DateTimeFormatter.ofPattern("yyyy-MM-dd")).atStartOfDay());
         payment.setUpdated(LocalDateTime.now());
         paymentRepository.save(payment);
@@ -411,9 +427,13 @@ public class PaymentTest extends ContainerConfiguration {
         StreamRecorder<PaymentsResponse> paymentsResponseObserver = StreamRecorder.create();
         grpcService.getPayments(paymentsQuery, paymentsResponseObserver);
         Assertions.assertNull(paymentsResponseObserver.getError());
+        List<PaymentsResponse> paymentResponses = paymentsResponseObserver.getValues();
+        Assertions.assertFalse(CollectionUtils.isEmpty(paymentResponses));
 
         Page<Payment> payments = paymentService.getPayments(paymentsQuery);
         Assertions.assertNotNull(payments.getContent());
+        Assertions.assertTrue(payments.stream().allMatch(it->it.getStatus().equals(RequestPaymentStatus.SUCCESS)));
+
         Page<Payment> secondPayments = paymentService.getPayments(datePaymentsQuery);
         Assertions.assertEquals(0L, secondPayments.getTotalElements());
     }

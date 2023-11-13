@@ -1,5 +1,6 @@
 package dev.crashteam.charon.repository.specification;
 
+import dev.crashteam.charon.model.RequestPaymentStatus;
 import dev.crashteam.charon.model.domain.Payment;
 import dev.crashteam.payment.PaymentsQuery;
 import lombok.Data;
@@ -49,6 +50,8 @@ public class PaymentSpecification implements Specification<Payment> {
                     builder.lessThanOrEqualTo(root.get("created"), dateTime)
             );
         }
+
+        predicates.add(builder.equal(root.get("status"), RequestPaymentStatus.SUCCESS));
         return builder.and(predicates.toArray(new Predicate[0]));
     }
 }
