@@ -67,7 +67,7 @@ public class PaymentService {
 
     @Transactional(readOnly = true)
     public GetBalanceResponse getBalanceResponse(GetBalanceRequest request) {
-        User user = userService.getUser(request.getUserId());
+        User user = getUser(request.getUserId());
         return protoMapper.getBalanceResponse(user);
     }
 
@@ -83,8 +83,7 @@ public class PaymentService {
             throw new DuplicateTransactionException("Transaction with operation id %s already exists"
                     .formatted(request.getOperationId()));
 
-        User user = userService.getUser(request.getUserId());
-        if (user == null) return protoMapper.getErrorPurchaseServiceResponse(0L);
+        User user = getUser(request.getUserId());
         PaidServiceContext context = request.getPaidService().getContext();
         PaidService paidService = getPaidServiceFromContext(context);
         log.info("Purchasing service - {} by user - {}", paidService.getName(), user.getId());
@@ -207,7 +206,7 @@ public class PaymentService {
         payment.setAmount(amount);
         payment.setProviderAmount(Long.valueOf(response.getProviderAmount()));
         payment.setProviderCurrency(response.getProviderCurrency());
-        payment.setUser(userService.saveUser(user));
+        payment.setUser(user);
         payment.setCreated(response.getCreatedAt());
         payment.setUpdated(LocalDateTime.now());
         payment.setOperationType(operationTypeService.getOperationType(Operation.PURCHASE_SERVICE.getTitle()));
@@ -250,7 +249,6 @@ public class PaymentService {
         payment.setAmount(balanceRequest.getAmount());
         payment.setProviderAmount(Long.valueOf(response.getProviderAmount()));
         payment.setProviderCurrency(response.getProviderCurrency());
-        payment.setUser(userService.saveUser(user));
         payment.setCreated(response.getCreatedAt());
         payment.setUpdated(LocalDateTime.now());
         payment.setUser(user);
