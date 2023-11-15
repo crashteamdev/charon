@@ -1,5 +1,6 @@
 package dev.crashteam.charon.service;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import dev.crashteam.charon.config.PromoCodeConfig;
 import dev.crashteam.charon.exception.DuplicateTransactionException;
@@ -110,6 +111,7 @@ public class PaymentService {
         payment.setUser(saveUser);
 
         Payment savedPayment = paymentRepository.save(payment);
+        log.info("Saving payment with paymentId - {}", paymentId);
 
         streamService.publishPaymentCreatedAwsMessage(savedPayment);
 
@@ -161,16 +163,21 @@ public class PaymentService {
 
     @Transactional
     public PaymentCreateResponse createPayment(PaymentCreateRequest request) {
-        return switch (request.getPaymentCase()) {
-            case PAYMENT_DEPOSIT_USER_BALANCE -> createBalanceDepositPayment(request);
-            case PAYMENT_PURCHASE_SERVICE -> createPurchaseServicePayment(request);
-            case PAYMENT_NOT_SET -> throw new NoSuchPaymentTypeException();
-        };
+        try {
+            return switch (request.getPaymentCase()) {
+                case PAYMENT_DEPOSIT_USER_BALANCE -> createBalanceDepositPayment(request);
+                case PAYMENT_PURCHASE_SERVICE -> createPurchaseServicePayment(request);
+                case PAYMENT_NOT_SET -> throw new NoSuchPaymentTypeException();
+            };
+        } catch (Exception e) {
+            log.info("Exception while creating payment ", e);
+            return PaymentCreateResponse.newBuilder()
+                    .setStatus(PaymentStatus.PAYMENT_STATUS_FAILED).build();
+        }
     }
 
     @Transactional
-    @SneakyThrows
-    public PaymentCreateResponse createPurchaseServicePayment(PaymentCreateRequest request) {
+    public PaymentCreateResponse createPurchaseServicePayment(PaymentCreateRequest request) throws JsonProcessingException {
         PaymentCreateRequest.PaymentPurchaseService purchaseService = request.getPaymentPurchaseService();
         log.info("Processing service purchase request for user - {}", purchaseService.getUserId());
         PaymentResolver paymentResolver = paymentResolvers.stream().filter(it -> it.getPaymentSystem()
@@ -218,6 +225,7 @@ public class PaymentService {
         payment.setMetadata(objectMapper.writeValueAsString(request.getMetadataMap()));
         payment.setPaidService(paidService);
         paymentRepository.save(payment);
+        log.info("Saving payment with paymentId - {}", response.getPaymentId());
 
         streamService.publishPaymentCreatedAwsMessage(payment);
 
@@ -227,8 +235,7 @@ public class PaymentService {
     }
 
     @Transactional
-    @SneakyThrows
-    public PaymentCreateResponse createBalanceDepositPayment(PaymentCreateRequest request) {
+    public PaymentCreateResponse createBalanceDepositPayment(PaymentCreateRequest request) throws JsonProcessingException {
         PaymentCreateRequest.PaymentDepositUserBalance balanceRequest = request.getPaymentDepositUserBalance();
         PaymentResolver paymentResolver = paymentResolvers.stream().filter(it -> it.getPaymentSystem()
                         .equals(balanceRequest.getPaymentSystem()))
@@ -259,6 +266,7 @@ public class PaymentService {
         payment.setPaymentSystem(paymentSystemTitle);
         payment.setMetadata(objectMapper.writeValueAsString(request.getMetadataMap()));
         paymentRepository.save(payment);
+        log.info("Saving payment with paymentId - {}", response.getPaymentId());
 
         streamService.publishPaymentCreatedAwsMessage(payment);
 

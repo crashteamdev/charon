@@ -65,6 +65,7 @@ public class StreamService {
 
     private PutRecordsRequestEntry getAwsMessagePaymentCreatedEntry(Payment payment) {
         try {
+            log.info("Creating AWS message for created paymentId - {}", payment.getPaymentId());
             PaymentEvent createdPaymentEvent = protoMapper.getCreatedPaymentEvent(payment);
             PutRecordsRequestEntry requestEntry = new PutRecordsRequestEntry();
             requestEntry.setPartitionKey(payment.getPaymentId());
@@ -79,6 +80,7 @@ public class StreamService {
 
     private PutRecordsRequestEntry getAwsMessagePaymentStatusChangeEntry(Payment payment) {
         try {
+            log.info("Creating AWS message for changed status of paymentId - {}", payment.getPaymentId());
             PaymentEvent createdPaymentEvent = protoMapper.getPaymentStatusChangeEvent(payment);
             PutRecordsRequestEntry requestEntry = new PutRecordsRequestEntry();
             requestEntry.setPartitionKey(payment.getPaymentId());
