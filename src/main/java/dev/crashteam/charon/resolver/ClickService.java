@@ -8,12 +8,14 @@ import dev.crashteam.charon.util.PaymentProtoUtils;
 import dev.crashteam.payment.PaymentCreateRequest;
 import dev.crashteam.payment.PaymentSystem;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class ClickService implements PaymentResolver {
@@ -28,6 +30,7 @@ public class ClickService implements PaymentResolver {
 
     @Override
     public PaymentData createPayment(PaymentCreateRequest request, String amount) {
+        log.info("Processing click payment");
         StringBuilder sb = new StringBuilder();
 
         String paymentId = UUID.randomUUID().toString();

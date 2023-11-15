@@ -230,11 +230,12 @@ public class PaymentService {
     @SneakyThrows
     public PaymentCreateResponse createBalanceDepositPayment(PaymentCreateRequest request) {
         PaymentCreateRequest.PaymentDepositUserBalance balanceRequest = request.getPaymentDepositUserBalance();
-        log.info("Processing balance deposit request for user - {}", balanceRequest.getUserId());
         PaymentResolver paymentResolver = paymentResolvers.stream().filter(it -> it.getPaymentSystem()
                         .equals(balanceRequest.getPaymentSystem()))
                 .findFirst()
                 .orElseThrow(IllegalArgumentException::new);
+        String paymentSystemTitle = protoMapper.getPaymentSystemType(balanceRequest.getPaymentSystem()).getTitle();
+        log.info("Processing balance deposit request for user - {} with payment system - {}", balanceRequest.getUserId(), paymentSystemTitle);
         BigDecimal actualAmount = PaymentProtoUtils.getMajorMoneyAmount(balanceRequest.getAmount());
         PaymentData response = paymentResolver.createPayment(request, String.valueOf(actualAmount));
 
@@ -255,7 +256,7 @@ public class PaymentService {
         payment.setEmail(response.getEmail());
         payment.setPhone(response.getPhone());
         payment.setOperationType(operationTypeService.getOperationType(Operation.DEPOSIT_BALANCE.getTitle()));
-        payment.setPaymentSystem(protoMapper.getPaymentSystemType(balanceRequest.getPaymentSystem()).getTitle());
+        payment.setPaymentSystem(paymentSystemTitle);
         payment.setMetadata(objectMapper.writeValueAsString(request.getMetadataMap()));
         paymentRepository.save(payment);
 
@@ -303,6 +304,11 @@ public class PaymentService {
     @Transactional(readOnly = true)
     public Payment findByPaymentId(String paymentId) {
         return paymentRepository.findByPaymentId(paymentId).orElse(null);
+    }
+
+    @Transactional(readOnly = true)
+    public Payment findByExternalId(String externalId) {
+        return paymentRepository.findByPaymentId(externalId).orElse(null);
     }
 
     @Transactional

@@ -187,6 +187,7 @@ public class ProtoMapper {
             case PAYMENT_SYSTEM_FREEKASSA -> PaymentSystemType.PAYMENT_SYSTEM_FREEKASSA;
             case PAYMENT_SYSTEM_UZUM_BANK -> PaymentSystemType.PAYMENT_SYSTEM_UZUM_BANK;
             case PAYMENT_SYSTEM_CLICK -> PaymentSystemType.PAYMENT_SYSTEM_CLICK;
+            case PAYMENT_SYSTEM_LAVA -> PaymentSystemType.PAYMENT_SYSTEM_LAVA;
             case UNRECOGNIZED -> PaymentSystemType.UNRECOGNIZED;
         };
     }

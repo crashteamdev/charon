@@ -8,6 +8,7 @@ import dev.crashteam.charon.util.PaymentProtoUtils;
 import dev.crashteam.payment.PaymentCreateRequest;
 import dev.crashteam.payment.PaymentSystem;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.codec.digest.DigestUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
@@ -16,6 +17,7 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class FreeKassaService implements PaymentResolver {
@@ -33,6 +35,7 @@ public class FreeKassaService implements PaymentResolver {
 
     @Override
     public PaymentData createPayment(PaymentCreateRequest request, String amount) {
+        log.info("Processing freekassa payment");
         StringBuilder sb = new StringBuilder();
         String paymentId = UUID.randomUUID().toString();
         String convertedAmount = currencyService.getConvertedAmount("USD", "RUB", amount);

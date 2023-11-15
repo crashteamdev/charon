@@ -27,6 +27,8 @@ public interface PaymentRepository extends JpaRepository<Payment, String>, JpaSp
     @Query("select p from Payment p where p.paymentId = :paymentId")
     Optional<Payment> findByPaymentId(String paymentId);
 
+    Optional<Payment> findByExternalId(String externalId);
+
     @Query("SELECT p FROM Payment p WHERE p.created >= ?1 AND p.created <= ?2")
     List<Payment> findByCreatedAtBetween(Date from, Date to);
 
