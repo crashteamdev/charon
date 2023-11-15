@@ -9,8 +9,8 @@ import dev.crashteam.charon.model.domain.Payment;
 import dev.crashteam.charon.model.dto.lava.LavaRequest;
 import dev.crashteam.charon.model.dto.lava.LavaResponse;
 import dev.crashteam.charon.model.dto.resolver.PaymentData;
+import dev.crashteam.charon.repository.PaymentRepository;
 import dev.crashteam.charon.service.CurrencyService;
-import dev.crashteam.charon.service.PaymentService;
 import dev.crashteam.charon.service.feign.LavaClient;
 import dev.crashteam.charon.util.PaymentProtoUtils;
 import dev.crashteam.payment.PaymentCreateRequest;
@@ -36,7 +36,7 @@ public class LavaService implements PaymentResolver {
     private final LavaClient lavaClient;
     private final CurrencyService currencyService;
     private final LavaProperties lavaProperties;
-    private final PaymentService paymentService;
+    private final PaymentRepository paymentRepository;
     private final LavaPaymentMapper paymentMapper;
     private final ObjectMapper objectMapper;
 
@@ -76,7 +76,7 @@ public class LavaService implements PaymentResolver {
 
     @Override
     public RequestPaymentStatus getPaymentStatus(String paymentId) {
-        Payment payment = paymentService.findByExternalId(paymentId);
+        Payment payment = paymentRepository.findByExternalId(paymentId).orElse(null);
         if (payment == null) {
             throw new EntityNotFoundException();
         }
