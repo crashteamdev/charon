@@ -2,6 +2,7 @@ package dev.crashteam.charon.resolver;
 
 import dev.crashteam.charon.component.ClickProperties;
 import dev.crashteam.charon.model.RequestPaymentStatus;
+import dev.crashteam.charon.model.dto.currency.ExchangeDto;
 import dev.crashteam.charon.model.dto.resolver.PaymentData;
 import dev.crashteam.charon.service.CurrencyService;
 import dev.crashteam.charon.util.PaymentProtoUtils;
@@ -12,6 +13,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
@@ -34,7 +36,11 @@ public class ClickService implements PaymentResolver {
         StringBuilder sb = new StringBuilder();
 
         String paymentId = UUID.randomUUID().toString();
-        String convertedAmount = currencyService.getConvertedAmount("USD", "UZS", amount);
+
+        BigDecimal exchangeRate = currencyService.getExchangeRate("UZS");
+        BigDecimal convertedAmount = BigDecimal.valueOf(Double.parseDouble(amount))
+                .multiply(exchangeRate.setScale(2, RoundingMode.HALF_UP));
+
         String email = PaymentProtoUtils.getEmailFromRequest(request);
         String phone = PaymentProtoUtils.getPhoneFromRequest(request);
 
@@ -46,7 +52,7 @@ public class ClickService implements PaymentResolver {
                 .append("&merchant_user_id=").append(clickProperties.getMerchantUserId())
                 .toString();
 
-        BigDecimal moneyAmount = PaymentProtoUtils.getMinorMoneyAmount(convertedAmount);
+        BigDecimal moneyAmount = PaymentProtoUtils.getMinorMoneyAmount(String.valueOf(convertedAmount));
 
         PaymentData paymentData = new PaymentData();
         paymentData.setPaymentId(paymentId);

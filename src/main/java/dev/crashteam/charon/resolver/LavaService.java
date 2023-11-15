@@ -24,6 +24,8 @@ import org.springframework.stereotype.Service;
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
 import javax.persistence.EntityNotFoundException;
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
 import java.util.UUID;
@@ -49,8 +51,10 @@ public class LavaService implements PaymentResolver {
     public PaymentData createPayment(PaymentCreateRequest request, String amount) {
         log.info("Processing lava payment");
         String paymentId = UUID.randomUUID().toString();
-        String convertedAmount = currencyService.getConvertedAmount("USD", "RUB", amount);
-        LavaRequest lavaRequest = paymentMapper.getRequest(request, paymentId, convertedAmount);
+        BigDecimal exchangeRate = currencyService.getExchangeRate("RUB");
+        BigDecimal convertedAmount = BigDecimal.valueOf(Double.parseDouble(amount))
+                .multiply(exchangeRate.setScale(2, RoundingMode.HALF_UP));
+        LavaRequest lavaRequest = paymentMapper.getRequest(request, paymentId, String.valueOf(convertedAmount));
 
         String signature = generateSignature(lavaRequest);
         LavaResponse lavaResponse = lavaClient.create(signature, lavaRequest);
@@ -63,7 +67,7 @@ public class LavaService implements PaymentResolver {
             paymentData.setEmail(PaymentProtoUtils.getEmailFromRequest(request));
             paymentData.setPhone(PaymentProtoUtils.getPhoneFromRequest(request));
             paymentData.setStatus(RequestPaymentStatus.PENDING);
-            paymentData.setProviderAmount(String.valueOf(PaymentProtoUtils.getMinorMoneyAmount(convertedAmount)));
+            paymentData.setProviderAmount(String.valueOf(PaymentProtoUtils.getMinorMoneyAmount(String.valueOf(convertedAmount))));
             paymentData.setProviderCurrency("RUB");
             paymentData.setConfirmationUrl(lavaData.getUrl());
             paymentData.setProviderId(lavaData.getId());

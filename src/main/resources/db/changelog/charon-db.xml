@@ -317,4 +317,16 @@
     <changeSet id="add_operation_id_unique_constraint" author="sagefreke">
         <addUniqueConstraint tableName="payment" columnNames="operation_id"/>
     </changeSet>
+
+    <changeSet id="create_currency_rate_table" author="sagefreke">
+        <createTable tableName="currency_rate">
+            <column name="id" type="BIGINT">
+                <constraints primaryKey="true" primaryKeyName="currency_rate_pkey"/>
+            </column>
+            <column name="currency" type="VARCHAR(16)"/>
+            <column name="rate" type="NUMERIC"/>
+            <column name="init_currency" type="VARCHAR(16)"/>
+        </createTable>
+        <createSequence sequenceName="currency_rate_id_seq" startValue="1" incrementBy="1"/>
+    </changeSet>
 </databaseChangeLog>

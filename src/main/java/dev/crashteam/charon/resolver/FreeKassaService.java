@@ -14,6 +14,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
@@ -38,7 +39,9 @@ public class FreeKassaService implements PaymentResolver {
         log.info("Processing freekassa payment");
         StringBuilder sb = new StringBuilder();
         String paymentId = UUID.randomUUID().toString();
-        String convertedAmount = currencyService.getConvertedAmount("USD", "RUB", amount);
+        BigDecimal exchangeRate = currencyService.getExchangeRate("RUB");
+        BigDecimal convertedAmount = BigDecimal.valueOf(Double.parseDouble(amount))
+                .multiply(exchangeRate.setScale(2, RoundingMode.HALF_UP));
         String email = PaymentProtoUtils.getEmailFromRequest(request);
         String phone = PaymentProtoUtils.getPhoneFromRequest(request);
         String sign = DigestUtils.md5Hex("%s:%s:%s:%s:%s".formatted(freeKassaProperties.getShopId(), convertedAmount,
@@ -55,7 +58,7 @@ public class FreeKassaService implements PaymentResolver {
             sb.append("&em=").append(email);
         }
 
-        BigDecimal moneyAmount = PaymentProtoUtils.getMinorMoneyAmount(convertedAmount);
+        BigDecimal moneyAmount = PaymentProtoUtils.getMinorMoneyAmount(String.valueOf(convertedAmount));
         PaymentData paymentData = new PaymentData();
         paymentData.setPaymentId(paymentId);
         paymentData.setCreatedAt(LocalDateTime.now());

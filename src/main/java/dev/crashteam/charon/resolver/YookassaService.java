@@ -15,6 +15,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.util.UUID;
 
 @Service
@@ -26,9 +27,11 @@ public class YookassaService implements PaymentResolver {
     private final YookassaPaymentMapper yookassaPaymentMapper;
 
     public PaymentData createPayment(PaymentCreateRequest request, String amount) {
-        String convertedAmount = currencyService.getConvertedAmount("USD", "RUB", amount);
+        BigDecimal exchangeRate = currencyService.getExchangeRate("RUB");
+        BigDecimal convertedAmount = BigDecimal.valueOf(Double.parseDouble(amount))
+                .multiply(exchangeRate.setScale(2, RoundingMode.HALF_UP));
         YkPaymentCreateRequestDTO paymentRequestDto = yookassaPaymentMapper
-                .getCreatePaymentRequestDto(request, convertedAmount);
+                .getCreatePaymentRequestDto(request, String.valueOf(convertedAmount));
         YkPaymentResponseDTO responseDTO = kassaClient.createPayment(paymentRequestDto);
 
         String phone = PaymentProtoUtils.getPhoneFromRequest(request);

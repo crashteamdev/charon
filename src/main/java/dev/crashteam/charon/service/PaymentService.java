@@ -13,7 +13,6 @@ import dev.crashteam.charon.model.domain.PaidService;
 import dev.crashteam.charon.model.domain.Payment;
 import dev.crashteam.charon.model.domain.PromoCode;
 import dev.crashteam.charon.model.domain.User;
-import dev.crashteam.charon.model.dto.ninja.ExchangeRateDto;
 import dev.crashteam.charon.model.dto.resolver.PaymentData;
 import dev.crashteam.charon.model.dto.yookassa.YkPaymentRefundResponseDTO;
 import dev.crashteam.charon.repository.PaymentRepository;
@@ -24,7 +23,6 @@ import dev.crashteam.charon.util.PaymentProtoUtils;
 import dev.crashteam.charon.util.PromoCodeGenerator;
 import dev.crashteam.payment.*;
 import lombok.RequiredArgsConstructor;
-import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -59,10 +57,11 @@ public class PaymentService {
     private final List<PaymentResolver> paymentResolvers;
 
     public GetExchangeRateResponse getExchangeRate(GetExchangeRateRequest request) {
-        ExchangeRateDto exchangeRate = currencyService.getExchangeRate("USD_" + request.getCurrency());
+        String currency = request.getCurrency();
+        BigDecimal exchangeRate = currencyService.getExchangeRate(currency);
         return GetExchangeRateResponse.newBuilder()
-                .setPair(exchangeRate.getCurrencyPair())
-                .setExchangeRate(exchangeRate.getExchangeRate())
+                .setPair("USD_" + currency)
+                .setExchangeRate(String.valueOf(exchangeRate))
                 .build();
     }
 
@@ -170,7 +169,7 @@ public class PaymentService {
                 case PAYMENT_NOT_SET -> throw new NoSuchPaymentTypeException();
             };
         } catch (Exception e) {
-            log.info("Exception while creating payment ", e);
+            log.error("Exception while creating payment ", e);
             return PaymentCreateResponse.newBuilder()
                     .setStatus(PaymentStatus.PAYMENT_STATUS_FAILED).build();
         }
