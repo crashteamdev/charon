@@ -145,6 +145,12 @@ public class PaymentService {
         return paymentRepository.findAllByPendingStatusAndOperationType(operationType);
     }
 
+    @Transactional(readOnly = true)
+    public List<Payment> getPaymentByPendingStatusAndOperationTypeBetweenTimeRange(String operationType) {
+        return paymentRepository.findAllByPendingStatusAndOperationTypeAndCreatedBetween(operationType,
+                LocalDateTime.now().minusDays(1), LocalDateTime.now());
+    }
+
     @Deprecated
     @Transactional
     public Payment refundPayment(YkPaymentRefundResponseDTO refundResponse, String userId, String id) {
@@ -223,6 +229,7 @@ public class PaymentService {
         payment.setPaymentSystem(protoMapper.getPaymentSystemType(purchaseService.getPaymentSystem()).getTitle());
         payment.setMetadata(objectMapper.writeValueAsString(request.getMetadataMap()));
         payment.setPaidService(paidService);
+        payment.setExchangeRate(response.getExchangeRate());
         paymentRepository.save(payment);
         log.info("Saving payment with paymentId - {}", response.getPaymentId());
 
@@ -264,6 +271,7 @@ public class PaymentService {
         payment.setOperationType(operationTypeService.getOperationType(Operation.DEPOSIT_BALANCE.getTitle()));
         payment.setPaymentSystem(paymentSystemTitle);
         payment.setMetadata(objectMapper.writeValueAsString(request.getMetadataMap()));
+        payment.setExchangeRate(response.getExchangeRate());
         paymentRepository.save(payment);
         log.info("Saving payment with paymentId - {}", response.getPaymentId());
 

@@ -8,6 +8,7 @@ import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedDate;
 
 import javax.persistence.*;
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 @Data
@@ -60,6 +61,8 @@ public class Payment {
     private String email;
     @Column(name = "phone")
     private String phone;
+    @Column(name = "exchange_rate")
+    private BigDecimal exchangeRate;
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "operation_type_id", referencedColumnName = "id")
     private OperationType operationType;

@@ -49,6 +49,7 @@ public class YookassaService implements PaymentResolver {
         paymentData.setProviderAmount(String.valueOf(moneyAmount));
         paymentData.setDescription(responseDTO.getDescription());
         paymentData.setConfirmationUrl(responseDTO.getConfirmation().getConfirmationUrl());
+        paymentData.setExchangeRate(exchangeRate);
         return paymentData;
     }
 

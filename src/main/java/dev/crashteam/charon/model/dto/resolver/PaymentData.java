@@ -3,6 +3,7 @@ package dev.crashteam.charon.model.dto.resolver;
 import dev.crashteam.charon.model.RequestPaymentStatus;
 import lombok.Data;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 @Data
@@ -18,4 +19,5 @@ public class PaymentData {
     private String confirmationUrl;
     private String email;
     private String phone;
+    private BigDecimal exchangeRate;
 }

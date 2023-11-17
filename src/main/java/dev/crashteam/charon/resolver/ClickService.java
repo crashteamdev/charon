@@ -65,6 +65,7 @@ public class ClickService implements PaymentResolver {
         paymentData.setPhone(phone);
         paymentData.setProviderId("");
         paymentData.setConfirmationUrl(url);
+        paymentData.setExchangeRate(exchangeRate);
         return paymentData;
     }
 

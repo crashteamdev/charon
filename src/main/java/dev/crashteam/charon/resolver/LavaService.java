@@ -8,6 +8,7 @@ import dev.crashteam.charon.model.RequestPaymentStatus;
 import dev.crashteam.charon.model.domain.Payment;
 import dev.crashteam.charon.model.dto.lava.LavaRequest;
 import dev.crashteam.charon.model.dto.lava.LavaResponse;
+import dev.crashteam.charon.model.dto.lava.LavaStatusRequest;
 import dev.crashteam.charon.model.dto.resolver.PaymentData;
 import dev.crashteam.charon.repository.PaymentRepository;
 import dev.crashteam.charon.service.CurrencyService;
@@ -72,6 +73,7 @@ public class LavaService implements PaymentResolver {
             paymentData.setConfirmationUrl(lavaData.getUrl());
             paymentData.setProviderId(lavaData.getId());
             paymentData.setDescription(lavaData.getComment());
+            paymentData.setExchangeRate(exchangeRate);
             return paymentData;
         }
         String userId = PaymentProtoUtils.getUserIdFromRequest(request);
@@ -84,12 +86,30 @@ public class LavaService implements PaymentResolver {
         if (payment == null) {
             throw new EntityNotFoundException();
         }
-        //TODO: узнать виды статусов у LAVA
-        return RequestPaymentStatus.SUCCESS;
+        LavaStatusRequest request = new LavaStatusRequest();
+        request.setOrderId(payment.getPaymentId());
+        request.setShopId(lavaProperties.getShopId());
+        request.setInvoiceId(paymentId);
+        String signature = generateSignature(request);
+
+        LavaResponse response = lavaClient.status(signature, request);
+
+        if (response.getStatus().equals("200")) {
+            return RequestPaymentStatus.SUCCESS;
+        }
+        log.info("Payment with id - {} is still not in success status", payment.getPaymentId());
+        return RequestPaymentStatus.PENDING;
     }
 
-    @SneakyThrows
+    private String generateSignature(LavaStatusRequest lavaRequest) {
+        return generateSignature(lavaRequest);
+    }
+
     private String generateSignature(LavaRequest lavaRequest) {
+        return generateSignature(lavaRequest);
+    }
+
+    private String generateSignature(Object lavaRequest) throws Exception{
         String json = objectMapper.writeValueAsString(lavaRequest);
         Mac sha256_HMAC = Mac.getInstance("HmacSHA256");
         SecretKeySpec secret_key =

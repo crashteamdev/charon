@@ -329,4 +329,10 @@
         </createTable>
         <createSequence sequenceName="currency_rate_id_seq" startValue="1" incrementBy="1"/>
     </changeSet>
+
+    <changeSet id="add_exchange_rate_column" author="sagefreke">
+        <addColumn tableName="payment">
+            <column name="exchange_rate" type="NUMERIC"/>
+        </addColumn>
+    </changeSet>
 </databaseChangeLog>

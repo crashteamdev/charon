@@ -39,8 +39,7 @@ public interface PaymentRepository extends JpaRepository<Payment, String>, JpaSp
 
     @Query(value = "SELECT pr.* FROM payment pr " +
             "INNER JOIN operation_type ot ON pr.operation_type_id = ot.id " +
-            "WHERE (pr.status = ?1 AND ot.type = ?2) " +
-            "AND (p.created >= ?3 AND p.created <= ?4)", nativeQuery = true)
-    List<Payment> findAllByStatusAndOperationTypeAndCreatedBetween(RequestPaymentStatus status, String operationType,
-                                                                   LocalDateTime from, LocalDateTime to);
+            "WHERE (pr.status = 'PENDING' AND ot.type = ?1) " +
+            "AND (pr.created >= ?2 AND pr.created <= ?3)", nativeQuery = true)
+    List<Payment> findAllByPendingStatusAndOperationTypeAndCreatedBetween(String operationType, LocalDateTime from, LocalDateTime to);
 }

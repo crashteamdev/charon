@@ -70,6 +70,7 @@ public class FreeKassaService implements PaymentResolver {
         paymentData.setEmail(email);
         paymentData.setProviderAmount(String.valueOf(moneyAmount));
         paymentData.setConfirmationUrl(sb.toString());
+        paymentData.setExchangeRate(exchangeRate);
         return paymentData;
     }
 

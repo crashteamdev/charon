@@ -39,7 +39,7 @@ public class PurchaseServiceJob implements Job {
     @Transactional
     public void execute(JobExecutionContext jobExecutionContext) throws JobExecutionException {
         var payments = paymentService
-                .getPaymentByPendingStatusAndOperationType(Operation.PURCHASE_SERVICE.getTitle()).stream();
+                .getPaymentByPendingStatusAndOperationTypeBetweenTimeRange(Operation.PURCHASE_SERVICE.getTitle()).stream();
         payments.forEach(this::checkPaymentStatus);
     }
 

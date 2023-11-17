@@ -40,7 +40,7 @@ public class BalancePaymentJob implements Job {
     @Transactional
     public void execute(JobExecutionContext jobExecutionContext) throws JobExecutionException {
         var payments = paymentService
-                .getPaymentByPendingStatusAndOperationType(Operation.DEPOSIT_BALANCE.getTitle()).stream();
+                .getPaymentByPendingStatusAndOperationTypeBetweenTimeRange(Operation.DEPOSIT_BALANCE.getTitle()).stream();
         payments.forEach(this::checkPaymentStatus);
     }
 
