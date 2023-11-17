@@ -177,7 +177,9 @@ public class PaymentService {
         } catch (Exception e) {
             log.error("Exception while creating payment ", e);
             return PaymentCreateResponse.newBuilder()
-                    .setStatus(PaymentStatus.PAYMENT_STATUS_FAILED).build();
+                    .setStatus(PaymentStatus.PAYMENT_STATUS_FAILED)
+                    .setDescription(e.getMessage())
+                    .build();
         }
     }
 
@@ -282,6 +284,9 @@ public class PaymentService {
 
     @Transactional
     public User getUser(String id) {
+        if (!StringUtils.hasText(id)) {
+            throw new IllegalArgumentException("User id can't be null or empty");
+        }
         if (userService.userExists(id)) {
             return userService.getUser(id);
         }
