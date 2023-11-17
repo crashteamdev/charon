@@ -59,9 +59,9 @@ public class LavaService implements PaymentResolver {
 
         String signature;
         try {
-            signature = generateSignature(request);
+            signature = generateSignature(lavaRequest);
         } catch (Exception e) {
-            log.error("Exception while creating signature for lava request");
+            log.error("Exception while creating signature for lava request", e);
             throw new IntegrationException();
         }
         LavaResponse lavaResponse = lavaClient.create(signature, lavaRequest);
@@ -113,7 +113,17 @@ public class LavaService implements PaymentResolver {
         return RequestPaymentStatus.PENDING;
     }
 
-    private String generateSignature(Object lavaRequest) throws Exception{
+    private String generateSignature(LavaRequest lavaRequest) throws Exception{
+        String json = objectMapper.writeValueAsString(lavaRequest);
+        return generateSignature(json);
+    }
+
+    private String generateSignature(LavaStatusRequest lavaRequest) throws Exception{
+        String json = objectMapper.writeValueAsString(lavaRequest);
+        return generateSignature(json);
+    }
+
+    private String generateSignature(String lavaRequest) throws Exception{
         String json = objectMapper.writeValueAsString(lavaRequest);
         Mac sha256_HMAC = Mac.getInstance("HmacSHA256");
         SecretKeySpec secret_key =

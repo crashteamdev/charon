@@ -34,6 +34,25 @@ public class IntegrationUtils {
         );
     }
 
+    public static void createPostMockStub(WireMockServer mockService, String url, String signature, String jsonPath) throws IOException {
+        mockService.stubFor(WireMock.post(WireMock.urlEqualTo(url))
+                .withHeader("Content-Type", containing(MediaType.APPLICATION_JSON_VALUE))
+                .withHeader("Signature", containing(signature))
+                .willReturn(
+                        WireMock.aResponse()
+                                .withStatus(HttpStatus.OK.value())
+                                .withHeader("Content-Type", MediaType.APPLICATION_JSON_VALUE)
+                                .withBody(
+                                        copyToString(
+                                                IntegrationUtils.class
+                                                        .getClassLoader()
+                                                        .getResourceAsStream(jsonPath),
+                                                defaultCharset())
+                                )
+                )
+        );
+    }
+
     public static void createGetMockStub(WireMockServer mockService,
                                          Map<String, StringValuePattern> queryParams,
                                          String urlPath,

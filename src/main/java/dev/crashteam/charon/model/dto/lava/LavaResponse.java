@@ -23,7 +23,7 @@ public class LavaResponse {
     public static class LavaData {
         private String id;
         private BigDecimal amount;
-        @JsonFormat(pattern = "YYYY-MM-DD HH:mm:ss")
+        @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
         private LocalDateTime expired;
         private String status;
         @JsonProperty("shop_id")

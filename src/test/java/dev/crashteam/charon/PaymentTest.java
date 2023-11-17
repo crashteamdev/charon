@@ -10,6 +10,7 @@ import dev.crashteam.charon.exception.DuplicateTransactionException;
 import dev.crashteam.charon.grpc.PaymentServiceImpl;
 import dev.crashteam.charon.job.BalancePaymentJob;
 import dev.crashteam.charon.job.PurchaseServiceJob;
+import dev.crashteam.charon.mock.LavaMock;
 import dev.crashteam.charon.mock.YookassaMock;
 import dev.crashteam.charon.model.Operation;
 import dev.crashteam.charon.model.RequestPaymentStatus;
@@ -122,6 +123,9 @@ public class PaymentTest extends ContainerConfiguration {
         YookassaMock.createPayment(mockServer);
         YookassaMock.createRefundPayment(mockServer);
         YookassaMock.paymentStatus(mockServer);
+
+        LavaMock.paymentStatus(mockServer);
+        LavaMock.createPayment(mockServer);
     }
 
     @Test
@@ -232,6 +236,36 @@ public class PaymentTest extends ContainerConfiguration {
         StreamRecorder<PurchaseServiceResponse> responseStreamRecorder = StreamRecorder.create();
         grpcService.purchaseService(purchaseServiceRequest, responseStreamRecorder);
         Assertions.assertThrows(DuplicateTransactionException.class, () -> grpcService.purchaseService(secondServiceRequest, responseStreamRecorder));
+
+    }
+
+    @Test
+    public void createPurchaseServiceLavaPaymentTest() {
+        String userId = UUID.randomUUID().toString();
+        var purchaseService = PaymentCreateRequest.PaymentPurchaseService.newBuilder()
+                .setUserId(userId)
+                .setPaidService(PaidService.newBuilder().setContext(PaidServiceContext.newBuilder()
+                        .setMultiply(2).setKeAnalyticsContext(KeAnalyticsContext.newBuilder()
+                                .setPlan(KeAnalyticsContext.KeAnalyticsPlan.newBuilder()
+                                        .setDefaultPlan(KeAnalyticsContext.KeAnalyticsPlan.KeAnalyticsDefaultPlan
+                                                .newBuilder().buildPartial()).build()).build())).build())
+                .setPaymentSystem(PaymentSystem.PAYMENT_SYSTEM_LAVA)
+                .setReturnUrl("return-test.test")
+                .build();
+        PaymentCreateRequest paymentCreateRequest = PaymentCreateRequest.newBuilder()
+                .setPaymentPurchaseService(purchaseService)
+                .build();
+        StreamRecorder<PaymentCreateResponse> paymentCreateObserver = StreamRecorder.create();
+        grpcService.createPayment(paymentCreateRequest, paymentCreateObserver);
+        Assertions.assertNull(paymentCreateObserver.getError());
+
+        String paymentId = paymentCreateObserver.getValues().get(0).getPaymentId();
+        Optional<Payment> payment = paymentRepository.findByPaymentId(paymentId);
+        Assertions.assertTrue(payment.isPresent());
+
+        purchaseServiceJob.checkPaymentStatus(payment.get());
+        Optional<Payment> paymentAfterJob = paymentRepository.findByPaymentId(paymentId);
+        Assertions.assertEquals(paymentAfterJob.get().getStatus(), RequestPaymentStatus.SUCCESS);
 
     }
 

@@ -42,6 +42,10 @@ app:
     purchase-service:
       cron: 0 0/1 * * * ?
   integration:
+    lava:
+      url: http://localhost:8085/lava
+      shopId: 45c330f1-a46d-484f-a8e1-524c08df8879
+      secretKey: test-key
     ninja:
       url: http://localhost:8085/v1
       api-key: some-api-key

@@ -1,0 +1,22 @@
+{
+  "data": {
+    "status": "created",
+    "error_message": null,
+    "id": "8c2b18c5-4a25-4f42-a953-f753501ad445",
+    "shop_id": "05d6662e-138a-4cdc-bd4b-bd20a41d49e0",
+    "amount": 25,
+    "expire": "2006-06-11 13:40:01",
+    "order_id": "2006-06-11 13:40:01",
+    "fail_url": "https://birukova.net/dolor-a-tempora-aliquid-enim.html",
+    "success_url": "https://birukova.net/dolor-a-tempora-aliquid-enim.html",
+    "hook_url": "https://isakov.ru/a-qui-libero-aut-pariatur-nulla-perspiciatis.html",
+    "custom_fields": "deleniti",
+    "include_service": [
+      "card",
+      "sbp",
+      "qiwi"
+    ]
+  },
+  "status": 200,
+  "status_check": true
+}
