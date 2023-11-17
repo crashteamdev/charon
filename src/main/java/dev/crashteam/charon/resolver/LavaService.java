@@ -57,7 +57,13 @@ public class LavaService implements PaymentResolver {
                 .multiply(exchangeRate.setScale(2, RoundingMode.HALF_UP));
         LavaRequest lavaRequest = paymentMapper.getRequest(request, paymentId, String.valueOf(convertedAmount));
 
-        String signature = generateSignature(lavaRequest);
+        String signature;
+        try {
+            signature = generateSignature(request);
+        } catch (Exception e) {
+            log.error("Exception while creating signature for lava request");
+            throw new IntegrationException();
+        }
         LavaResponse lavaResponse = lavaClient.create(signature, lavaRequest);
 
         PaymentData paymentData = new PaymentData();
@@ -90,7 +96,13 @@ public class LavaService implements PaymentResolver {
         request.setOrderId(payment.getPaymentId());
         request.setShopId(lavaProperties.getShopId());
         request.setInvoiceId(paymentId);
-        String signature = generateSignature(request);
+        String signature;
+        try {
+            signature = generateSignature(request);
+        } catch (Exception e) {
+            log.error("Exception while creating signature for lava request");
+            throw new IntegrationException();
+        }
 
         LavaResponse response = lavaClient.status(signature, request);
 
@@ -99,14 +111,6 @@ public class LavaService implements PaymentResolver {
         }
         log.info("Payment with id - {} is still not in success status", payment.getPaymentId());
         return RequestPaymentStatus.PENDING;
-    }
-
-    private String generateSignature(LavaStatusRequest lavaRequest) {
-        return generateSignature(lavaRequest);
-    }
-
-    private String generateSignature(LavaRequest lavaRequest) {
-        return generateSignature(lavaRequest);
     }
 
     private String generateSignature(Object lavaRequest) throws Exception{
