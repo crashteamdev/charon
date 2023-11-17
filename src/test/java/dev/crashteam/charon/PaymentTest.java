@@ -16,7 +16,6 @@ import dev.crashteam.charon.model.Operation;
 import dev.crashteam.charon.model.RequestPaymentStatus;
 import dev.crashteam.charon.model.domain.Payment;
 import dev.crashteam.charon.model.domain.User;
-import dev.crashteam.charon.model.dto.FkCallbackData;
 import dev.crashteam.charon.model.dto.currency.ExchangeDto;
 import dev.crashteam.charon.model.dto.ninja.ConversionDto;
 import dev.crashteam.charon.model.dto.ninja.ExchangeRateDto;
@@ -110,11 +109,6 @@ public class PaymentTest extends ContainerConfiguration {
     public void setup() throws IOException {
         Mockito.when(streamService.publishPaymentCreatedAwsMessage(Mockito.any())).thenReturn(new PutRecordsResult());
         Mockito.when(streamService.publishPaymentStatusChangeAwsMessage(Mockito.any())).thenReturn(new PutRecordsResult());
-
-        Mockito.when(ninjaClient.convert(Mockito.any(), Mockito.any(), Mockito.any(), Mockito.any()))
-                .thenReturn(new ConversionDto("1500.00", "RUB", "USD", "15.00"));
-        Mockito.when(ninjaClient.exchangeRate(Mockito.any(), Mockito.any()))
-                .thenReturn(new ExchangeRateDto("USD_RUB", "92.027499"));
 
         Map<String, ExchangeDto.ExchangeData> data = new HashMap<>();
         data.put("RUB", new ExchangeDto.ExchangeData("RUB", BigDecimal.valueOf(92.027499)));
