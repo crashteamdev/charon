@@ -56,6 +56,23 @@ public class PaymentService {
     private final StreamService streamService;
     private final List<PaymentResolver> paymentResolvers;
 
+    @Transactional
+    public PaymentCreateResponse createPayment(PaymentCreateRequest request) {
+        try {
+            return switch (request.getPaymentCase()) {
+                case PAYMENT_DEPOSIT_USER_BALANCE -> createBalanceDepositPayment(request);
+                case PAYMENT_PURCHASE_SERVICE -> createPurchaseServicePayment(request);
+                case PAYMENT_NOT_SET -> throw new NoSuchPaymentTypeException("No such payment type exists");
+            };
+        } catch (Exception e) {
+            log.error("Exception while creating payment ", e);
+            return PaymentCreateResponse.newBuilder()
+                    .setStatus(PaymentStatus.PAYMENT_STATUS_FAILED)
+                    .setDescription(e.getMessage())
+                    .build();
+        }
+    }
+
     public GetExchangeRateResponse getExchangeRate(GetExchangeRateRequest request) {
         String currency = request.getCurrency();
         BigDecimal exchangeRate = currencyService.getExchangeRate(currency);
@@ -79,42 +96,51 @@ public class PaymentService {
     @Transactional
     public PurchaseServiceResponse purchaseService(PurchaseServiceRequest request) {
         log.info("Trying to purchase service by user - {}", request.getUserId());
-        if (paymentRepository.findByOperationId(request.getOperationId()).isPresent())
-            throw new DuplicateTransactionException("Transaction with operation id %s already exists"
-                    .formatted(request.getOperationId()));
+        try {
+            if (paymentRepository.findByOperationId(request.getOperationId()).isPresent())
+                throw new DuplicateTransactionException("Transaction with operation id %s already exists"
+                        .formatted(request.getOperationId()));
 
-        User user = getUser(request.getUserId());
-        PaidServiceContext context = request.getPaidService().getContext();
-        PaidService paidService = getPaidServiceFromContext(context);
-        log.info("Purchasing service - {} by user - {}", paidService.getName(), user.getId());
-        long multiply = context.getMultiply() == 0 ? 1 : context.getMultiply();
-        long multipliedAmount = paidService.getAmount() * multiply;
-        long balanceAfterPurchase = user.getBalance() - multipliedAmount;
-        if (balanceAfterPurchase < 0) {
-            return protoMapper.getErrorPurchaseServiceResponse(user.getBalance());
+            User user = getUser(request.getUserId());
+            PaidServiceContext context = request.getPaidService().getContext();
+            PaidService paidService = getPaidServiceFromContext(context);
+            log.info("Purchasing service - {} by user - {}", paidService.getName(), user.getId());
+            long multiply = context.getMultiply() == 0 ? 1 : context.getMultiply();
+            long multipliedAmount = paidService.getAmount() * multiply;
+            long balanceAfterPurchase = user.getBalance() - multipliedAmount;
+            if (balanceAfterPurchase < 0) {
+                return protoMapper.getErrorPurchaseServiceResponse(user.getBalance());
+            }
+            Payment payment = new Payment();
+            String paymentId = UUID.randomUUID().toString();
+            payment.setPaymentId(paymentId);
+            payment.setOperationId(request.getOperationId());
+            payment.setCurrency("USD");
+            payment.setAmount(multipliedAmount);
+            payment.setCreated(LocalDateTime.now());
+            payment.setUpdated(LocalDateTime.now());
+            payment.setMonthPaid(context.getMultiply());
+            payment.setPaidService(paidService);
+            payment.setOperationType(operationTypeService.getOperationType(Operation.PURCHASE_SERVICE.getTitle()));
+            payment.setStatus(RequestPaymentStatus.SUCCESS);
+            user.setBalance(balanceAfterPurchase);
+            User saveUser = userService.saveUser(user);
+            payment.setUser(saveUser);
+
+            Payment savedPayment = paymentRepository.save(payment);
+            log.info("Saving payment with paymentId - {}", paymentId);
+
+            streamService.publishPaymentCreatedAwsMessage(savedPayment);
+
+            return protoMapper.getPurchaseServiceResponse(savedPayment, user.getBalance());
+        } catch (Exception e) {
+            log.error("Exception while trying to purchase service from balance");
+            PurchaseServiceResponse.ErrorResponse errorResponse = PurchaseServiceResponse.ErrorResponse.newBuilder()
+                    .setErrorCode(PurchaseServiceResponse.ErrorResponse.ErrorCode.ERROR_CODE_UNKNOWN)
+                    .setDescription(e.getMessage())
+                    .build();
+            return PurchaseServiceResponse.newBuilder().setErrorResponse(errorResponse).build();
         }
-        Payment payment = new Payment();
-        String paymentId = UUID.randomUUID().toString();
-        payment.setPaymentId(paymentId);
-        payment.setOperationId(request.getOperationId());
-        payment.setCurrency("USD");
-        payment.setAmount(multipliedAmount);
-        payment.setCreated(LocalDateTime.now());
-        payment.setUpdated(LocalDateTime.now());
-        payment.setMonthPaid(context.getMultiply());
-        payment.setPaidService(paidService);
-        payment.setOperationType(operationTypeService.getOperationType(Operation.PURCHASE_SERVICE.getTitle()));
-        payment.setStatus(RequestPaymentStatus.SUCCESS);
-        user.setBalance(balanceAfterPurchase);
-        User saveUser = userService.saveUser(user);
-        payment.setUser(saveUser);
-
-        Payment savedPayment = paymentRepository.save(payment);
-        log.info("Saving payment with paymentId - {}", paymentId);
-
-        streamService.publishPaymentCreatedAwsMessage(savedPayment);
-
-        return protoMapper.getPurchaseServiceResponse(savedPayment, user.getBalance());
     }
 
     public CreatePromoCodeResponse createPromoCode(CreatePromoCodeRequest request) {
@@ -164,23 +190,6 @@ public class PaymentService {
         payment.setCreated(refundResponse.getCreatedAt());
         payment.setUpdated(LocalDateTime.now());
         return paymentRepository.save(payment);
-    }
-
-    @Transactional
-    public PaymentCreateResponse createPayment(PaymentCreateRequest request) {
-        try {
-            return switch (request.getPaymentCase()) {
-                case PAYMENT_DEPOSIT_USER_BALANCE -> createBalanceDepositPayment(request);
-                case PAYMENT_PURCHASE_SERVICE -> createPurchaseServicePayment(request);
-                case PAYMENT_NOT_SET -> throw new NoSuchPaymentTypeException();
-            };
-        } catch (Exception e) {
-            log.error("Exception while creating payment ", e);
-            return PaymentCreateResponse.newBuilder()
-                    .setStatus(PaymentStatus.PAYMENT_STATUS_FAILED)
-                    .setDescription(e.getMessage())
-                    .build();
-        }
     }
 
     @Transactional

@@ -17,7 +17,6 @@ import dev.crashteam.charon.util.PaymentProtoUtils;
 import dev.crashteam.payment.PaymentCreateRequest;
 import dev.crashteam.payment.PaymentSystem;
 import lombok.RequiredArgsConstructor;
-import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.codec.binary.Hex;
 import org.springframework.stereotype.Service;
@@ -127,8 +126,8 @@ public class LavaService implements PaymentResolver {
         String json = objectMapper.writeValueAsString(lavaRequest);
         Mac sha256_HMAC = Mac.getInstance("HmacSHA256");
         SecretKeySpec secret_key =
-                new SecretKeySpec(lavaProperties.getSecretKey().getBytes(StandardCharsets.UTF_8), "HmacSHA256");
+                new SecretKeySpec(lavaProperties.getSecretKey().getBytes(), "HmacSHA256");
         sha256_HMAC.init(secret_key);
-        return Hex.encodeHexString(sha256_HMAC.doFinal(json.getBytes(StandardCharsets.UTF_8)));
+        return Hex.encodeHexString(sha256_HMAC.doFinal(json.getBytes()));
     }
 }
