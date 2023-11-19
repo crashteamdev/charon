@@ -6,6 +6,7 @@ import lombok.ToString;
 import org.hibernate.annotations.Type;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedDate;
+import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 import javax.persistence.*;
 import java.math.BigDecimal;
@@ -15,6 +16,7 @@ import java.time.LocalDateTime;
 @Entity
 @ToString(callSuper = true)
 @Table(name = "payment")
+@EntityListeners(AuditingEntityListener.class)
 public class Payment {
 
     @Id

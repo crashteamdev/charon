@@ -28,6 +28,7 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
+import java.util.Optional;
 import java.util.UUID;
 
 @Slf4j
@@ -102,13 +103,12 @@ public class LavaService implements PaymentResolver {
             log.error("Exception while creating signature for lava request");
             throw new IntegrationException();
         }
-
         LavaResponse response = lavaClient.status(signature, request);
-
-        if (response.getStatus().equals("200")) {
+        String status = Optional.ofNullable(response.getData()).map(LavaResponse.LavaData::getStatus).orElse(null);
+        if (status != null && status.equals("")) {
             return RequestPaymentStatus.SUCCESS;
         }
-        log.info("Payment with id - {} is still not in success status", payment.getPaymentId());
+        log.info("Payment with id - {} is still not in success status, current status - {}", payment.getPaymentId(), status);
         return RequestPaymentStatus.PENDING;
     }
 
