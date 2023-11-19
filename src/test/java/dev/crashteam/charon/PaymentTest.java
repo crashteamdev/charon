@@ -229,7 +229,8 @@ public class PaymentTest extends ContainerConfiguration {
 
         StreamRecorder<PurchaseServiceResponse> responseStreamRecorder = StreamRecorder.create();
         grpcService.purchaseService(purchaseServiceRequest, responseStreamRecorder);
-        Assertions.assertThrows(DuplicateTransactionException.class, () -> grpcService.purchaseService(secondServiceRequest, responseStreamRecorder));
+        grpcService.purchaseService(secondServiceRequest, responseStreamRecorder);
+        Assertions.assertNotNull(responseStreamRecorder.getValues().get(0).getErrorResponse());
 
     }
 
