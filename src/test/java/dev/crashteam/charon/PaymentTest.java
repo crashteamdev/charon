@@ -257,7 +257,7 @@ public class PaymentTest extends ContainerConfiguration {
 
         purchaseServiceJob.checkPaymentStatus(payment.get());
         Optional<Payment> paymentAfterJob = paymentRepository.findByPaymentId(paymentId);
-        //Assertions.assertEquals(paymentAfterJob.get().getStatus(), RequestPaymentStatus.SUCCESS);
+        Assertions.assertEquals(paymentAfterJob.get().getStatus(), RequestPaymentStatus.SUCCESS);
 
     }
 

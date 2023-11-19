@@ -105,7 +105,7 @@ public class LavaService implements PaymentResolver {
         }
         LavaResponse response = lavaClient.status(signature, request);
         String status = Optional.ofNullable(response.getData()).map(LavaResponse.LavaData::getStatus).orElse(null);
-        if (status != null && status.equals("")) {
+        if (status != null && status.equals("success")) {
             return RequestPaymentStatus.SUCCESS;
         }
         log.info("Payment with id - {} is still not in success status, current status - {}", payment.getPaymentId(), status);
