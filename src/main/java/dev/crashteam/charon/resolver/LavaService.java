@@ -122,8 +122,7 @@ public class LavaService implements PaymentResolver {
         return generateSignature(json);
     }
 
-    private String generateSignature(String lavaRequest) throws Exception{
-        String json = objectMapper.writeValueAsString(lavaRequest);
+    private String generateSignature(String json) throws Exception{
         Mac sha256_HMAC = Mac.getInstance("HmacSHA256");
         SecretKeySpec secret_key =
                 new SecretKeySpec(lavaProperties.getSecretKey().getBytes(), "HmacSHA256");
