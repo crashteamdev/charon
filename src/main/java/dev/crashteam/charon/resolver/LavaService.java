@@ -108,7 +108,7 @@ public class LavaService implements PaymentResolver {
             return switch (status) {
                 case "success" -> RequestPaymentStatus.SUCCESS;
                 case "error" -> RequestPaymentStatus.FAILED;
-                case "cancel" -> RequestPaymentStatus.CANCELED;
+                case "cancel", "expired" -> RequestPaymentStatus.CANCELED;
                 default -> RequestPaymentStatus.PENDING;
             };
         }
