@@ -69,6 +69,16 @@ public class BalancePaymentJob implements Job {
             payment.setStatus(RequestPaymentStatus.SUCCESS);
             paymentService.save(payment);
             streamService.publishPaymentStatusChangeAwsMessage(payment);
+        } else if (RequestPaymentStatus.FAILED.equals(paymentStatus)) {
+            log.info("Payment with id [{}] failed for some reason", payment.getPaymentId());
+            payment.setStatus(RequestPaymentStatus.FAILED);
+            paymentService.save(payment);
+            streamService.publishPaymentStatusChangeAwsMessage(payment);
+        } else if (RequestPaymentStatus.CANCELED.equals(paymentStatus)) {
+            log.info("Payment with id [{}] canceled", payment.getPaymentId());
+            payment.setStatus(RequestPaymentStatus.CANCELED);
+            paymentService.save(payment);
+            streamService.publishPaymentStatusChangeAwsMessage(payment);
         }
     }
 }

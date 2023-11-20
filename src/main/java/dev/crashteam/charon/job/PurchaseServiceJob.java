@@ -54,9 +54,19 @@ public class PurchaseServiceJob implements Job {
                 .findFirst()
                 .orElseThrow(IllegalArgumentException::new);
         RequestPaymentStatus paymentStatus = paymentResolver.getPaymentStatus(payment.getExternalId());
-        if (RequestPaymentStatus.SUCCESS.equals(paymentStatus)) {
-            log.info("Payment with id [{}] successful, purchasing service", payment.getPaymentId());
-            payment.setStatus(RequestPaymentStatus.SUCCESS);
+        if (!RequestPaymentStatus.PENDING.equals(paymentStatus)
+                && !RequestPaymentStatus.UNKNOWN.equals(paymentStatus)
+                && !RequestPaymentStatus.NOT_ACCEPTABLE.equals(paymentStatus)) {
+            if (RequestPaymentStatus.SUCCESS.equals(paymentStatus)) {
+                log.info("Payment with id [{}] successful, purchasing service", payment.getPaymentId());
+                payment.setStatus(RequestPaymentStatus.SUCCESS);
+            } else if (RequestPaymentStatus.FAILED.equals(paymentStatus)) {
+                log.info("Payment with id [{}] failed for some reason", payment.getPaymentId());
+                payment.setStatus(RequestPaymentStatus.FAILED);
+            } else if (RequestPaymentStatus.CANCELED.equals(paymentStatus)) {
+                log.info("Payment with id [{}] canceled", payment.getPaymentId());
+                payment.setStatus(RequestPaymentStatus.CANCELED);
+            }
             paymentService.save(payment);
             streamService.publishPaymentStatusChangeAwsMessage(payment);
         }

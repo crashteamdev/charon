@@ -26,7 +26,6 @@ import javax.crypto.spec.SecretKeySpec;
 import javax.persistence.EntityNotFoundException;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
-import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
 import java.util.Optional;
 import java.util.UUID;
@@ -105,10 +104,14 @@ public class LavaService implements PaymentResolver {
         }
         LavaResponse response = lavaClient.status(signature, request);
         String status = Optional.ofNullable(response.getData()).map(LavaResponse.LavaData::getStatus).orElse(null);
-        if (status != null && status.equals("success")) {
-            return RequestPaymentStatus.SUCCESS;
+        if (status != null) {
+            return switch (status) {
+                case "success" -> RequestPaymentStatus.SUCCESS;
+                case "error" -> RequestPaymentStatus.FAILED;
+                case "cancel" -> RequestPaymentStatus.CANCELED;
+                default -> RequestPaymentStatus.PENDING;
+            };
         }
-        log.info("Payment with id - {} is still not in success status, current status - {}", payment.getPaymentId(), status);
         return RequestPaymentStatus.PENDING;
     }
 
