@@ -134,7 +134,7 @@ public class PaymentService {
 
             return protoMapper.getPurchaseServiceResponse(savedPayment, user.getBalance());
         } catch (Exception e) {
-            log.error("Exception while trying to purchase service from balance");
+            log.error("Exception while trying to purchase service from balance", e);
             PurchaseServiceResponse.ErrorResponse errorResponse = PurchaseServiceResponse.ErrorResponse.newBuilder()
                     .setErrorCode(PurchaseServiceResponse.ErrorResponse.ErrorCode.ERROR_CODE_UNKNOWN)
                     .setDescription(e.getMessage())
