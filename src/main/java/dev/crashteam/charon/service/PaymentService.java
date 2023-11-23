@@ -119,7 +119,7 @@ public class PaymentService {
             payment.setAmount(multipliedAmount);
             payment.setCreated(LocalDateTime.now());
             payment.setUpdated(LocalDateTime.now());
-            payment.setMonthPaid(context.getMultiply());
+            payment.setMonthPaid(multiply);
             payment.setPaidService(paidService);
             payment.setOperationType(operationTypeService.getOperationType(Operation.PURCHASE_SERVICE.getTitle()));
             payment.setStatus(RequestPaymentStatus.SUCCESS);
@@ -234,7 +234,7 @@ public class PaymentService {
         payment.setUpdated(LocalDateTime.now());
         payment.setOperationType(operationTypeService.getOperationType(Operation.PURCHASE_SERVICE.getTitle()));
         payment.setPromoCode(promoCode);
-        payment.setMonthPaid(paidServiceContext.getMultiply());
+        payment.setMonthPaid(multiply);
         payment.setEmail(response.getEmail());
         payment.setPhone(response.getPhone());
         payment.setPaymentSystem(protoMapper.getPaymentSystemType(purchaseService.getPaymentSystem()).getTitle());
