@@ -1,11 +1,14 @@
 package dev.crashteam.charon.service;
 
 import dev.crashteam.charon.component.ClickProperties;
+import dev.crashteam.charon.model.Operation;
 import dev.crashteam.charon.model.RequestPaymentStatus;
 import dev.crashteam.charon.model.domain.Payment;
+import dev.crashteam.charon.model.domain.User;
 import dev.crashteam.charon.model.dto.FkCallbackData;
 import dev.crashteam.charon.model.dto.click.ClickRequest;
 import dev.crashteam.charon.model.dto.click.ClickResponse;
+import dev.crashteam.charon.repository.UserRepository;
 import dev.crashteam.charon.stream.StreamService;
 import dev.crashteam.charon.util.PaymentProtoUtils;
 import lombok.RequiredArgsConstructor;
@@ -25,6 +28,7 @@ public class CallbackService {
     private final PaymentService paymentService;
     private final StreamService streamService;
     private final ClickProperties clickProperties;
+    private final UserService userService;
 
     @Transactional
     public ClickResponse clickResponse(ClickRequest request) {
@@ -58,6 +62,12 @@ public class CallbackService {
             paymentService.save(payment);
             streamService.publishPaymentStatusChangeAwsMessage(payment);
             return;
+        }
+        if (payment.getOperationType().getType().equals(Operation.DEPOSIT_BALANCE.getTitle())) {
+            log.info("Payment with id [{}] successful, processing balance deposit", payment.getPaymentId());
+            User user = userService.getUser(payment.getUser().getId());
+            user.setBalance(user.getBalance() + payment.getAmount());
+            userService.saveUser(user);
         }
         payment.setStatus(RequestPaymentStatus.SUCCESS);
         streamService.publishPaymentStatusChangeAwsMessage(payment);
@@ -150,6 +160,12 @@ public class CallbackService {
 
         payment.setStatus(RequestPaymentStatus.SUCCESS);
         paymentService.save(payment);
+        if (payment.getOperationType().getType().equals(Operation.DEPOSIT_BALANCE.getTitle())) {
+            log.info("Payment with id [{}] successful, processing balance deposit", payment.getPaymentId());
+            User user = userService.getUser(payment.getUser().getId());
+            user.setBalance(user.getBalance() + payment.getAmount());
+            userService.saveUser(user);
+        }
         streamService.publishPaymentStatusChangeAwsMessage(payment);
         response.setError(0L);
         response.setErrorNote("Success");
