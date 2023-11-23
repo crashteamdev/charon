@@ -129,7 +129,8 @@ public class CallbackService {
         BigDecimal amountClick = amount.movePointRight(2);
         BigDecimal providerAmount = BigDecimal.valueOf(payment.getProviderAmount());
         log.info("Comparing amount - ours: [{}] ; click - [{}]", providerAmount, amountClick);
-        if (!amountClick.equals(providerAmount)) {
+        if (amountClick.compareTo(providerAmount) != 0) {
+            log.warn("Incorrect amount for payment - {}", payment.getPaymentId());
             response.setError(-2L);
             response.setErrorNote("Incorrect parameter amount");
             if (payment.getOperationId() != null) {
