@@ -189,13 +189,15 @@ public class CallbackService {
         BigDecimal amountClick = amount.movePointRight(2);
         BigDecimal providerAmount = BigDecimal.valueOf(payment.getProviderAmount());
         log.info("Comparing amount - ours: [{}] ; click - [{}]", providerAmount, amountClick);
-        if (!amountClick.equals(providerAmount)) {
+        if (amountClick.compareTo(providerAmount) != 0) {
+            log.warn("Incorrect amount for payment - {}", payment.getPaymentId());
             response.setError(-2L);
             response.setErrorNote("Incorrect parameter amount");
             return response;
         }
 
         if (!request.getSignString().equals(md5Hex)) {
+            log.info("Sign string incorrect for click payment - {}", payment.getPaymentId());
             response.setError(-1L);
             response.setErrorNote("SIGN CHECK FAILED!");
             return response;
