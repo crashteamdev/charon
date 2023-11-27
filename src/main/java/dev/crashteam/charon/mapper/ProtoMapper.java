@@ -74,6 +74,7 @@ public class ProtoMapper {
                 .setAmount(Amount.newBuilder().setValue(payment.getAmount()).setCurrency(payment.getCurrency()).build())
                 .setStatus(getPaymentStatus(payment.getStatus()))
                 .setUserPaidService(userPaidService)
+                .setUserId(payment.getUser().getId())
                 .build();
 
         PaymentChange paymentChange = PaymentChange.newBuilder()

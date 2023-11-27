@@ -84,7 +84,7 @@ public class PaymentService {
 
     @Transactional(readOnly = true)
     public GetBalanceResponse getBalanceResponse(GetBalanceRequest request) {
-        User user = getUser(request.getUserId());
+        User user = userService.getUser(request.getUserId());
         return protoMapper.getBalanceResponse(user);
     }
 
@@ -101,7 +101,7 @@ public class PaymentService {
                 throw new DuplicateTransactionException("Transaction with operation id %s already exists"
                         .formatted(request.getOperationId()));
 
-            User user = getUser(request.getUserId());
+            User user = userService.getUser(request.getUserId());
             PaidServiceContext context = request.getPaidService().getContext();
             PaidService paidService = getPaidServiceFromContext(context);
             log.info("Purchasing service - {} by user - {}", paidService.getName(), user.getId());
@@ -209,7 +209,7 @@ public class PaymentService {
         log.info("Purchasing service - {} by user - {}", paidService.getName(), purchaseService.getUserId());
         long multiply = paidServiceContext.getMultiply() == 0 ? 1 : paidServiceContext.getMultiply();
 
-        User user = getUser(purchaseService.getUserId());
+        User user = userService.getUser(purchaseService.getUserId());
         long multiplyAmount = paidService.getAmount() * multiply;
         long amount = multiplyDiscount(multiplyAmount, multiply);
 
@@ -263,7 +263,7 @@ public class PaymentService {
         BigDecimal actualAmount = PaymentProtoUtils.getMajorMoneyAmount(balanceRequest.getAmount());
         PaymentData response = paymentResolver.createPayment(request, String.valueOf(actualAmount));
 
-        User user = getUser(balanceRequest.getUserId());
+        User user = userService.getUser(balanceRequest.getUserId());
 
         ObjectMapper objectMapper = new ObjectMapper();
         Payment payment = new Payment();
@@ -289,22 +289,6 @@ public class PaymentService {
         streamService.publishPaymentCreatedAwsMessage(payment);
 
         return protoMapper.getPaymentResponse(response, payment);
-    }
-
-    @Transactional
-    public User getUser(String id) {
-        if (!StringUtils.hasText(id)) {
-            throw new IllegalArgumentException("User id can't be null or empty");
-        }
-        if (userService.userExists(id)) {
-            return userService.getUser(id);
-        }
-        log.info("Creating new user with id - {}", id);
-        User user = new User();
-        user.setId(id);
-        user.setBalance(0L);
-        user.setCurrency("USD");
-        return userService.saveUser(user);
     }
 
     @Transactional(readOnly = true)
