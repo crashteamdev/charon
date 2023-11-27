@@ -131,6 +131,7 @@ public class PaymentService {
             log.info("Saving payment with paymentId - {}", paymentId);
 
             streamService.publishPaymentCreatedAwsMessage(savedPayment);
+            streamService.publishPaymentStatusChangeAwsMessage(savedPayment);
 
             return protoMapper.getPurchaseServiceResponse(savedPayment, user.getBalance());
         } catch (Exception e) {
@@ -317,11 +318,6 @@ public class PaymentService {
     @Transactional(readOnly = true)
     public Payment findByPaymentId(String paymentId) {
         return paymentRepository.findByPaymentId(paymentId).orElse(null);
-    }
-
-    @Transactional(readOnly = true)
-    public Payment findByExternalId(String externalId) {
-        return paymentRepository.findByPaymentId(externalId).orElse(null);
     }
 
     @Transactional
