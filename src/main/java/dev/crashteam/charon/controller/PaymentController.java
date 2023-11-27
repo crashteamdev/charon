@@ -18,6 +18,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.math.BigDecimal;
 import java.util.Map;
+import java.util.Objects;
 
 @Slf4j
 @RestController
@@ -43,7 +44,7 @@ public class PaymentController {
             return ResponseEntity.badRequest().build();
         }
         var md5Hash = DigestUtils.md5Hex("%s:%s:%s:%s".formatted(merchantId, amount, freeKassaProperties.getSecretWordSecond(), orderId));
-        if (attributes.get("SIGN") != md5Hash) {
+        if (!Objects.equals(attributes.get("SIGN"), md5Hash)) {
             log.warn("Callback payment sign is not valid. expected={}; actual={}", md5Hash, attributes.get("SIGN"));
             return ResponseEntity.badRequest().build();
         }
