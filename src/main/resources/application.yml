@@ -3,9 +3,13 @@ server:
   servlet:
     context-path: /charon
 spring:
+  data:
+    redis:
+      repositories:
+        enabled: false
   redis:
     host: 0.0.0.0
-    port: 55000
+    port: 6380
     password: redispw
   quartz:
     job-store-type: jdbc
