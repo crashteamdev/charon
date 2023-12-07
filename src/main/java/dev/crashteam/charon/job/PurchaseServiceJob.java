@@ -4,10 +4,10 @@ import dev.crashteam.charon.model.Operation;
 import dev.crashteam.charon.model.PaymentSystemType;
 import dev.crashteam.charon.model.RequestPaymentStatus;
 import dev.crashteam.charon.model.domain.Payment;
+import dev.crashteam.charon.publisher.handler.StreamPublisherHandler;
 import dev.crashteam.charon.service.PaymentService;
 import dev.crashteam.charon.service.UserService;
 import dev.crashteam.charon.resolver.PaymentResolver;
-import dev.crashteam.charon.stream.StreamService;
 import dev.crashteam.payment.PaymentSystem;
 import lombok.extern.slf4j.Slf4j;
 import org.quartz.DisallowConcurrentExecution;
@@ -29,7 +29,7 @@ public class PurchaseServiceJob implements Job {
     @Autowired
     PaymentService paymentService;
     @Autowired
-    StreamService streamService;
+    StreamPublisherHandler publisherHandler;
     @Autowired
     UserService userService;
     @Autowired
@@ -68,7 +68,7 @@ public class PurchaseServiceJob implements Job {
                 payment.setStatus(RequestPaymentStatus.CANCELED);
             }
             paymentService.save(payment);
-            streamService.publishPaymentStatusChangeAwsMessage(payment);
+            publisherHandler.publishPaymentStatusChangeMessage(payment);
         }
     }
 }

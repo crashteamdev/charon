@@ -1,4 +1,4 @@
-package dev.crashteam.charon.stream;
+package dev.crashteam.charon.publisher.handler;
 
 import com.amazonaws.services.kinesis.model.PutRecordsRequestEntry;
 import com.amazonaws.services.kinesis.model.PutRecordsResult;
@@ -11,6 +11,7 @@ import dev.crashteam.payment.PaymentEvent;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.retry.RetryCallback;
 import org.springframework.retry.support.RetryTemplate;
 import org.springframework.stereotype.Service;
@@ -22,7 +23,8 @@ import java.util.Optional;
 @Slf4j
 @Service
 @RequiredArgsConstructor
-public class StreamService {
+@ConditionalOnProperty(value = "app.stream.publisher", havingValue = "AWS")
+public class AwsStreamPublisherHandler implements StreamPublisherHandler<PutRecordsResult> {
 
     private final AwsStreamMessagePublisher awsStreamMessagePublisher;
     private final ProtoMapper protoMapper;
@@ -31,7 +33,7 @@ public class StreamService {
     @Value("${app.aws-stream.uzum-stream.name}")
     private String awsStreamName;
 
-    public PutRecordsResult publishPaymentStatusChangeAwsMessage(Payment payment) {
+    public PutRecordsResult publishPaymentStatusChangeMessage(Payment payment) {
         try {
             retryTemplate.execute((RetryCallback<PutRecordsResult, Exception>) retryContext -> {
                 PutRecordsRequestEntry awsMessagePaymentCreatedEntry = getAwsMessagePaymentStatusChangeEntry(payment);
@@ -48,7 +50,7 @@ public class StreamService {
         return null;
     }
 
-    public PutRecordsResult publishPaymentCreatedAwsMessage(Payment payment) {
+    public PutRecordsResult publishPaymentCreatedMessage(Payment payment) {
         try {
             retryTemplate.execute((RetryCallback<PutRecordsResult, Exception>) retryContext -> {
                 PutRecordsRequestEntry awsMessagePaymentCreatedEntry = getAwsMessagePaymentCreatedEntry(payment);

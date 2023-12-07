@@ -24,7 +24,7 @@ import dev.crashteam.charon.service.OperationTypeService;
 import dev.crashteam.charon.service.PaymentService;
 import dev.crashteam.charon.service.feign.CurrencyApiClient;
 import dev.crashteam.charon.service.feign.NinjaClient;
-import dev.crashteam.charon.stream.StreamService;
+import dev.crashteam.charon.publisher.handler.AwsStreamPublisherHandler;
 import dev.crashteam.payment.*;
 import io.grpc.internal.testing.StreamRecorder;
 import lombok.extern.slf4j.Slf4j;
@@ -94,7 +94,7 @@ public class PaymentTest extends ContainerConfiguration {
     OperationTypeService operationTypeService;
 
     @MockBean
-    StreamService streamService;
+    AwsStreamPublisherHandler awsStreamPublisherHandler;
 
     @MockBean
     NinjaClient ninjaClient;
@@ -104,8 +104,8 @@ public class PaymentTest extends ContainerConfiguration {
 
     @BeforeEach
     public void setup() throws IOException {
-        Mockito.when(streamService.publishPaymentCreatedAwsMessage(Mockito.any())).thenReturn(new PutRecordsResult());
-        Mockito.when(streamService.publishPaymentStatusChangeAwsMessage(Mockito.any())).thenReturn(new PutRecordsResult());
+        Mockito.when(awsStreamPublisherHandler.publishPaymentCreatedMessage(Mockito.any())).thenReturn(new PutRecordsResult());
+        Mockito.when(awsStreamPublisherHandler.publishPaymentStatusChangeMessage(Mockito.any())).thenReturn(new PutRecordsResult());
 
         Map<String, ExchangeDto.ExchangeData> data = new HashMap<>();
         data.put("RUB", new ExchangeDto.ExchangeData("RUB", BigDecimal.valueOf(92.027499)));

@@ -58,6 +58,12 @@
             <version>${spring-retry.version}</version>
         </dependency>
 
+        <!--redis stream-->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-data-redis</artifactId>
+        </dependency>
+
         <!--aws stream      -->
         <dependency>
             <groupId>com.amazonaws</groupId>

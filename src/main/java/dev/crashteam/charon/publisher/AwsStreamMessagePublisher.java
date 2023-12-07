@@ -5,10 +5,12 @@ import dev.crashteam.charon.stream.AwsStreamClient;
 import dev.crashteam.charon.model.stream.AwsStreamMessage;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 
 @Component
 @RequiredArgsConstructor
+@ConditionalOnProperty(value = "app.stream.publisher", havingValue = "AWS")
 public class AwsStreamMessagePublisher implements MessagePublisher<AwsStreamMessage> {
 
     private final AwsStreamClient awsStreamClient;

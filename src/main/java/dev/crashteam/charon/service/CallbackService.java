@@ -8,8 +8,7 @@ import dev.crashteam.charon.model.domain.User;
 import dev.crashteam.charon.model.dto.FkCallbackData;
 import dev.crashteam.charon.model.dto.click.ClickRequest;
 import dev.crashteam.charon.model.dto.click.ClickResponse;
-import dev.crashteam.charon.repository.UserRepository;
-import dev.crashteam.charon.stream.StreamService;
+import dev.crashteam.charon.publisher.handler.StreamPublisherHandler;
 import dev.crashteam.charon.util.PaymentProtoUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -26,7 +25,7 @@ import java.math.BigDecimal;
 public class CallbackService {
 
     private final PaymentService paymentService;
-    private final StreamService streamService;
+    private final StreamPublisherHandler publisherHandler;
     private final ClickProperties clickProperties;
     private final UserService userService;
 
@@ -60,7 +59,7 @@ public class CallbackService {
         if (!payment.getProviderAmount().equals(callbackAmount.longValue())) {
             payment.setStatus(RequestPaymentStatus.FAILED);
             paymentService.save(payment);
-            streamService.publishPaymentStatusChangeAwsMessage(payment);
+            publisherHandler.publishPaymentStatusChangeMessage(payment);
             return;
         }
         if (payment.getOperationType().getType().equals(Operation.DEPOSIT_BALANCE.getTitle())) {
@@ -70,7 +69,7 @@ public class CallbackService {
             userService.saveUser(user);
         }
         payment.setStatus(RequestPaymentStatus.SUCCESS);
-        streamService.publishPaymentStatusChangeAwsMessage(payment);
+        publisherHandler.publishPaymentStatusChangeMessage(payment);
         paymentService.save(payment);
 
     }
@@ -132,7 +131,7 @@ public class CallbackService {
                 payment.setStatus(RequestPaymentStatus.CANCELED);
                 paymentService.save(payment);
             }
-            streamService.publishPaymentStatusChangeAwsMessage(payment);
+            publisherHandler.publishPaymentStatusChangeMessage(payment);
             return response;
         }
 
@@ -166,7 +165,7 @@ public class CallbackService {
             user.setBalance(user.getBalance() + payment.getAmount());
             userService.saveUser(user);
         }
-        streamService.publishPaymentStatusChangeAwsMessage(payment);
+        publisherHandler.publishPaymentStatusChangeMessage(payment);
         response.setError(0L);
         response.setErrorNote("Success");
         response.setMerchantConfirmId(null);

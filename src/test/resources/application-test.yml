@@ -25,6 +25,8 @@ spring:
   liquibase:
     change-log: classpath:db/changelog/db.changelog-master.xml
 app:
+  stream:
+    publisher: AWS
   aws-stream:
     endpoint: 'yds.serverless.yandexcloud.net'
     accessKey: fake-access-key

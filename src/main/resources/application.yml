@@ -3,6 +3,10 @@ server:
   servlet:
     context-path: /charon
 spring:
+  redis:
+    host: 0.0.0.0
+    port: 55000
+    password: redispw
   quartz:
     job-store-type: jdbc
     properties:
@@ -38,6 +42,13 @@ spring:
   liquibase:
     change-log: classpath:db/changelog/db.changelog-master.xml
 app:
+  stream:
+    publisher: REDIS
+  redis:
+    stream:
+      key: payment-stream
+      maxlen: 50000
+      waitPending: 0
   aws-stream:
     endpoint: 'yds.serverless.yandexcloud.net'
     accessKey: fake-access-key

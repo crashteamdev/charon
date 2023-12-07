@@ -5,10 +5,10 @@ import dev.crashteam.charon.model.PaymentSystemType;
 import dev.crashteam.charon.model.RequestPaymentStatus;
 import dev.crashteam.charon.model.domain.Payment;
 import dev.crashteam.charon.model.domain.User;
+import dev.crashteam.charon.publisher.handler.StreamPublisherHandler;
+import dev.crashteam.charon.resolver.PaymentResolver;
 import dev.crashteam.charon.service.PaymentService;
 import dev.crashteam.charon.service.UserService;
-import dev.crashteam.charon.resolver.PaymentResolver;
-import dev.crashteam.charon.stream.StreamService;
 import dev.crashteam.payment.PaymentSystem;
 import lombok.extern.slf4j.Slf4j;
 import org.quartz.DisallowConcurrentExecution;
@@ -20,7 +20,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
-import java.util.stream.Stream;
 
 @Slf4j
 @Service
@@ -30,7 +29,7 @@ public class BalancePaymentJob implements Job {
     @Autowired
     PaymentService paymentService;
     @Autowired
-    StreamService streamService;
+    StreamPublisherHandler publisherHandler;
     @Autowired
     UserService userService;
     @Autowired
@@ -68,17 +67,17 @@ public class BalancePaymentJob implements Job {
 
             payment.setStatus(RequestPaymentStatus.SUCCESS);
             paymentService.save(payment);
-            streamService.publishPaymentStatusChangeAwsMessage(payment);
+            publisherHandler.publishPaymentStatusChangeMessage(payment);
         } else if (RequestPaymentStatus.FAILED.equals(paymentStatus)) {
             log.info("Payment with id [{}] failed for some reason", payment.getPaymentId());
             payment.setStatus(RequestPaymentStatus.FAILED);
             paymentService.save(payment);
-            streamService.publishPaymentStatusChangeAwsMessage(payment);
+            publisherHandler.publishPaymentStatusChangeMessage(payment);
         } else if (RequestPaymentStatus.CANCELED.equals(paymentStatus)) {
             log.info("Payment with id [{}] canceled", payment.getPaymentId());
             payment.setStatus(RequestPaymentStatus.CANCELED);
             paymentService.save(payment);
-            streamService.publishPaymentStatusChangeAwsMessage(payment);
+            publisherHandler.publishPaymentStatusChangeMessage(payment);
         }
     }
 }

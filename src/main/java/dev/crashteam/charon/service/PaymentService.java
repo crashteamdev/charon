@@ -15,10 +15,10 @@ import dev.crashteam.charon.model.domain.PromoCode;
 import dev.crashteam.charon.model.domain.User;
 import dev.crashteam.charon.model.dto.resolver.PaymentData;
 import dev.crashteam.charon.model.dto.yookassa.YkPaymentRefundResponseDTO;
+import dev.crashteam.charon.publisher.handler.StreamPublisherHandler;
 import dev.crashteam.charon.repository.PaymentRepository;
 import dev.crashteam.charon.repository.specification.PaymentSpecification;
 import dev.crashteam.charon.resolver.PaymentResolver;
-import dev.crashteam.charon.stream.StreamService;
 import dev.crashteam.charon.util.PaymentProtoUtils;
 import dev.crashteam.charon.util.PromoCodeGenerator;
 import dev.crashteam.payment.*;
@@ -53,7 +53,7 @@ public class PaymentService {
     private final OperationTypeService operationTypeService;
     private final ProtoMapper protoMapper;
     private final CurrencyService currencyService;
-    private final StreamService streamService;
+    private final StreamPublisherHandler publisherHandler;
     private final List<PaymentResolver> paymentResolvers;
 
     @Transactional
@@ -130,8 +130,8 @@ public class PaymentService {
             Payment savedPayment = paymentRepository.save(payment);
             log.info("Saving payment with paymentId - {}", paymentId);
 
-            streamService.publishPaymentCreatedAwsMessage(savedPayment);
-            streamService.publishPaymentStatusChangeAwsMessage(savedPayment);
+            publisherHandler.publishPaymentCreatedMessage(savedPayment);
+            publisherHandler.publishPaymentStatusChangeMessage(savedPayment);
 
             return protoMapper.getPurchaseServiceResponse(savedPayment, user.getBalance());
         } catch (Exception e) {
@@ -245,7 +245,7 @@ public class PaymentService {
         paymentRepository.save(payment);
         log.info("Saving payment with paymentId - {}", response.getPaymentId());
 
-        streamService.publishPaymentCreatedAwsMessage(payment);
+        publisherHandler.publishPaymentCreatedMessage(payment);
 
         savePromoCodeRestrictions(promoCode, user);
         return protoMapper.getPaymentResponse(response, payment, amount);
@@ -287,7 +287,7 @@ public class PaymentService {
         paymentRepository.save(payment);
         log.info("Saving payment with paymentId - {}", response.getPaymentId());
 
-        streamService.publishPaymentCreatedAwsMessage(payment);
+        publisherHandler.publishPaymentCreatedMessage(payment);
 
         return protoMapper.getPaymentResponse(response, payment);
     }
