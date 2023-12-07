@@ -47,7 +47,7 @@ app:
   redis:
     stream:
       key: payment-stream
-      maxlen: 50000
+      maxlen: 1000
       waitPending: 0
   aws-stream:
     endpoint: 'yds.serverless.yandexcloud.net'
