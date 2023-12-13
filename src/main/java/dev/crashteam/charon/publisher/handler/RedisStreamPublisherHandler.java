@@ -39,12 +39,12 @@ public class RedisStreamPublisherHandler implements StreamPublisherHandler<Recor
     @Override
     public RecordId publishPaymentStatusChangeMessage(Payment payment) {
         try {
+            log.info("Publishing status change payment - {}", payment.getPaymentId());
             retryTemplate.execute((RetryCallback<RecordId, Exception>) retryContext -> {
                 PaymentEvent paymentEvent = getMessagePaymentStatusChangeEntry(payment);
                 if (paymentEvent != null) {
-                    log.info("Publishing status change payment - {}", payment.getPaymentId());
                     return messagePublisher
-                            .publish(new RedisStreamMessage(streamKey, payment, maxlen, "payment", waitPending));
+                            .publish(new RedisStreamMessage(streamKey, paymentEvent, maxlen, "payment", waitPending));
                 }
                 return null;
             });
@@ -57,12 +57,12 @@ public class RedisStreamPublisherHandler implements StreamPublisherHandler<Recor
     @Override
     public RecordId publishPaymentCreatedMessage(Payment payment) {
         try {
+            log.info("Publishing create payment event - {}", payment.getPaymentId());
             retryTemplate.execute((RetryCallback<RecordId, Exception>) retryContext -> {
                 PaymentEvent paymentEvent = getMessagePaymentCreatedEntry(payment);
                 if (paymentEvent != null) {
-                    log.info("Publishing create payment event - {}", payment.getPaymentId());
                     return messagePublisher
-                            .publish(new RedisStreamMessage(streamKey, payment, maxlen, "payment", waitPending));
+                            .publish(new RedisStreamMessage(streamKey, paymentEvent, maxlen, "payment", waitPending));
                 }
                 return null;
             });

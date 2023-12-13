@@ -35,10 +35,10 @@ public class AwsStreamPublisherHandler implements StreamPublisherHandler<PutReco
 
     public PutRecordsResult publishPaymentStatusChangeMessage(Payment payment) {
         try {
+            log.info("Publishing status change payment - {}", payment.getPaymentId());
             retryTemplate.execute((RetryCallback<PutRecordsResult, Exception>) retryContext -> {
                 PutRecordsRequestEntry awsMessagePaymentCreatedEntry = getAwsMessagePaymentStatusChangeEntry(payment);
                 if (awsMessagePaymentCreatedEntry != null) {
-                    log.info("Publishing status change payment - {}", payment.getPaymentId());
                     return awsStreamMessagePublisher.publish(new AwsStreamMessage(awsStreamName,
                             Collections.singletonList(awsMessagePaymentCreatedEntry)));
                 }
@@ -52,10 +52,10 @@ public class AwsStreamPublisherHandler implements StreamPublisherHandler<PutReco
 
     public PutRecordsResult publishPaymentCreatedMessage(Payment payment) {
         try {
+            log.info("Publishing created payment - {}", payment.getPaymentId());
             retryTemplate.execute((RetryCallback<PutRecordsResult, Exception>) retryContext -> {
                 PutRecordsRequestEntry awsMessagePaymentCreatedEntry = getAwsMessagePaymentCreatedEntry(payment);
                 if (awsMessagePaymentCreatedEntry != null) {
-                    log.info("Publishing created payment - {}", payment.getPaymentId());
                     return awsStreamMessagePublisher.publish(new AwsStreamMessage(awsStreamName,
                             Collections.singletonList(awsMessagePaymentCreatedEntry)));
                 }
