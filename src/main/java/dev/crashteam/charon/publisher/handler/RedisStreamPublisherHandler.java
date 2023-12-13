@@ -49,7 +49,7 @@ public class RedisStreamPublisherHandler implements StreamPublisherHandler<Recor
                 return null;
             });
         } catch (Exception e) {
-            log.error("Error while trying to publish payment - {}", payment.getPaymentId());
+            log.error("Error while trying to publish payment - {}", payment.getPaymentId(), e);
         }
         return null;
     }
@@ -67,7 +67,7 @@ public class RedisStreamPublisherHandler implements StreamPublisherHandler<Recor
                 return null;
             });
         } catch (Exception e) {
-            log.error("Error while trying to publish payment - {}", payment.getPaymentId());
+            log.error("Error while trying to publish payment - {}", payment.getPaymentId(), e);
         }
         return null;
     }
