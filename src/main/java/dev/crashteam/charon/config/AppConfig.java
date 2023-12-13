@@ -22,11 +22,11 @@ public class AppConfig {
 
         Random randomTimeout = new Random();
         FixedBackOffPolicy fixedBackOffPolicy = new FixedBackOffPolicy();
-        fixedBackOffPolicy.setBackOffPeriod(randomTimeout.nextLong(5000L, 15000L));
+        fixedBackOffPolicy.setBackOffPeriod(randomTimeout.nextLong(3000L, 7000L));
         retryTemplate.setBackOffPolicy(fixedBackOffPolicy);
 
         SimpleRetryPolicy retryPolicy = new SimpleRetryPolicy();
-        retryPolicy.setMaxAttempts(5);
+        retryPolicy.setMaxAttempts(3);
         retryTemplate.setRetryPolicy(retryPolicy);
 
         return retryTemplate;
