@@ -2,7 +2,6 @@ package dev.crashteam.charon.publisher;
 
 import dev.crashteam.charon.model.stream.RedisStreamMessage;
 import lombok.RequiredArgsConstructor;
-import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.data.redis.connection.RedisStreamCommands;

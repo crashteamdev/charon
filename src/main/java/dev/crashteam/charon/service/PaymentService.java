@@ -95,7 +95,7 @@ public class PaymentService {
 
     @Transactional
     public PurchaseServiceResponse purchaseService(PurchaseServiceRequest request) {
-        log.info("Trying to purchase service by user - {}", request.getUserId());
+        log.info("Trying to purchase service from balance by user - {}", request.getUserId());
         try {
             if (paymentRepository.findByOperationId(request.getOperationId()).isPresent())
                 throw new DuplicateTransactionException("Transaction with operation id %s already exists"
@@ -130,8 +130,7 @@ public class PaymentService {
             Payment savedPayment = paymentRepository.save(payment);
             log.info("Saving payment with paymentId - {}", paymentId);
 
-            publisherHandler.publishPaymentCreatedMessage(savedPayment);
-            publisherHandler.publishPaymentStatusChangeMessage(savedPayment);
+            publisherHandler.publishPaymentCreatedMessage(savedPayment); // Event отпарвлять не требуется, платеж уже в статусе SUCCESS
 
             return protoMapper.getPurchaseServiceResponse(savedPayment, user.getBalance());
         } catch (Exception e) {
