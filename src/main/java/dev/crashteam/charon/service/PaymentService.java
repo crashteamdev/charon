@@ -130,7 +130,7 @@ public class PaymentService {
             Payment savedPayment = paymentRepository.save(payment);
             log.info("Saving payment with paymentId - {}", paymentId);
 
-            publisherHandler.publishPaymentCreatedMessage(savedPayment); // Event отпарвлять не требуется, платеж уже в статусе SUCCESS
+            publisherHandler.publishPaymentCreatedMessage(savedPayment); // Event отправлять не требуется, платеж уже в статусе SUCCESS
 
             return protoMapper.getPurchaseServiceResponse(savedPayment, user.getBalance());
         } catch (Exception e) {
