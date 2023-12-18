@@ -22,7 +22,6 @@ public class RedisStreamMessagePublisher implements MessagePublisher<RedisStream
     private final RedisStreamCommands streamCommands;
 
     @Override
-    @SneakyThrows
     public RecordId publish(RedisStreamMessage message) {
         return streamCommands.xAdd(MapRecord.create(message.getTopic().getBytes(StandardCharsets.UTF_8),
                 Collections.singletonMap(message.getMessageKey().getBytes(StandardCharsets.UTF_8),

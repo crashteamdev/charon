@@ -44,7 +44,7 @@ public class RedisStreamPublisherHandler implements StreamPublisherHandler<Recor
                 PaymentEvent paymentEvent = getMessagePaymentStatusChangeEntry(payment);
                 if (paymentEvent != null) {
                     return messagePublisher
-                            .publish(new RedisStreamMessage(streamKey, paymentEvent.toByteArray(), maxlen, "payment", waitPending));
+                            .publish(new RedisStreamMessage(streamKey, paymentEvent.toByteArray(), maxlen, "payment-create", waitPending));
                 }
                 return null;
             });
@@ -62,7 +62,7 @@ public class RedisStreamPublisherHandler implements StreamPublisherHandler<Recor
                 PaymentEvent paymentEvent = getMessagePaymentCreatedEntry(payment);
                 if (paymentEvent != null) {
                     return messagePublisher
-                            .publish(new RedisStreamMessage(streamKey, paymentEvent.toByteArray(), maxlen, "payment", waitPending));
+                            .publish(new RedisStreamMessage(streamKey, paymentEvent.toByteArray(), maxlen, "payment-event", waitPending));
                 }
                 return null;
             });

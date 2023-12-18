@@ -19,7 +19,6 @@ public class AwsStreamMessagePublisher implements MessagePublisher<AwsStreamMess
 
     private final AmazonKinesis amazonKinesis;
 
-    @SneakyThrows
     @Override
     public PutRecordsResult publish(AwsStreamMessage message) {
         return this.sendMessage(
