@@ -9,10 +9,9 @@ import dev.crashteam.charon.exception.NoSuchSubscriptionTypeException;
 import dev.crashteam.charon.mapper.ProtoMapper;
 import dev.crashteam.charon.model.Operation;
 import dev.crashteam.charon.model.RequestPaymentStatus;
+import dev.crashteam.charon.model.domain.*;
 import dev.crashteam.charon.model.domain.PaidService;
-import dev.crashteam.charon.model.domain.Payment;
 import dev.crashteam.charon.model.domain.PromoCode;
-import dev.crashteam.charon.model.domain.User;
 import dev.crashteam.charon.model.dto.resolver.PaymentData;
 import dev.crashteam.charon.model.dto.yookassa.YkPaymentRefundResponseDTO;
 import dev.crashteam.charon.publisher.handler.StreamPublisherHandler;
@@ -107,7 +106,9 @@ public class PaymentService {
             log.info("Purchasing service - {} by user - {}", paidService.getName(), user.getId());
             long multiply = context.getMultiply() == 0 ? 1 : context.getMultiply();
             long multipliedAmount = paidService.getAmount() * multiply;
-            long balanceAfterPurchase = user.getBalance() - multipliedAmount;
+            long amount = multiplyDiscount(multipliedAmount, multiply, paidService.getSubscriptionType());
+
+            long balanceAfterPurchase = user.getBalance() - amount;
             if (balanceAfterPurchase < 0) {
                 return protoMapper.getErrorPurchaseServiceResponse(user.getBalance());
             }
@@ -130,7 +131,7 @@ public class PaymentService {
             Payment savedPayment = paymentRepository.save(payment);
             log.info("Saving payment with paymentId - {}", paymentId);
 
-            publisherHandler.publishPaymentCreatedMessage(savedPayment); // Event отправлять не требуется, платеж уже в статусе SUCCESS
+            publisherHandler.publishPaymentCreatedMessage(savedPayment); // Status Event отправлять не требуется, платеж уже в статусе SUCCESS
 
             return protoMapper.getPurchaseServiceResponse(savedPayment, user.getBalance());
         } catch (Exception e) {
@@ -211,7 +212,7 @@ public class PaymentService {
 
         User user = userService.getUser(purchaseService.getUserId());
         long multiplyAmount = paidService.getAmount() * multiply;
-        long amount = multiplyDiscount(multiplyAmount, multiply);
+        long amount = multiplyDiscount(multiplyAmount, multiply, paidService.getSubscriptionType());
 
         if (promoCodeValidAndUnusedByUser(promoCode, user.getId())) {
             long discount = (long) (amount * ((double) promoCode.getDiscountPercentage() / 100));
@@ -339,13 +340,13 @@ public class PaymentService {
         promoCodeService.save(promoCode);
     }
 
-    private long multiplyDiscount(long amount, long multiply) {
-        if (multiply > 1) {
+    private long multiplyDiscount(long amount, long multiply, SubscriptionType subscriptionType) {
+        if (multiply > 1 && subscriptionType != null) {
             BigDecimal discount;
-            if (multiply <= 3) {
-                discount = new BigDecimal("0.10");
-            } else if (multiply >= 6) {
-                discount = new BigDecimal("0.30");
+            if (subscriptionType.getName().equals("advanced")) {
+                discount = new BigDecimal("0.15");
+            } else if (subscriptionType.getName().equals("pro")) {
+                discount = new BigDecimal("0.20");
             } else {
                 discount = new BigDecimal("0.10");
             }
