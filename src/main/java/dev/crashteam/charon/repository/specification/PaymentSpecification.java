@@ -14,6 +14,7 @@ import javax.persistence.criteria.Predicate;
 import javax.persistence.criteria.Root;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Locale;
@@ -45,7 +46,7 @@ public class PaymentSpecification implements Specification<Payment> {
         }
 
         if (paymentsQuery.hasDateTo() && StringUtils.hasText(paymentsQuery.getDateTo().getValue())) {
-            LocalDateTime dateTime = LocalDate.parse(paymentsQuery.getDateTo().getValue(), formatter).atStartOfDay();
+            LocalDateTime dateTime = LocalDate.parse(paymentsQuery.getDateTo().getValue(), formatter).atTime(LocalTime.MAX);
             predicates.add(
                     builder.lessThanOrEqualTo(root.get("created"), dateTime)
             );
