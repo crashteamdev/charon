@@ -53,8 +53,14 @@ public class CallbackService {
     public void freeKassaCallback(FkCallbackData callbackData) {
 
         Payment payment = paymentService.findByPaymentId(callbackData.getPaymentId());
-        if (payment == null) throw new EntityNotFoundException("Payment with id - %s not found"
-                .formatted(callbackData.getPaymentId()));
+        if (payment == null) {
+            log.error("Payment with id - {} not found", callbackData.getPaymentId());
+            return;
+        }
+        if (payment.getStatus().equals(RequestPaymentStatus.SUCCESS)) {
+            log.warn("Freekassa callback. Payment with id - {} already in success status", callbackData.getPaymentId());
+            return;
+        }
         BigDecimal callbackAmount = PaymentProtoUtils.getMinorMoneyAmount(callbackData.getAmount());
         if (!payment.getProviderAmount().equals(callbackAmount.longValue())) {
             payment.setStatus(RequestPaymentStatus.FAILED);
