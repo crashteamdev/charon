@@ -81,7 +81,7 @@ public class PaymentService {
                 .build();
     }
 
-    @Transactional(readOnly = true)
+    @Transactional
     public GetBalanceResponse getBalanceResponse(GetBalanceRequest request) {
         User user = userService.getUser(request.getUserId());
         return protoMapper.getBalanceResponse(user);
