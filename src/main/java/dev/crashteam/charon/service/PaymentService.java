@@ -367,7 +367,7 @@ public class PaymentService {
     }
 
     private boolean promoCodeValidAndUnusedByUser(PromoCode promoCode, String userId) {
-        return promoCode != null && !promoCodeService.existsByCodeAndUserId(promoCode.getCode(), userId)
+        return promoCode != null
                 && LocalDateTime.now().isBefore(promoCode.getValidUntil())
                 && promoCode.getUsageLimit() > 0;
     }
