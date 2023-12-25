@@ -49,7 +49,7 @@ public class PaymentController {
             return ResponseEntity.badRequest().build();
         }
         callbackService.freeKassaCallback(new FkCallbackData(merchantId, amount, orderId, paymentId, curId));
-        return ResponseEntity.ok().build();
+        return ResponseEntity.ok("YES");
     }
 
     @PostMapping(value = "/callback/click",
