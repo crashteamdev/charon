@@ -74,6 +74,9 @@ public class CallbackService {
             user.setBalance(user.getBalance() + payment.getAmount());
             userService.saveUser(user);
         }
+        if (payment.getPromoCode() != null) {
+            paymentService.savePromoCodeRestrictions(payment.getPromoCode(), payment.getUser());
+        }
         payment.setStatus(RequestPaymentStatus.SUCCESS);
         publisherHandler.publishPaymentStatusChangeMessage(payment);
         paymentService.save(payment);
@@ -170,6 +173,9 @@ public class CallbackService {
             User user = userService.getUser(payment.getUser().getId());
             user.setBalance(user.getBalance() + payment.getAmount());
             userService.saveUser(user);
+        }
+        if (payment.getPromoCode() != null) {
+            paymentService.savePromoCodeRestrictions(payment.getPromoCode(), payment.getUser());
         }
         publisherHandler.publishPaymentStatusChangeMessage(payment);
         response.setError(0L);

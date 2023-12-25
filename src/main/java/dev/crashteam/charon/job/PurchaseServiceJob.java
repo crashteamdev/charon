@@ -67,6 +67,9 @@ public class PurchaseServiceJob implements Job {
                 log.info("Payment with id [{}] canceled", payment.getPaymentId());
                 payment.setStatus(RequestPaymentStatus.CANCELED);
             }
+            if (payment.getPromoCode() != null) {
+                paymentService.savePromoCodeRestrictions(payment.getPromoCode(), payment.getUser());
+            }
             paymentService.save(payment);
             publisherHandler.publishPaymentStatusChangeMessage(payment);
         }
