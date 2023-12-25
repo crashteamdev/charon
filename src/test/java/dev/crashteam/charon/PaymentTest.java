@@ -15,6 +15,7 @@ import dev.crashteam.charon.model.Operation;
 import dev.crashteam.charon.model.RequestPaymentStatus;
 import dev.crashteam.charon.model.domain.Payment;
 import dev.crashteam.charon.model.domain.User;
+import dev.crashteam.charon.model.dto.FkCallbackData;
 import dev.crashteam.charon.model.dto.currency.ExchangeDto;
 import dev.crashteam.charon.repository.PaymentRepository;
 import dev.crashteam.charon.repository.PromoCodeRepository;
@@ -25,6 +26,7 @@ import dev.crashteam.charon.service.PaymentService;
 import dev.crashteam.charon.service.feign.CurrencyApiClient;
 import dev.crashteam.charon.service.feign.NinjaClient;
 import dev.crashteam.charon.publisher.handler.AwsStreamPublisherHandler;
+import dev.crashteam.charon.util.PaymentProtoUtils;
 import dev.crashteam.payment.*;
 import io.grpc.internal.testing.StreamRecorder;
 import lombok.extern.slf4j.Slf4j;
@@ -148,7 +150,7 @@ public class PaymentTest extends ContainerConfiguration {
                                 .setPlan(KeAnalyticsContext.KeAnalyticsPlan.newBuilder()
                                         .setDefaultPlan(KeAnalyticsContext.KeAnalyticsPlan.KeAnalyticsDefaultPlan
                                                 .newBuilder().buildPartial()).build()).build())).build())
-                .setPaymentSystem(PaymentSystem.PAYMENT_SYSTEM_YOOKASSA)
+                .setPaymentSystem(PaymentSystem.PAYMENT_SYSTEM_FREEKASSA)
                 .setReturnUrl("return-test.test")
                 .build();
         PaymentCreateRequest paymentCreateRequest = PaymentCreateRequest.newBuilder()
@@ -156,6 +158,18 @@ public class PaymentTest extends ContainerConfiguration {
                 .build();
         StreamRecorder<PaymentCreateResponse> paymentCreateObserver = StreamRecorder.create();
         grpcService.createPayment(paymentCreateRequest, paymentCreateObserver);
+
+        PaymentCreateResponse payment = paymentCreateObserver.getValues().get(0);
+        Payment paymentEntity = paymentService.findByPaymentId(payment.getPaymentId());
+
+        FkCallbackData fkCallbackData = new FkCallbackData();
+        fkCallbackData.setMerchantId("test");
+        fkCallbackData.setAmount(String.valueOf(PaymentProtoUtils.getMajorMoneyAmount(paymentEntity.getProviderAmount())));
+        fkCallbackData.setPaymentId(payment.getPaymentId());
+        fkCallbackData.setCurId("test");
+        fkCallbackData.setOrderId("1");
+        callbackService.freeKassaCallback(fkCallbackData);
+
         Assertions.assertNull(paymentCreateObserver.getError());
 
         Assertions.assertTrue(promoCodeRepository.findByCodeAndUserId(promoCode.get().getCode(), userId).isPresent());

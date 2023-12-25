@@ -28,8 +28,9 @@ public class YookassaService implements PaymentResolver {
 
     public PaymentData createPayment(PaymentCreateRequest request, String amount) {
         BigDecimal exchangeRate = currencyService.getExchangeRate("RUB");
-        BigDecimal convertedAmount = BigDecimal.valueOf(Double.parseDouble(amount))
-                .multiply(exchangeRate.setScale(2, RoundingMode.HALF_UP));
+        BigDecimal convertedAmount = (BigDecimal.valueOf(Double.parseDouble(amount))
+                .multiply(exchangeRate.setScale(2, RoundingMode.HALF_UP)))
+                .setScale(2, RoundingMode.HALF_UP);
         YkPaymentCreateRequestDTO paymentRequestDto = yookassaPaymentMapper
                 .getCreatePaymentRequestDto(request, String.valueOf(convertedAmount));
         YkPaymentResponseDTO responseDTO = kassaClient.createPayment(paymentRequestDto);

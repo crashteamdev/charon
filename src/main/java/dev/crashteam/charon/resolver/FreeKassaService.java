@@ -40,8 +40,9 @@ public class FreeKassaService implements PaymentResolver {
         StringBuilder sb = new StringBuilder();
         String paymentId = UUID.randomUUID().toString();
         BigDecimal exchangeRate = currencyService.getExchangeRate("RUB");
-        BigDecimal convertedAmount = BigDecimal.valueOf(Double.parseDouble(amount))
-                .multiply(exchangeRate.setScale(2, RoundingMode.HALF_UP));
+        BigDecimal convertedAmount = (BigDecimal.valueOf(Double.parseDouble(amount))
+                .multiply(exchangeRate.setScale(2, RoundingMode.HALF_UP)))
+                .setScale(2, RoundingMode.HALF_UP);
         String email = PaymentProtoUtils.getEmailFromRequest(request);
         String phone = PaymentProtoUtils.getPhoneFromRequest(request);
         String sign = DigestUtils.md5Hex("%s:%s:%s:%s:%s".formatted(freeKassaProperties.getShopId(), convertedAmount,

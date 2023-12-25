@@ -52,8 +52,9 @@ public class LavaService implements PaymentResolver {
         log.info("Processing lava payment");
         String paymentId = UUID.randomUUID().toString();
         BigDecimal exchangeRate = currencyService.getExchangeRate("RUB");
-        BigDecimal convertedAmount = BigDecimal.valueOf(Double.parseDouble(amount))
-                .multiply(exchangeRate.setScale(2, RoundingMode.HALF_UP));
+        BigDecimal convertedAmount = (BigDecimal.valueOf(Double.parseDouble(amount))
+                .multiply(exchangeRate.setScale(2, RoundingMode.HALF_UP)))
+                .setScale(2, RoundingMode.HALF_UP);
         LavaRequest lavaRequest = paymentMapper.getRequest(request, paymentId, String.valueOf(convertedAmount));
 
         String signature;

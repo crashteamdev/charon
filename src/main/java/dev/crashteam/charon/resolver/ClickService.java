@@ -38,8 +38,9 @@ public class ClickService implements PaymentResolver {
         String paymentId = UUID.randomUUID().toString();
 
         BigDecimal exchangeRate = currencyService.getExchangeRate("UZS");
-        BigDecimal convertedAmount = BigDecimal.valueOf(Double.parseDouble(amount))
-                .multiply(exchangeRate.setScale(2, RoundingMode.HALF_UP));
+        BigDecimal convertedAmount = (BigDecimal.valueOf(Double.parseDouble(amount))
+                .multiply(exchangeRate.setScale(2, RoundingMode.HALF_UP)))
+                .setScale(2, RoundingMode.HALF_UP);
 
         String email = PaymentProtoUtils.getEmailFromRequest(request);
         String phone = PaymentProtoUtils.getPhoneFromRequest(request);
