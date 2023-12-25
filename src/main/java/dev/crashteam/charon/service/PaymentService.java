@@ -204,7 +204,7 @@ public class PaymentService {
 
         PromoCode promoCode = StringUtils.hasText(purchaseService.getPromoCode())
                 ? promoCodeService.getPromoCode(purchaseService.getPromoCode()) : null;
-        log.info("Promocode = {}", promoCode);
+        log.info("Protobuf code = {}. Found promocode = {}", purchaseService.getPromoCode(), promoCode);
 
         PaidServiceContext paidServiceContext = purchaseService.getPaidService().getContext();
         PaidService paidService = getPaidServiceFromContext(paidServiceContext);
