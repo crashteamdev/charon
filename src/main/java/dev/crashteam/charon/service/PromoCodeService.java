@@ -14,7 +14,6 @@ public class PromoCodeService {
 
     private final PromoCodeRepository promoCodeRepository;
 
-    @Transactional(readOnly = true)
     public PromoCode getPromoCode(String code) {
         return promoCodeRepository.findByCode(code).orElse(null);
     }

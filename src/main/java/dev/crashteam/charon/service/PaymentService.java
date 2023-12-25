@@ -217,6 +217,7 @@ public class PaymentService {
         if (promoCodeValidAndUnusedByUser(promoCode, user.getId())) {
             long discount = (long) (amount * ((double) promoCode.getDiscountPercentage() / 100));
             amount = amount - discount;
+            log.info("Using promocode={} by user={}, new amount={}", promoCode.getCode(), user.getId(), amount);
         }
         BigDecimal moneyAmount = PaymentProtoUtils.getMajorMoneyAmount(amount);
         PaymentData response = paymentResolver.createPayment(request, String.valueOf(moneyAmount));
