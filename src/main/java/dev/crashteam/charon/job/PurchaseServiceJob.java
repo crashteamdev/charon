@@ -60,15 +60,15 @@ public class PurchaseServiceJob implements Job {
             if (RequestPaymentStatus.SUCCESS.equals(paymentStatus)) {
                 log.info("Payment with id [{}] successful, purchasing service", payment.getPaymentId());
                 payment.setStatus(RequestPaymentStatus.SUCCESS);
+                if (payment.getPromoCode() != null) {
+                    paymentService.savePromoCodeRestrictions(payment.getPromoCode(), payment.getUser());
+                }
             } else if (RequestPaymentStatus.FAILED.equals(paymentStatus)) {
                 log.info("Payment with id [{}] failed for some reason", payment.getPaymentId());
                 payment.setStatus(RequestPaymentStatus.FAILED);
             } else if (RequestPaymentStatus.CANCELED.equals(paymentStatus)) {
                 log.info("Payment with id [{}] canceled", payment.getPaymentId());
                 payment.setStatus(RequestPaymentStatus.CANCELED);
-            }
-            if (payment.getPromoCode() != null) {
-                paymentService.savePromoCodeRestrictions(payment.getPromoCode(), payment.getUser());
             }
             paymentService.save(payment);
             publisherHandler.publishPaymentStatusChangeMessage(payment);
