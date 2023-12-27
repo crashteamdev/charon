@@ -117,7 +117,7 @@ public class PaymentService {
             payment.setPaymentId(paymentId);
             payment.setOperationId(request.getOperationId());
             payment.setCurrency("USD");
-            payment.setAmount(multipliedAmount);
+            payment.setAmount(amount);
             payment.setCreated(LocalDateTime.now());
             payment.setUpdated(LocalDateTime.now());
             payment.setMonthPaid(multiply);
