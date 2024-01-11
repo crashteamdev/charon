@@ -196,7 +196,8 @@ public class PaymentService {
     @Transactional
     public PaymentCreateResponse createPurchaseServicePayment(PaymentCreateRequest request) throws JsonProcessingException {
         PaymentCreateRequest.PaymentPurchaseService purchaseService = request.getPaymentPurchaseService();
-        log.info("Processing service purchase request for user - {}", purchaseService.getUserId());
+        log.info("Processing service purchase request for user - {}. Promo code - {}", purchaseService.getUserId(),
+                StringUtils.hasText(purchaseService.getPromoCode()) ? purchaseService.getPromoCode() : "");
         PaymentResolver paymentResolver = paymentResolvers.stream().filter(it -> it.getPaymentSystem()
                         .equals(purchaseService.getPaymentSystem()))
                 .findFirst()
