@@ -211,7 +211,14 @@ public class PaymentService {
         long multiply = paidServiceContext.getMultiply() == 0 ? 1 : paidServiceContext.getMultiply();
 
         User user = userService.getUser(purchaseService.getUserId());
-        long multiplyAmount = paidService.getAmount() * multiply;
+
+        long balanceRequestAmount = paidService.getAmount();
+        if (paymentResolver.getPaymentSystem().equals(PaymentSystem.PAYMENT_SYSTEM_CLICK)) {
+            long increaseAmount = (balanceRequestAmount * 20) / 100;
+            balanceRequestAmount += increaseAmount;
+        }
+
+        long multiplyAmount = balanceRequestAmount * multiply;
         long amount = multiplyDiscount(multiplyAmount, multiply, paidService.getSubscriptionType());
 
         if (promoCodeValidAndUnusedByUser(promoCode, user.getId())) {
@@ -260,7 +267,12 @@ public class PaymentService {
                 .orElseThrow(IllegalArgumentException::new);
         String paymentSystemTitle = protoMapper.getPaymentSystemType(balanceRequest.getPaymentSystem()).getTitle();
         log.info("Processing balance deposit request for user - {} with payment system - {}", balanceRequest.getUserId(), paymentSystemTitle);
-        BigDecimal actualAmount = PaymentProtoUtils.getMajorMoneyAmount(balanceRequest.getAmount());
+        long balanceRequestAmount = balanceRequest.getAmount();
+        if (paymentResolver.getPaymentSystem().equals(PaymentSystem.PAYMENT_SYSTEM_CLICK)) {
+            long increaseAmount = (balanceRequestAmount * 20) / 100;
+            balanceRequestAmount += increaseAmount;
+        }
+        BigDecimal actualAmount = PaymentProtoUtils.getMajorMoneyAmount(balanceRequestAmount);
         PaymentData response = paymentResolver.createPayment(request, String.valueOf(actualAmount));
 
         User user = userService.getUser(balanceRequest.getUserId());
