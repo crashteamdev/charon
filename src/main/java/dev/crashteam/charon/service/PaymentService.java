@@ -215,7 +215,7 @@ public class PaymentService {
 
         long balanceRequestAmount = paidService.getAmount();
         if (paymentResolver.getPaymentSystem().equals(PaymentSystem.PAYMENT_SYSTEM_CLICK)) {
-            long increaseAmount = (balanceRequestAmount * 20) / 100;
+            long increaseAmount = (balanceRequestAmount * 10) / 100;
             balanceRequestAmount += increaseAmount;
         }
 
@@ -270,7 +270,7 @@ public class PaymentService {
         log.info("Processing balance deposit request for user - {} with payment system - {}", balanceRequest.getUserId(), paymentSystemTitle);
         long balanceRequestAmount = balanceRequest.getAmount();
         if (paymentResolver.getPaymentSystem().equals(PaymentSystem.PAYMENT_SYSTEM_CLICK)) {
-            long increaseAmount = (balanceRequestAmount * 20) / 100;
+            long increaseAmount = (balanceRequestAmount * 10) / 100;
             balanceRequestAmount += increaseAmount;
         }
         BigDecimal actualAmount = PaymentProtoUtils.getMajorMoneyAmount(balanceRequestAmount);
