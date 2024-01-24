@@ -9,13 +9,20 @@ import java.math.BigDecimal;
 @Data
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class EnotPaymentStatusResponse {
-    @JsonProperty("invoice_id")
-    private String invoiceId;
-    @JsonProperty("invoice_amount")
-    private BigDecimal invoiceAmount;
-    @JsonProperty("order_id")
-    private String orderId;
-    private String currency;
-    private String shopId;
-    private String status;
+
+    private EnotPaymentStatusResponseData data;
+
+    @Data
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    public static class EnotPaymentStatusResponseData {
+        @JsonProperty("invoice_id")
+        private String invoiceId;
+        @JsonProperty("invoice_amount")
+        private BigDecimal invoiceAmount;
+        @JsonProperty("order_id")
+        private String orderId;
+        private String currency;
+        private String shopId;
+        private String status;
+    }
 }

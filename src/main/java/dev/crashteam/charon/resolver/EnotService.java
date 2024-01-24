@@ -80,8 +80,9 @@ public class EnotService implements PaymentResolver {
         }
         EnotPaymentStatusResponse status = enotClient
                 .status(enotProperties.getSecretKey(), paymentId, enotProperties.getShopId());
-        if (status != null) {
-            return switch (status.getStatus()) {
+        EnotPaymentStatusResponse.EnotPaymentStatusResponseData statusData = status.getData();
+        if (statusData != null && statusData.getStatus() != null) {
+            return switch (statusData.getStatus()) {
                 case "success" -> RequestPaymentStatus.SUCCESS;
                 case "fail" -> RequestPaymentStatus.FAILED;
                 case "expired" -> RequestPaymentStatus.CANCELED;
