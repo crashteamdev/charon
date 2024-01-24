@@ -81,6 +81,10 @@ app:
       url: https://api.lava.ru/business/invoice
       shopId: 45c330f1-a46d-484f-a8e1-524c08df8879
       secretKey: test-key
+    enot:
+      url: https://api.enot.io/invoice
+      shopId:
+      secretKey:
 
 freekassa:
   baseUrl: https://api.freekassa.ru
