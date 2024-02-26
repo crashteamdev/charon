@@ -50,6 +50,7 @@ public class EnotService implements PaymentResolver {
                 .multiply(exchangeRate.setScale(2, RoundingMode.HALF_UP)))
                 .setScale(2, RoundingMode.HALF_UP);
         EnotPaymentCreateRequest paymentCreateRequest = paymentMapper.createRequest(request, paymentId, convertedAmount);
+        log.info("Creating payment with data - {}", paymentCreateRequest);
         EnotPaymentCreateResponse response = enotClient.create(enotProperties.getSecretKey(), paymentCreateRequest);
 
         PaymentData paymentData = new PaymentData();
