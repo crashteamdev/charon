@@ -18,6 +18,7 @@ public class EnotPaymentCreateRequest {
     @JsonProperty("order_id")
     private String orderId;
     private String currency;
+    @JsonProperty("shop_id")
     private String shopId;
     @JsonProperty("fail_url")
     private String failUrl;
