@@ -16,7 +16,7 @@ public interface EnotClient {
     EnotPaymentCreateResponse create(@RequestHeader("x-api-key") String apiKey,
                                      EnotPaymentCreateRequest request);
 
-    @GetMapping("/status")
+    @GetMapping("/info")
     EnotPaymentStatusResponse status(@RequestHeader("x-api-key") String apiKey,
                                      @RequestParam("invoice_id") String invoiceId,
                                      @RequestParam("shop_id") String shopId);
