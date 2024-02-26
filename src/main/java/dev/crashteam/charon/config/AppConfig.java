@@ -1,6 +1,7 @@
 package dev.crashteam.charon.config;
 
 import dev.crashteam.charon.component.ClickProperties;
+import dev.crashteam.charon.component.EnotProperties;
 import dev.crashteam.charon.component.FreeKassaProperties;
 import dev.crashteam.charon.component.LavaProperties;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
@@ -13,7 +14,7 @@ import org.springframework.retry.support.RetryTemplate;
 import java.util.Random;
 
 @Configuration
-@EnableConfigurationProperties(value = {FreeKassaProperties.class, ClickProperties.class, LavaProperties.class})
+@EnableConfigurationProperties(value = {FreeKassaProperties.class, ClickProperties.class, LavaProperties.class, EnotProperties.class})
 public class AppConfig {
 
     @Bean
