@@ -3,6 +3,7 @@ package dev.crashteam.charon.util;
 import dev.crashteam.charon.model.RequestPaymentStatus;
 import dev.crashteam.payment.PaymentCreateRequest;
 import dev.crashteam.payment.PaymentStatus;
+import org.springframework.util.StringUtils;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -13,26 +14,31 @@ public class PaymentProtoUtils {
 
     public static String getUrlFromRequest(PaymentCreateRequest request) {
         return Optional.of(request.getPaymentDepositUserBalance().getReturnUrl())
+                .filter(StringUtils::hasText)
                 .orElse(request.getPaymentPurchaseService().getReturnUrl());
     }
 
     public static String getEmailFromRequest(PaymentCreateRequest request) {
         return Optional.of(request.getPaymentDepositUserBalance().getUserEmail())
+                .filter(StringUtils::hasText)
                 .orElse(request.getPaymentPurchaseService().getUserEmail());
     }
 
     public static String getPhoneFromRequest(PaymentCreateRequest request) {
         return Optional.of(request.getPaymentDepositUserBalance().getUserPhone())
+                .filter(StringUtils::hasText)
                 .orElse(request.getPaymentPurchaseService().getUserPhone());
     }
 
     public static String getDescriptionFromRequest(PaymentCreateRequest request) {
         return Optional.of(request.getPaymentDepositUserBalance().getDescription())
+                .filter(StringUtils::hasText)
                 .orElse(request.getPaymentPurchaseService().getDescription());
     }
 
     public static String getUserIdFromRequest(PaymentCreateRequest request) {
         return Optional.of(request.getPaymentDepositUserBalance().getUserId())
+                .filter(StringUtils::hasText)
                 .orElse(request.getPaymentPurchaseService().getUserId());
     }
 
