@@ -23,6 +23,7 @@ import javax.persistence.EntityNotFoundException;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDateTime;
+import java.util.Optional;
 import java.util.UUID;
 
 @Slf4j
@@ -70,7 +71,7 @@ public class EnotService implements PaymentResolver {
             return paymentData;
         }
         String userId = PaymentProtoUtils.getUserIdFromRequest(request);
-        throw new IntegrationException("Error creating enot request for user - %s".formatted(userId) );
+        throw new IntegrationException("Error creating enot request for user - %s".formatted(userId));
     }
 
     @Override
@@ -83,6 +84,7 @@ public class EnotService implements PaymentResolver {
                 .status(enotProperties.getSecretKey(), paymentId, enotProperties.getShopId());
         EnotPaymentStatusResponse.EnotPaymentStatusResponseData statusData = status.getData();
         if (statusData != null && statusData.getStatus() != null) {
+            log.info("Got ENOT payment status - {} for payment - {}", statusData.getStatus(), paymentId);
             return switch (statusData.getStatus()) {
                 case "success" -> RequestPaymentStatus.SUCCESS;
                 case "fail" -> RequestPaymentStatus.FAILED;
@@ -90,6 +92,7 @@ public class EnotService implements PaymentResolver {
                 default -> RequestPaymentStatus.PENDING;
             };
         }
+        log.info("ENOT payment status maybe null or unknown. Data - {} for payment - {}", statusData, paymentId);
         return RequestPaymentStatus.PENDING;
     }
 }
