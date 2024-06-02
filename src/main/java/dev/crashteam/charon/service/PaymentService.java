@@ -39,6 +39,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 @Slf4j
 @Service
@@ -101,12 +102,17 @@ public class PaymentService {
                         .formatted(request.getOperationId()));
 
             User user = userService.getUser(request.getUserId());
-            PaidServiceContext context = request.getPaidService().getContext();
-            PaidService paidService = getPaidServiceFromContext(context);
-            log.info("Purchasing service - {} by user - {}", paidService.getName(), user.getId());
-            long multiply = context.getMultiply() == 0 ? 1 : context.getMultiply();
-            long multipliedAmount = paidService.getAmount() * multiply;
-            long amount = multiplyDiscount(multipliedAmount, multiply, paidService.getSubscriptionType());
+
+            List<PaidService> paidServices = getPaidServiceFromContext(request.getPaidServicesList());
+            log.info("Purchasing service - {} by user - {}", paidServices.stream().map(PaidService::getName)
+                    .collect(Collectors.joining(", ")), user.getId());
+
+            long multiply = request.getMultiply() == 0 ? 1 : request.getMultiply();
+
+            long amount = paidServices.stream().map(it -> {
+                long multipliedAmount = it.getAmount() * multiply;
+                return multiplyDiscount(multipliedAmount, multiply, it.getSubscriptionType());
+            }).mapToLong(Long::longValue).sum();
 
             long balanceAfterPurchase = user.getBalance() - amount;
             if (balanceAfterPurchase < 0) {
@@ -121,7 +127,7 @@ public class PaymentService {
             payment.setCreated(LocalDateTime.now());
             payment.setUpdated(LocalDateTime.now());
             payment.setMonthPaid(multiply);
-            payment.setPaidService(paidService);
+            payment.setPaidServices(new HashSet<>(paidServices));
             payment.setOperationType(operationTypeService.getOperationType(Operation.PURCHASE_SERVICE.getTitle()));
             payment.setStatus(RequestPaymentStatus.SUCCESS);
             user.setBalance(balanceAfterPurchase);
@@ -206,21 +212,22 @@ public class PaymentService {
         PromoCode promoCode = StringUtils.hasText(purchaseService.getPromoCode())
                 ? promoCodeService.getPromoCode(purchaseService.getPromoCode()) : null;
 
-        PaidServiceContext paidServiceContext = purchaseService.getPaidService().getContext();
-        PaidService paidService = getPaidServiceFromContext(paidServiceContext);
-        log.info("Purchasing service - {} by user - {}", paidService.getName(), purchaseService.getUserId());
-        long multiply = paidServiceContext.getMultiply() == 0 ? 1 : paidServiceContext.getMultiply();
+        List<PaidService> paidServices = getPaidServiceFromContext(purchaseService.getPaidServicesList());
+        log.info("Purchasing service - {} by user - {}", paidServices.stream().map(PaidService::getName)
+                .collect(Collectors.joining(", ")), purchaseService.getUserId());
+        long multiply = purchaseService.getMultiply() == 0 ? 1 : purchaseService.getMultiply();
 
         User user = userService.getUser(purchaseService.getUserId());
 
-        long balanceRequestAmount = paidService.getAmount();
-        if (paymentResolver.getPaymentSystem().equals(PaymentSystem.PAYMENT_SYSTEM_CLICK)) {
-            long increaseAmount = (balanceRequestAmount * 10) / 100;
-            balanceRequestAmount += increaseAmount;
-        }
+        long amount = paidServices.stream().map(it -> {
+            long multipliedAmount = it.getAmount() * multiply;
+            return multiplyDiscount(multipliedAmount, multiply, it.getSubscriptionType());
+        }).mapToLong(Long::longValue).sum();
 
-        long multiplyAmount = balanceRequestAmount * multiply;
-        long amount = multiplyDiscount(multiplyAmount, multiply, paidService.getSubscriptionType());
+        if (paymentResolver.getPaymentSystem().equals(PaymentSystem.PAYMENT_SYSTEM_CLICK)) {
+            long increaseAmount = (amount * 10) / 100;
+            amount += increaseAmount;
+        }
 
         if (promoCodeValidAndUnusedByUser(promoCode, user.getId())) {
             long discount = (long) (amount * ((double) promoCode.getDiscountPercentage() / 100));
@@ -249,7 +256,7 @@ public class PaymentService {
         payment.setPhone(response.getPhone());
         payment.setPaymentSystem(protoMapper.getPaymentSystemType(purchaseService.getPaymentSystem()).getTitle());
         payment.setMetadata(objectMapper.writeValueAsString(request.getMetadataMap()));
-        payment.setPaidService(paidService);
+        payment.setPaidServices(new HashSet<>(paidServices));
         payment.setExchangeRate(response.getExchangeRate());
         paymentRepository.save(payment);
         log.info("Saving payment with paymentId - {}", response.getPaymentId());
@@ -310,6 +317,12 @@ public class PaymentService {
         Pageable pageable = PageRequest.of((int) (pagination.getOffset()
                 / pagination.getLimit()), (int) pagination.getLimit());
         return paymentRepository.findAll(new PaymentSpecification(paymentsQuery), pageable);
+    }
+
+    public List<PaidService> getPaidServiceFromContext(List<dev.crashteam.payment.PaidService> paidServicesList) {
+        return paidServicesList.stream().map(dev.crashteam.payment.PaidService::getContext)
+                .map(this::getPaidServiceFromContext)
+                .collect(Collectors.toList());
     }
 
     public PaidService getPaidServiceFromContext(PaidServiceContext paidServiceContext) {
