@@ -140,19 +140,17 @@ public class PaymentTest extends ContainerConfiguration {
         Assertions.assertNull(promoCodeResponse.getError());
         String createdCode = promoCodeResponse.getValues().get(0).getPromoCode().getCode();
         Optional<dev.crashteam.charon.model.domain.PromoCode> promoCode = promoCodeRepository.findByCode(createdCode);
-        Assertions.assertTrue(promoCode.isPresent());
 
+        List<PaidService> paidServices = getPaidServices();
         var purchaseService = PaymentCreateRequest.PaymentPurchaseService.newBuilder()
                 .setUserId(userId)
                 .setPromoCode(promoCode.get().getCode())
-                .setPaidService(PaidService.newBuilder().setContext(PaidServiceContext.newBuilder()
-                        .setMultiply(2).setKeAnalyticsContext(KeAnalyticsContext.newBuilder()
-                                .setPlan(KeAnalyticsContext.KeAnalyticsPlan.newBuilder()
-                                        .setDefaultPlan(KeAnalyticsContext.KeAnalyticsPlan.KeAnalyticsDefaultPlan
-                                                .newBuilder().buildPartial()).build()).build())).build())
+                .setMultiply(2)
                 .setPaymentSystem(PaymentSystem.PAYMENT_SYSTEM_FREEKASSA)
                 .setReturnUrl("return-test.test")
+                .addAllPaidServices(paidServices)
                 .build();
+
         PaymentCreateRequest paymentCreateRequest = PaymentCreateRequest.newBuilder()
                 .setPaymentPurchaseService(purchaseService)
                 .build();
@@ -179,25 +177,15 @@ public class PaymentTest extends ContainerConfiguration {
     public void purchaseServiceTest() {
         User user = new User();
         user.setCurrency("USD");
-        user.setBalance(10000L);
+        user.setBalance(20000L);
         user.setId(UUID.randomUUID().toString());
         userRepository.save(user);
-
-        KeAnalyticsContext.KeAnalyticsPlan.KeAnalyticsAdvancedPlan analyticsAdvancedPlan = KeAnalyticsContext
-                .KeAnalyticsPlan.KeAnalyticsAdvancedPlan.newBuilder().build();
-        KeAnalyticsContext.KeAnalyticsPlan keAnalyticsPlan = KeAnalyticsContext.KeAnalyticsPlan.newBuilder()
-                .setAdvancedPlan(analyticsAdvancedPlan)
-                .build();
-        KeAnalyticsContext keAnalyticsContext = KeAnalyticsContext.newBuilder().setPlan(keAnalyticsPlan).build();
-
-        PaidServiceContext serviceContext = PaidServiceContext.newBuilder()
-                .setMultiply(2).setKeAnalyticsContext(keAnalyticsContext).build();
-
-        PaidService paidService = PaidService.newBuilder().setContext(serviceContext).build();
+        List<PaidService> paidServices = getPaidServices();
 
         PurchaseServiceRequest purchaseServiceRequest = PurchaseServiceRequest.newBuilder()
-                .setPaidService(paidService)
+                .addAllPaidServices(paidServices)
                 .setUserId(user.getId())
+                .setMultiply(1)
                 .setOperationId(UUID.randomUUID().toString())
                 .build();
 
@@ -209,31 +197,21 @@ public class PaymentTest extends ContainerConfiguration {
     public void purchaseServiceTestIdempotentError() {
         User user = new User();
         user.setCurrency("USD");
-        user.setBalance(10000L);
+        user.setBalance(20000L);
         user.setId(UUID.randomUUID().toString());
         userRepository.save(user);
 
         String operationId = UUID.randomUUID().toString();
 
-        KeAnalyticsContext.KeAnalyticsPlan.KeAnalyticsAdvancedPlan analyticsAdvancedPlan = KeAnalyticsContext
-                .KeAnalyticsPlan.KeAnalyticsAdvancedPlan.newBuilder().build();
-        KeAnalyticsContext.KeAnalyticsPlan keAnalyticsPlan = KeAnalyticsContext.KeAnalyticsPlan.newBuilder()
-                .setAdvancedPlan(analyticsAdvancedPlan)
-                .build();
-        KeAnalyticsContext keAnalyticsContext = KeAnalyticsContext.newBuilder().setPlan(keAnalyticsPlan).build();
-
-        PaidServiceContext serviceContext = PaidServiceContext.newBuilder()
-                .setMultiply(2).setKeAnalyticsContext(keAnalyticsContext).build();
-
-        PaidService paidService = PaidService.newBuilder().setContext(serviceContext).build();
-
         PurchaseServiceRequest purchaseServiceRequest = PurchaseServiceRequest.newBuilder()
-                .setPaidService(paidService)
+                .setMultiply(2)
+                .addAllPaidServices(getPaidServices())
                 .setUserId(user.getId())
                 .setOperationId(operationId)
                 .build();
         PurchaseServiceRequest secondServiceRequest = PurchaseServiceRequest.newBuilder()
-                .setPaidService(paidService)
+                .setMultiply(1)
+                .addAllPaidServices(getPaidServices())
                 .setUserId(user.getId())
                 .setOperationId(operationId)
                 .build();
@@ -250,11 +228,8 @@ public class PaymentTest extends ContainerConfiguration {
         String userId = UUID.randomUUID().toString();
         var purchaseService = PaymentCreateRequest.PaymentPurchaseService.newBuilder()
                 .setUserId(userId)
-                .setPaidService(PaidService.newBuilder().setContext(PaidServiceContext.newBuilder()
-                        .setMultiply(2).setKeAnalyticsContext(KeAnalyticsContext.newBuilder()
-                                .setPlan(KeAnalyticsContext.KeAnalyticsPlan.newBuilder()
-                                        .setDefaultPlan(KeAnalyticsContext.KeAnalyticsPlan.KeAnalyticsDefaultPlan
-                                                .newBuilder().buildPartial()).build()).build())).build())
+                .setMultiply(2)
+                .addAllPaidServices(getPaidServices())
                 .setPaymentSystem(PaymentSystem.PAYMENT_SYSTEM_LAVA)
                 .setReturnUrl("return-test.test")
                 .build();
@@ -280,11 +255,8 @@ public class PaymentTest extends ContainerConfiguration {
         String userId = UUID.randomUUID().toString();
         var purchaseService = PaymentCreateRequest.PaymentPurchaseService.newBuilder()
                 .setUserId(userId)
-                .setPaidService(PaidService.newBuilder().setContext(PaidServiceContext.newBuilder()
-                        .setMultiply(2).setKeAnalyticsContext(KeAnalyticsContext.newBuilder()
-                                .setPlan(KeAnalyticsContext.KeAnalyticsPlan.newBuilder()
-                                        .setDefaultPlan(KeAnalyticsContext.KeAnalyticsPlan.KeAnalyticsDefaultPlan
-                                                .newBuilder().buildPartial()).build()).build())).build())
+                .setMultiply(1)
+                .addAllPaidServices(getPaidServices())
                 .setPaymentSystem(PaymentSystem.PAYMENT_SYSTEM_FREEKASSA)
                 .setReturnUrl("return-test.test")
                 .build();
@@ -314,11 +286,8 @@ public class PaymentTest extends ContainerConfiguration {
         String userId = UUID.randomUUID().toString();
         var purchaseService = PaymentCreateRequest.PaymentPurchaseService.newBuilder()
                 .setUserId(userId)
-                .setPaidService(PaidService.newBuilder().setContext(PaidServiceContext.newBuilder()
-                        .setMultiply(2).setKeAnalyticsContext(KeAnalyticsContext.newBuilder()
-                                .setPlan(KeAnalyticsContext.KeAnalyticsPlan.newBuilder()
-                                        .setDefaultPlan(KeAnalyticsContext.KeAnalyticsPlan.KeAnalyticsDefaultPlan
-                                                .newBuilder().buildPartial()).build()).build())).build())
+                .setMultiply(1)
+                .addAllPaidServices(getPaidServices())
                 .setPaymentSystem(PaymentSystem.PAYMENT_SYSTEM_YOOKASSA)
                 .setReturnUrl("return-test.test")
                 .build();
@@ -480,10 +449,24 @@ public class PaymentTest extends ContainerConfiguration {
 
         Page<Payment> payments = paymentService.getPayments(paymentsQuery);
         Assertions.assertNotNull(payments.getContent());
-        Assertions.assertTrue(payments.stream().allMatch(it->it.getStatus().equals(RequestPaymentStatus.SUCCESS)));
+        Assertions.assertTrue(payments.stream().allMatch(it -> it.getStatus().equals(RequestPaymentStatus.SUCCESS)));
 
         Page<Payment> secondPayments = paymentService.getPayments(datePaymentsQuery);
         Assertions.assertEquals(0L, secondPayments.getTotalElements());
+    }
+
+    private List<PaidService> getPaidServices() {
+        PaidService kePaidService = PaidService.newBuilder().setContext(PaidServiceContext.newBuilder()
+                .setKeAnalyticsContext(KeAnalyticsContext.newBuilder()
+                        .setPlan(KeAnalyticsContext.KeAnalyticsPlan.newBuilder()
+                                .setDefaultPlan(KeAnalyticsContext.KeAnalyticsPlan.KeAnalyticsDefaultPlan
+                                        .newBuilder().buildPartial()).build()).build())).build();
+        PaidService uzumPaidService = PaidService.newBuilder().setContext(PaidServiceContext.newBuilder()
+                .setUzumAnalyticsContext(UzumAnalyticsContext.newBuilder()
+                        .setPlan(UzumAnalyticsContext.UzumAnalyticsPlan.newBuilder()
+                                .setDefaultPlan(UzumAnalyticsContext.UzumAnalyticsPlan.UzumAnalyticsDefaultPlan
+                                        .newBuilder().buildPartial()).build()).build())).build();
+        return List.of(kePaidService, uzumPaidService);
     }
 
 //    @Test

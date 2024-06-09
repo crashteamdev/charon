@@ -11,6 +11,7 @@ import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 import javax.persistence.*;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.Set;
 
 @Data
 @Entity
@@ -76,4 +77,12 @@ public class Payment {
     @LastModifiedDate
     @Column(name = "updated")
     private LocalDateTime updated;
+    @ManyToMany
+    @JoinTable(
+            name = "payment_paid_service",
+            joinColumns = @JoinColumn(name = "payment_id"),
+            inverseJoinColumns = @JoinColumn(name = "paid_service_id")
+    )
+    @ToString.Exclude
+    private Set<PaidService> paidServices;
 }

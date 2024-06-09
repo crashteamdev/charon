@@ -335,4 +335,32 @@
             <column name="exchange_rate" type="NUMERIC"/>
         </addColumn>
     </changeSet>
+
+    <changeSet id="create-payment-paid-service-table" author="sagefreke">
+        <createTable tableName="payment_paid_service">
+            <column name="payment_id" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="paid_service_id" type="bigint">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+
+        <addPrimaryKey tableName="payment_paid_service" columnNames="payment_id,paid_service_id"
+                       constraintName="pk_payment_paid_service"/>
+
+        <addForeignKeyConstraint baseTableName="payment_paid_service"
+                                 baseColumnNames="payment_id"
+                                 constraintName="fk_payment_paid_service_payment"
+                                 referencedTableName="payment"
+                                 referencedColumnNames="payment_id"
+                                 deleteCascade="true"/>
+
+        <addForeignKeyConstraint baseTableName="payment_paid_service"
+                                 baseColumnNames="paid_service_id"
+                                 constraintName="fk_payment_paid_service_paid_service"
+                                 referencedTableName="paid_service"
+                                 referencedColumnNames="id"
+                                 deleteCascade="true"/>
+    </changeSet>
 </databaseChangeLog>
