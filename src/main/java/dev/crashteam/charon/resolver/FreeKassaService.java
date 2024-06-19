@@ -27,7 +27,7 @@ public class FreeKassaService implements PaymentResolver {
 
     private final FreeKassaProperties freeKassaProperties;
 
-    private final static String FREEKASSA_BASE_URL = "https://pay.freekassa.ru";
+    private final static String FREEKASSA_BASE_URL = "https://pay.freekassa.com";
 
     @Override
     public PaymentSystem getPaymentSystem() {
