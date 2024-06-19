@@ -16,7 +16,7 @@
         <management.port>8023</management.port>
         <grpc-server.version>2.14.0.RELEASE</grpc-server.version>
         <spring-cloud.version>2021.0.1</spring-cloud.version>
-        <payment-proto.version>0.0.43</payment-proto.version>
+        <payment-proto.version>0.0.44</payment-proto.version>
         <spring-data-jpa.version>2.6.4</spring-data-jpa.version>
         <grpc-testing.version>1.53.0</grpc-testing.version>
         <wiremock.version>2.27.2</wiremock.version>

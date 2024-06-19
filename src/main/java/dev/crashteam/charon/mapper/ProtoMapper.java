@@ -177,6 +177,7 @@ public class ProtoMapper {
         return CheckPromoCodeResponse.newBuilder()
                 .setSuccessResponse(CheckPromoCodeResponse.SuccessResponse.newBuilder()
                         .setPromoCode(promoCode.getCode())
+                        .setDiscountPercentage(promoCode.getDiscountPercentage())
                         .build())
                 .build();
     }
