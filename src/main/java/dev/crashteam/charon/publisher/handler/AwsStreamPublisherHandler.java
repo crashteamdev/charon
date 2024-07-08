@@ -2,6 +2,7 @@ package dev.crashteam.charon.publisher.handler;
 
 import com.amazonaws.services.kinesis.model.PutRecordsRequestEntry;
 import com.amazonaws.services.kinesis.model.PutRecordsResult;
+import dev.crashteam.charon.exception.MessagePublishException;
 import dev.crashteam.charon.mapper.ProtoMapper;
 import dev.crashteam.charon.model.domain.Payment;
 import dev.crashteam.charon.model.domain.User;
@@ -45,7 +46,8 @@ public class AwsStreamPublisherHandler implements StreamPublisherHandler<PutReco
                 return null;
             });
         } catch (Exception e) {
-            log.error("Error while trying to publish payment - {}", payment.getPaymentId());
+            log.error("Error while trying to publish payment - {}", payment.getPaymentId(), e);
+            throw new MessagePublishException(Optional.ofNullable(e.getCause()).map(Throwable::getMessage).orElse(e.getMessage()));
         }
         return null;
     }
@@ -62,7 +64,8 @@ public class AwsStreamPublisherHandler implements StreamPublisherHandler<PutReco
                 return null;
             });
         } catch (Exception e) {
-            log.error("Error while trying to publish payment - {}", payment.getPaymentId());
+            log.error("Error while trying to publish payment - {}", payment.getPaymentId(), e);
+            throw new MessagePublishException(Optional.ofNullable(e.getCause()).map(Throwable::getMessage).orElse(e.getMessage()));
         }
         return null;
     }
