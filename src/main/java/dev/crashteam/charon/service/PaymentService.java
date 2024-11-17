@@ -7,6 +7,7 @@ import dev.crashteam.charon.exception.DuplicateTransactionException;
 import dev.crashteam.charon.exception.NoSuchPaymentTypeException;
 import dev.crashteam.charon.exception.NoSuchSubscriptionTypeException;
 import dev.crashteam.charon.mapper.ProtoMapper;
+import dev.crashteam.charon.model.Currency;
 import dev.crashteam.charon.model.Operation;
 import dev.crashteam.charon.model.RequestPaymentStatus;
 import dev.crashteam.charon.model.domain.*;
@@ -137,7 +138,7 @@ public class PaymentService {
             String paymentId = UUID.randomUUID().toString();
             payment.setPaymentId(paymentId);
             payment.setOperationId(request.getOperationId());
-            payment.setCurrency("USD");
+            payment.setCurrency(Currency.RUB.getTitle());
             payment.setAmount(amount);
             payment.setCreated(LocalDateTime.now());
             payment.setUpdated(LocalDateTime.now());
@@ -270,7 +271,7 @@ public class PaymentService {
         payment.setPaymentId(response.getPaymentId());
         payment.setExternalId(response.getProviderId());
         payment.setStatus(RequestPaymentStatus.PENDING);
-        payment.setCurrency("USD");
+        payment.setCurrency(Currency.RUB.getTitle());
         payment.setAmount(amount);
         payment.setProviderAmount(Long.valueOf(response.getProviderAmount()));
         payment.setProviderCurrency(response.getProviderCurrency());
@@ -317,7 +318,7 @@ public class PaymentService {
         payment.setPaymentId(response.getPaymentId());
         payment.setExternalId(response.getProviderId());
         payment.setStatus(RequestPaymentStatus.PENDING);
-        payment.setCurrency("USD");
+        payment.setCurrency(Currency.RUB.getTitle());
         payment.setAmount(balanceRequest.getAmount());
         payment.setProviderAmount(Long.valueOf(response.getProviderAmount()));
         payment.setProviderCurrency(response.getProviderCurrency());

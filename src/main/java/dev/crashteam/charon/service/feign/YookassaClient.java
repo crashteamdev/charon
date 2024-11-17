@@ -1,13 +1,11 @@
 package dev.crashteam.charon.service.feign;
 
 import dev.crashteam.charon.model.dto.yookassa.*;
+import dev.crashteam.charon.service.feign.config.YookassaFeignConfig;
 import org.springframework.cloud.openfeign.FeignClient;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.*;
 
-@FeignClient(value = "yookassaClient", url = "${app.integration.yookassa}")
+@FeignClient(value = "yookassaClient", url = "${app.integration.yookassa.url}", configuration = YookassaFeignConfig.class)
 public interface YookassaClient {
 
     @PostMapping("/payments")

@@ -196,8 +196,8 @@ public class PaymentTest extends ContainerConfiguration {
     @Test
     public void purchaseServiceTestIdempotentError() {
         User user = new User();
-        user.setCurrency("USD");
-        user.setBalance(20000L);
+        user.setCurrency("RUB");
+        user.setBalance(1000000L);
         user.setId(UUID.randomUUID().toString());
         userRepository.save(user);
 

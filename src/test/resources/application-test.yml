@@ -51,7 +51,10 @@ app:
     ninja:
       url: http://localhost:8085/v1
       api-key: some-api-key
-    yookassa: http://localhost:8085/v3
+    yookassa:
+      url: http://localhost:8085/v3
+      secretKey: test-key
+      shopId: some-id
 org:
   jobrunr:
     background-job-server:

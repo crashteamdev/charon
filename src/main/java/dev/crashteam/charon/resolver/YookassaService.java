@@ -12,12 +12,14 @@ import dev.crashteam.charon.service.feign.YookassaClient;
 import dev.crashteam.charon.util.PaymentProtoUtils;
 import dev.crashteam.payment.*;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.UUID;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class YookassaService implements PaymentResolver {
@@ -27,10 +29,8 @@ public class YookassaService implements PaymentResolver {
     private final YookassaPaymentMapper yookassaPaymentMapper;
 
     public PaymentData createPayment(PaymentCreateRequest request, String amount) {
-        BigDecimal exchangeRate = currencyService.getExchangeRate("RUB");
-        BigDecimal convertedAmount = (BigDecimal.valueOf(Double.parseDouble(amount))
-                .multiply(exchangeRate.setScale(2, RoundingMode.HALF_UP)))
-                .setScale(2, RoundingMode.HALF_UP);
+        //BigDecimal exchangeRate = currencyService.getExchangeRate("RUB");
+        BigDecimal convertedAmount = BigDecimal.valueOf(Double.parseDouble(amount));
         YkPaymentCreateRequestDTO paymentRequestDto = yookassaPaymentMapper
                 .getCreatePaymentRequestDto(request, String.valueOf(convertedAmount));
         YkPaymentResponseDTO responseDTO = kassaClient.createPayment(paymentRequestDto);
@@ -44,13 +44,13 @@ public class YookassaService implements PaymentResolver {
         paymentData.setPaymentId(UUID.randomUUID().toString());
         paymentData.setProviderId(responseDTO.getId());
         paymentData.setCreatedAt(responseDTO.getCreatedAt());
-        paymentData.setStatus(yookassaPaymentMapper.getPaymentStatus(responseDTO.getStatus()));
+        paymentData.setStatus(RequestPaymentStatus.PENDING);
         paymentData.setProviderCurrency("RUB");
         BigDecimal moneyAmount = PaymentProtoUtils.getMinorMoneyAmount(responseDTO.getAmount().getValue());
         paymentData.setProviderAmount(String.valueOf(moneyAmount));
         paymentData.setDescription(responseDTO.getDescription());
         paymentData.setConfirmationUrl(responseDTO.getConfirmation().getConfirmationUrl());
-        paymentData.setExchangeRate(exchangeRate);
+        //paymentData.setExchangeRate(exchangeRate);
         return paymentData;
     }
 
