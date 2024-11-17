@@ -76,7 +76,10 @@ app:
     ninja:
       url: https://api.api-ninjas.com/v1
       api-key:
-    yookassa: https://api.yookassa.ru/v3
+    yookassa:
+      url: https://api.yookassa.ru/v3
+      secretKey: test-key
+      shopId: 817883
     lava:
       url: https://api.lava.ru/business/invoice
       shopId: 45c330f1-a46d-484f-a8e1-524c08df8879

@@ -39,10 +39,8 @@ public class FreeKassaService implements PaymentResolver {
         log.info("Processing freekassa payment");
         StringBuilder sb = new StringBuilder();
         String paymentId = UUID.randomUUID().toString();
-        BigDecimal exchangeRate = currencyService.getExchangeRate("RUB");
-        BigDecimal convertedAmount = (BigDecimal.valueOf(Double.parseDouble(amount))
-                .multiply(exchangeRate.setScale(2, RoundingMode.HALF_UP)))
-                .setScale(2, RoundingMode.HALF_UP);
+        //BigDecimal exchangeRate = currencyService.getExchangeRate("RUB");
+        BigDecimal convertedAmount = BigDecimal.valueOf(Double.parseDouble(amount));
         String email = PaymentProtoUtils.getEmailFromRequest(request);
         String phone = PaymentProtoUtils.getPhoneFromRequest(request);
         String sign = DigestUtils.md5Hex("%s:%s:%s:%s:%s".formatted(freeKassaProperties.getShopId(), convertedAmount,
@@ -71,7 +69,7 @@ public class FreeKassaService implements PaymentResolver {
         paymentData.setEmail(email);
         paymentData.setProviderAmount(String.valueOf(moneyAmount));
         paymentData.setConfirmationUrl(sb.toString());
-        paymentData.setExchangeRate(exchangeRate);
+        //paymentData.setExchangeRate(exchangeRate);
         return paymentData;
     }
 

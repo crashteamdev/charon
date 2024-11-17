@@ -6,4 +6,5 @@
          http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.1.xsd">
 
     <include file="db/changelog/charon-db.xml"/>
+    <include file="db/changelog/db.charon-db-2.0.xml"/>
 </databaseChangeLog>

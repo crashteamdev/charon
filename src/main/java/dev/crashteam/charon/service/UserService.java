@@ -1,5 +1,6 @@
 package dev.crashteam.charon.service;
 
+import dev.crashteam.charon.model.Currency;
 import dev.crashteam.charon.model.domain.User;
 import dev.crashteam.charon.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
@@ -36,7 +37,7 @@ public class UserService {
         User user = new User();
         user.setId(id);
         user.setBalance(0L);
-        user.setCurrency("USD");
+        user.setCurrency(Currency.RUB.getTitle());
         return this.saveUser(user);
     }
 }

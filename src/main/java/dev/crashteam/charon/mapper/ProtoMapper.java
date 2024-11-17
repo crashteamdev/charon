@@ -2,6 +2,7 @@ package dev.crashteam.charon.mapper;
 
 import com.google.protobuf.Timestamp;
 import dev.crashteam.charon.exception.NoConfirmationUrlException;
+import dev.crashteam.charon.model.Currency;
 import dev.crashteam.charon.model.domain.PromoCode;
 import dev.crashteam.charon.model.domain.SubscriptionType;
 import dev.crashteam.charon.model.dto.resolver.PaymentData;
@@ -220,7 +221,7 @@ public class ProtoMapper {
         log.info("Returning payment response with type - {}, url - {}, id - {}",
                 payment.getPaymentSystem(), response.getConfirmationUrl(), payment.getPaymentId());
         return PaymentCreateResponse.newBuilder()
-                .setAmount(getAmount("USD", amount))
+                .setAmount(getAmount(Currency.RUB.getTitle(), amount))
                 .setDescription(Optional.ofNullable(response.getDescription()).orElse(""))
                 .setCreatedAt(Timestamp.newBuilder().setSeconds(instantCreated.getEpochSecond())
                         .setNanos(instantCreated.getNano()).build())
