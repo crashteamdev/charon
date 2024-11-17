@@ -29,7 +29,6 @@ public class YookassaService implements PaymentResolver {
     private final YookassaPaymentMapper yookassaPaymentMapper;
 
     public PaymentData createPayment(PaymentCreateRequest request, String amount) {
-        log.info("Processing freekassa payment");
         //BigDecimal exchangeRate = currencyService.getExchangeRate("RUB");
         BigDecimal convertedAmount = BigDecimal.valueOf(Double.parseDouble(amount));
         YkPaymentCreateRequestDTO paymentRequestDto = yookassaPaymentMapper
