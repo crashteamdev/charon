@@ -20,7 +20,6 @@ public class YookassaFeignConfig {
     private String shopId;
 
     @Bean
-    @Primary
     public RequestInterceptor requestInterceptor() {
         return requestTemplate -> {
             if (requestTemplate.headers().containsKey(HttpHeaders.AUTHORIZATION)) {
