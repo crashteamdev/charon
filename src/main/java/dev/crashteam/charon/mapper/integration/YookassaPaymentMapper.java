@@ -25,7 +25,7 @@ public class YookassaPaymentMapper {
         requestDTO.setConfirmation(redirectConfirmation);
         requestDTO.setDescription(PaymentProtoUtils.getDescriptionFromRequest(createRequest));
         requestDTO.setMetaData(createRequest.getMetadataMap());
-        requestDTO.setCapture(false);
+        requestDTO.setCapture(true);
         return requestDTO;
     }
 
