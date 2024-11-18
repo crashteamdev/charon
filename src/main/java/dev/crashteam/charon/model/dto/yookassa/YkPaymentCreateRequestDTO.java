@@ -16,4 +16,5 @@ public class YkPaymentCreateRequestDTO {
     private boolean savePaymentMethod;
     private String paymentMethodId;
     private Map<String, String> metaData;
+    private Boolean capture;
 }
