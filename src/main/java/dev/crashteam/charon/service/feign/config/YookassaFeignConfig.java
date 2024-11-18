@@ -28,7 +28,7 @@ public class YookassaFeignConfig {
             }
             String auth = shopId + ":" + secretKey;
             String encoded = Base64.getEncoder().encodeToString(auth.getBytes(StandardCharsets.UTF_8));
-            requestTemplate.header(HttpHeaders.AUTHORIZATION, encoded);
+            requestTemplate.header(HttpHeaders.AUTHORIZATION, "Basic " + encoded);
             requestTemplate.header("Idempotence-Key", UUID.randomUUID().toString());
         };
     }
