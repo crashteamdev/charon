@@ -70,6 +70,8 @@ app:
     purchase-service:
       cron: 0 0/1 * * * ?
   integration:
+    posthog:
+      api-key: change_me
     currency-api:
       url: https://api.currencyapi.com/v3
       api-key: test-key
