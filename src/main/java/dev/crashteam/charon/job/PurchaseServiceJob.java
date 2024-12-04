@@ -68,6 +68,7 @@ public class PurchaseServiceJob implements Job {
                 if (payment.getPromoCode() != null) {
                     paymentService.savePromoCodeRestrictions(payment.getPromoCode(), payment.getUser());
                 }
+                sendUserPurchaseAnalyticsEvent(payment.getUserId(), payment);
             } else if (RequestPaymentStatus.FAILED.equals(paymentStatus)) {
                 log.info("Payment with id [{}] failed for some reason", payment.getPaymentId());
                 payment.setStatus(RequestPaymentStatus.FAILED);
@@ -76,7 +77,6 @@ public class PurchaseServiceJob implements Job {
                 payment.setStatus(RequestPaymentStatus.CANCELED);
             }
             paymentService.save(payment);
-            sendUserPurchaseAnalyticsEvent(payment.getUserId(), payment);
             publisherHandler.publishPaymentStatusChangeMessage(payment);
         }
     }
