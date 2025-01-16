@@ -20,4 +20,5 @@ public class PaymentData {
     private String email;
     private String phone;
     private BigDecimal exchangeRate;
+    private boolean savePaymentMethod;
 }

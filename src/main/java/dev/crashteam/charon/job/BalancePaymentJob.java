@@ -19,6 +19,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Slf4j
@@ -63,6 +64,13 @@ public class BalancePaymentJob implements Job {
             }
             long newBalance = user.getBalance() + payment.getAmount();
             user.setBalance(newBalance);
+            if (user.getSubscriptionValidUntil() == null) {
+                user.setSubscriptionValidUntil(LocalDateTime.now().plusMonths(payment.getMonthPaid()));
+            } else {
+                LocalDateTime plusMonths = user.getSubscriptionValidUntil().plusMonths(payment.getMonthPaid());
+                user.setSubscriptionValidUntil(plusMonths);
+            }
+
             userService.saveUser(user);
 
             payment.setStatus(RequestPaymentStatus.SUCCESS);

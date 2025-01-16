@@ -363,4 +363,12 @@
                                  referencedColumnNames="id"
                                  deleteCascade="true"/>
     </changeSet>
+    <changeSet id="add_subscriprion_valid_until" author="sagefreke">
+        <addColumn tableName="app_user">
+            <column name="subscription_valid_until" type="TIMESTAMP"/>
+        </addColumn>
+        <createIndex tableName="app_user" indexName="idx_subscription_valid_until">
+            <column name="subscription_valid_until"/>
+        </createIndex>
+    </changeSet>
 </databaseChangeLog>

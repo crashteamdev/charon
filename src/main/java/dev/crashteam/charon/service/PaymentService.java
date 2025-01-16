@@ -263,6 +263,7 @@ public class PaymentService {
             long discount = (long) (amount * ((double) promoCode.getDiscountPercentage() / 100));
             amount = amount - discount;
             log.info("Using promocode={} by user={}, new amount={}", promoCode.getCode(), user.getId(), amount);
+            payment.setPromoCode(promoCode);
         }
         BigDecimal moneyAmount = PaymentProtoUtils.getMajorMoneyAmount(amount);
         PaymentData response = paymentResolver.createPayment(request, String.valueOf(moneyAmount));
@@ -279,7 +280,6 @@ public class PaymentService {
         payment.setCreated(response.getCreatedAt());
         payment.setUpdated(LocalDateTime.now());
         payment.setOperationType(operationTypeService.getOperationType(Operation.PURCHASE_SERVICE.getTitle()));
-        payment.setPromoCode(promoCode);
         payment.setMonthPaid(multiply);
         payment.setEmail(response.getEmail());
         payment.setPhone(response.getPhone());
