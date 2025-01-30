@@ -19,7 +19,7 @@
   "payment_method": {
     "type": "bank_card",
     "id": "22e12f66-000f-5000-8000-18db351245c7",
-    "saved": false
+    "saved": true
   },
   "recipient": {
     "account_id": 100500,

@@ -9,6 +9,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
+import java.util.List;
+
 
 @Slf4j
 @Service
@@ -39,5 +41,9 @@ public class UserService {
         user.setBalance(0L);
         user.setCurrency(Currency.RUB.getTitle());
         return this.saveUser(user);
+    }
+
+    public List<User> findTodaySubscriptionEnds() {
+        return userRepository.findTodaySubEnds();
     }
 }

@@ -15,7 +15,7 @@
   "payment_method": {
     "type": "bank_card",
     "id": "22e12f66-000f-5000-8000-18db351245c7",
-    "saved": false,
+    "saved": true,
     "card": {
       "first6": 555555,
       "last4": 4444,

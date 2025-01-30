@@ -74,6 +74,11 @@ public class FreeKassaService implements PaymentResolver {
     }
 
     @Override
+    public PaymentData recurrentPayment(String paymentId, String amount) {
+        return null;
+    }
+
+    @Override
     public RequestPaymentStatus getPaymentStatus(String paymentId) {
         return RequestPaymentStatus.NOT_ACCEPTABLE;
     }

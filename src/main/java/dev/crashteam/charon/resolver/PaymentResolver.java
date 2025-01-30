@@ -17,6 +17,8 @@ public interface PaymentResolver {
      */
     PaymentData createPayment(PaymentCreateRequest request, String amount);
 
+    PaymentData recurrentPayment(String paymentId, String amount);
+
     /***
      * Get status from integration service
      * @param paymentId set null if payment system on callbacks

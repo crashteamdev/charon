@@ -64,12 +64,6 @@ public class BalancePaymentJob implements Job {
             }
             long newBalance = user.getBalance() + payment.getAmount();
             user.setBalance(newBalance);
-            if (user.getSubscriptionValidUntil() == null) {
-                user.setSubscriptionValidUntil(LocalDateTime.now().plusMonths(payment.getMonthPaid()));
-            } else {
-                LocalDateTime plusMonths = user.getSubscriptionValidUntil().plusMonths(payment.getMonthPaid());
-                user.setSubscriptionValidUntil(plusMonths);
-            }
 
             userService.saveUser(user);
 
