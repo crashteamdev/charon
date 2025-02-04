@@ -1,5 +1,6 @@
 package dev.crashteam.charon.job;
 
+import com.posthog.java.PostHog;
 import dev.crashteam.charon.model.Operation;
 import dev.crashteam.charon.model.PaymentSystemType;
 import dev.crashteam.charon.model.RequestPaymentStatus;
@@ -21,6 +22,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
 
 
 @Slf4j
@@ -36,6 +38,8 @@ public class PurchaseServiceJob implements Job {
     UserService userService;
     @Autowired
     List<PaymentResolver> resolvers;
+    @Autowired
+    PostHog postHog;
 
     @Override
     @Transactional
@@ -81,7 +85,21 @@ public class PurchaseServiceJob implements Job {
                 payment.setStatus(RequestPaymentStatus.CANCELED);
             }
             paymentService.save(payment);
+            sendUserPurchaseAnalyticsEvent(payment.getUserId(), payment);
             publisherHandler.publishPaymentStatusChangeMessage(payment);
+        }
+    }
+
+    private void sendUserPurchaseAnalyticsEvent(String userId, Payment payment) {
+        try {
+            boolean isPromo = payment.getPromoCode() != null;
+            Map<String, Object> properties = Map.of(
+                    "amount", payment.getAmount().toString(),
+                    "paid-service", payment.getPaidService().getName(),
+                    "promo", isPromo);
+            postHog.capture(userId, "payment_complete", properties);
+        } catch (Exception ex) {
+            log.warn("Exception during send user analytics data", ex);
         }
     }
 }
