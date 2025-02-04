@@ -389,10 +389,6 @@ public class PaymentService {
         return paymentRepository.findByPaymentId(paymentId).orElse(null);
     }
 
-    public Payment findByExternalId(String externalPaymentId) {
-        return paymentRepository.findByExternalId(externalPaymentId).orElse(null);
-    }
-
     @Transactional
     public void save(Payment payment) {
         paymentRepository.save(payment);

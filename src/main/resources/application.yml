@@ -61,6 +61,8 @@ app:
     uzum-stream:
       name: '/ru-central1/b1gtojcphtuae1n9siie/etnvck8jo3kuh0vilc57/payment'
   scheduler:
+    recurrent-payment:
+      cron: 0 0 16 ? * * *
     exchange-rate:
       cron: 0 0 1 ? * * *
     evict-currency:
@@ -77,6 +79,10 @@ app:
       url: https://api.api-ninjas.com/v1
       api-key:
     yookassa:
+      retry:
+        max-attempts: 2
+        period: 2000
+        duration: 2
       url: https://api.yookassa.ru/v3
       secretKey: test-key
       shopId: 817883

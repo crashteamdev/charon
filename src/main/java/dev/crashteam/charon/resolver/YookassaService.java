@@ -94,7 +94,7 @@ public class YookassaService implements PaymentResolver {
         YkPaymentMethodDTO paymentMethod = paymentResponseDTO.getPaymentMethod();
         RequestPaymentStatus paymentStatus = yookassaPaymentMapper.getPaymentStatus(paymentResponseDTO.getStatus());
 
-        if (paymentStatus.equals(RequestPaymentStatus.SUCCESS) && paymentMethod != null && paymentMethod.getSaved()) { // Saving payment method if needed
+        if (paymentStatus.equals(RequestPaymentStatus.SUCCESS) && paymentMethod != null && paymentMethod.getSaved()) {
             Optional<Payment> optionalPayment = paymentRepository.findByExternalId(paymentId);
             if (optionalPayment.isPresent()) {
                 Payment payment = optionalPayment.get();

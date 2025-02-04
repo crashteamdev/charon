@@ -16,6 +16,7 @@ import dev.crashteam.charon.service.UserService;
 import dev.crashteam.charon.util.PaymentProtoUtils;
 import dev.crashteam.payment.PaymentSystem;
 import lombok.extern.slf4j.Slf4j;
+import org.quartz.DisallowConcurrentExecution;
 import org.quartz.Job;
 import org.quartz.JobExecutionContext;
 import org.quartz.JobExecutionException;
@@ -28,6 +29,7 @@ import java.util.List;
 
 @Slf4j
 @Component
+@DisallowConcurrentExecution
 public class RecurrentPaymentJob implements Job {
 
     @Autowired
@@ -90,11 +92,6 @@ public class RecurrentPaymentJob implements Job {
             log.info("Saving payment with paymentId - {}", response.getPaymentId());
 
             publisherHandler.publishPaymentCreatedMessage(payment);
-            try {
-                Thread.sleep(200L);
-            } catch (InterruptedException e) {
-                throw new RuntimeException(e);
-            }
         }
     }
 }
