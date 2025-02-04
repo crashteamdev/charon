@@ -77,6 +77,7 @@ public class PurchaseServiceJob implements Job {
                     user.setSubscriptionValidUntil(plusMonths);
                 }
                 userService.saveUser(user);
+                sendUserPurchaseAnalyticsEvent(payment.getUserId(), payment);
             } else if (RequestPaymentStatus.FAILED.equals(paymentStatus)) {
                 log.info("Payment with id [{}] failed for some reason", payment.getPaymentId());
                 payment.setStatus(RequestPaymentStatus.FAILED);
@@ -85,7 +86,6 @@ public class PurchaseServiceJob implements Job {
                 payment.setStatus(RequestPaymentStatus.CANCELED);
             }
             paymentService.save(payment);
-            sendUserPurchaseAnalyticsEvent(payment.getUserId(), payment);
             publisherHandler.publishPaymentStatusChangeMessage(payment);
         }
     }
