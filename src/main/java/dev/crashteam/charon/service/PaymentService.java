@@ -56,6 +56,7 @@ public class PaymentService {
     private final CurrencyService currencyService;
     private final StreamPublisherHandler publisherHandler;
     private final List<PaymentResolver> paymentResolvers;
+    private final UserSavedPaymentService savedPaymentService;
 
     @Transactional
     public PaymentCreateResponse createPayment(PaymentCreateRequest request) {
@@ -72,6 +73,13 @@ public class PaymentService {
                     .setDescription(e.getMessage())
                     .build();
         }
+    }
+
+    public RecurrentPaymentCancelResponse cancelRecurrentPayment(RecurrentPaymentCancelRequest request) {
+        savedPaymentService.cancelRecurrentPayment(request.getUserId());
+        return RecurrentPaymentCancelResponse.newBuilder()
+                .setUserId(request.getUserId())
+                .build();
     }
 
     public GetExchangeRateResponse getExchangeRate(GetExchangeRateRequest request) {
@@ -114,7 +122,7 @@ public class PaymentService {
                 log.info("Purchasing service - {} by user - {}", paidService.getName(), user.getId());
                 multiply = context.getMultiply() == 0 ? 1 : context.getMultiply();
                 long multipliedAmount = paidService.getAmount() * multiply;
-                amount = multiplyDiscount(multipliedAmount, multiply, paidService.getSubscriptionType());
+                amount = PaymentProtoUtils.multiplyDiscount(multipliedAmount, multiply, paidService.getSubscriptionType());
                 payment.setPaidService(paidService);
             } else {
                 List<PaidService> paidServices = getPaidServiceFromContext(request.getPaidServicesList());
@@ -125,7 +133,7 @@ public class PaymentService {
 
                 amount = paidServices.stream().map(it -> {
                     long multipliedAmount = it.getAmount() * multiply;
-                    return multiplyDiscount(multipliedAmount, multiply, it.getSubscriptionType());
+                    return PaymentProtoUtils.multiplyDiscount(multipliedAmount, multiply, it.getSubscriptionType());
                 }).mapToLong(Long::longValue).sum();
                 payment.setPaidServices(new HashSet<>(paidServices));
             }
@@ -146,6 +154,14 @@ public class PaymentService {
             payment.setOperationType(operationTypeService.getOperationType(Operation.PURCHASE_SERVICE.getTitle()));
             payment.setStatus(RequestPaymentStatus.SUCCESS);
             user.setBalance(balanceAfterPurchase);
+
+            if (user.getSubscriptionValidUntil() == null) {
+                user.setSubscriptionValidUntil(LocalDateTime.now().plusMonths(payment.getMonthPaid()));
+            } else {
+                LocalDateTime plusMonths = user.getSubscriptionValidUntil().plusMonths(payment.getMonthPaid());
+                user.setSubscriptionValidUntil(plusMonths);
+            }
+
             User saveUser = userService.saveUser(user);
             payment.setUser(saveUser);
 
@@ -240,7 +256,7 @@ public class PaymentService {
             log.info("Purchasing service - {} by user - {}", paidService.getName(), user.getId());
             multiply = context.getMultiply() == 0 ? 1 : context.getMultiply();
             long multipliedAmount = paidService.getAmount() * multiply;
-            amount = multiplyDiscount(multipliedAmount, multiply, paidService.getSubscriptionType());
+            amount = PaymentProtoUtils.multiplyDiscount(multipliedAmount, multiply, paidService.getSubscriptionType());
             payment.setPaidService(paidService);
         } else {
             List<PaidService> paidServices = getPaidServiceFromContext(purchaseService.getPaidServicesList());
@@ -249,7 +265,7 @@ public class PaymentService {
             multiply = purchaseService.getMultiply() == 0 ? 1 : purchaseService.getMultiply();
             amount = paidServices.stream().map(it -> {
                 long multipliedAmount = it.getAmount() * multiply;
-                return multiplyDiscount(multipliedAmount, multiply, it.getSubscriptionType());
+                return PaymentProtoUtils.multiplyDiscount(multipliedAmount, multiply, it.getSubscriptionType());
             }).mapToLong(Long::longValue).sum();
             payment.setPaidServices(new HashSet<>(paidServices));
         }
@@ -263,6 +279,7 @@ public class PaymentService {
             long discount = (long) (amount * ((double) promoCode.getDiscountPercentage() / 100));
             amount = amount - discount;
             log.info("Using promocode={} by user={}, new amount={}", promoCode.getCode(), user.getId(), amount);
+            payment.setPromoCode(promoCode);
         }
         BigDecimal moneyAmount = PaymentProtoUtils.getMajorMoneyAmount(amount);
         PaymentData response = paymentResolver.createPayment(request, String.valueOf(moneyAmount));
@@ -279,7 +296,6 @@ public class PaymentService {
         payment.setCreated(response.getCreatedAt());
         payment.setUpdated(LocalDateTime.now());
         payment.setOperationType(operationTypeService.getOperationType(Operation.PURCHASE_SERVICE.getTitle()));
-        payment.setPromoCode(promoCode);
         payment.setMonthPaid(multiply);
         payment.setEmail(response.getEmail());
         payment.setPhone(response.getPhone());
@@ -391,22 +407,6 @@ public class PaymentService {
             promoCode.getUsers().add(user);
         }
         promoCodeService.save(promoCode);
-    }
-
-    private long multiplyDiscount(long amount, long multiply, SubscriptionType subscriptionType) {
-        if (multiply > 1 && subscriptionType != null) {
-            BigDecimal discount;
-            if (subscriptionType.getName().equals("advanced")) {
-                discount = new BigDecimal("0.15");
-            } else if (subscriptionType.getName().equals("pro")) {
-                discount = new BigDecimal("0.20");
-            } else {
-                discount = new BigDecimal("0.10");
-            }
-            return BigDecimal.valueOf(amount).subtract(BigDecimal.valueOf(amount).multiply(discount)).longValue();
-        }
-        return amount;
-
     }
 
     @Transactional(readOnly = true)

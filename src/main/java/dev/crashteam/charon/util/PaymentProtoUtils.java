@@ -1,6 +1,7 @@
 package dev.crashteam.charon.util;
 
 import dev.crashteam.charon.model.RequestPaymentStatus;
+import dev.crashteam.charon.model.domain.SubscriptionType;
 import dev.crashteam.payment.PaymentCreateRequest;
 import dev.crashteam.payment.PaymentStatus;
 import org.springframework.util.StringUtils;
@@ -77,5 +78,21 @@ public class PaymentProtoUtils {
         BigDecimal bd = BigDecimal.valueOf(value);
         bd = bd.setScale(places, RoundingMode.HALF_UP);
         return bd.doubleValue();
+    }
+
+    public static long multiplyDiscount(long amount, long multiply, SubscriptionType subscriptionType) {
+        if (multiply > 1 && subscriptionType != null) {
+            BigDecimal discount;
+            if (subscriptionType.getName().equals("advanced")) {
+                discount = new BigDecimal("0.15");
+            } else if (subscriptionType.getName().equals("pro")) {
+                discount = new BigDecimal("0.20");
+            } else {
+                discount = new BigDecimal("0.10");
+            }
+            return BigDecimal.valueOf(amount).subtract(BigDecimal.valueOf(amount).multiply(discount)).longValue();
+        }
+        return amount;
+
     }
 }

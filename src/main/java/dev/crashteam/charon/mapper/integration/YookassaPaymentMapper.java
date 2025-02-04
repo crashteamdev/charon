@@ -29,19 +29,12 @@ public class YookassaPaymentMapper {
         return requestDTO;
     }
 
-    @Deprecated
-    public YkPaymentCreateRequestDTO getRecurrentPaymentRequestDto(RecurrentPaymentCreateRequest createRequest) {
+    public YkPaymentCreateRequestDTO getRecurrentPaymentRequestDto(String paymentId, String amount) {
         YkPaymentCreateRequestDTO requestDTO = new YkPaymentCreateRequestDTO();
-        YkConfirmationDTO redirectConfirmation = YkConfirmationDTO.builder()
-                .type("redirect")
-                .returnUrl(createRequest.getReturnUrl())
-                .build();
-        //requestDTO.setAmount(getAmountDto(createRequest.getAmount()));
-        requestDTO.setConfirmation(redirectConfirmation);
-        requestDTO.setDescription(createRequest.getDescription());
-        requestDTO.setMetaData(createRequest.getMetadataMap());
-        requestDTO.setPaymentMethodId(createRequest.getPaymentMethodId());
-        requestDTO.setSavePaymentMethod(createRequest.getSavePaymentMethod());
+        requestDTO.setAmount(getAmountDto("RUB", amount));
+        requestDTO.setDescription("Recurrent payment");
+        requestDTO.setPaymentMethodId(paymentId);
+        requestDTO.setCapture(true);
         return requestDTO;
     }
 

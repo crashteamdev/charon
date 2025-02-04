@@ -9,20 +9,20 @@ import dev.crashteam.charon.config.WireMockConfig;
 import dev.crashteam.charon.grpc.PaymentServiceImpl;
 import dev.crashteam.charon.job.BalancePaymentJob;
 import dev.crashteam.charon.job.PurchaseServiceJob;
+import dev.crashteam.charon.job.RecurrentPaymentJob;
 import dev.crashteam.charon.mock.LavaMock;
 import dev.crashteam.charon.mock.YookassaMock;
 import dev.crashteam.charon.model.Operation;
 import dev.crashteam.charon.model.RequestPaymentStatus;
 import dev.crashteam.charon.model.domain.Payment;
 import dev.crashteam.charon.model.domain.User;
+import dev.crashteam.charon.model.domain.UserSavedPayment;
 import dev.crashteam.charon.model.dto.FkCallbackData;
 import dev.crashteam.charon.model.dto.currency.ExchangeDto;
 import dev.crashteam.charon.repository.PaymentRepository;
 import dev.crashteam.charon.repository.PromoCodeRepository;
 import dev.crashteam.charon.repository.UserRepository;
-import dev.crashteam.charon.service.CallbackService;
-import dev.crashteam.charon.service.OperationTypeService;
-import dev.crashteam.charon.service.PaymentService;
+import dev.crashteam.charon.service.*;
 import dev.crashteam.charon.service.feign.CurrencyApiClient;
 import dev.crashteam.charon.service.feign.NinjaClient;
 import dev.crashteam.charon.publisher.handler.AwsStreamPublisherHandler;
@@ -95,6 +95,15 @@ public class PaymentTest extends ContainerConfiguration {
     @Autowired
     OperationTypeService operationTypeService;
 
+    @Autowired
+    UserSavedPaymentService savedPaymentService;
+
+    @Autowired
+    RecurrentPaymentJob recurrentPaymentJob;
+
+    @Autowired
+    UserService userService;
+
     @MockBean
     AwsStreamPublisherHandler awsStreamPublisherHandler;
 
@@ -119,6 +128,8 @@ public class PaymentTest extends ContainerConfiguration {
 
         LavaMock.paymentStatus(mockServer);
         LavaMock.createPayment(mockServer);
+
+        paymentRepository.deleteAll();
     }
 
     @Test
@@ -467,6 +478,84 @@ public class PaymentTest extends ContainerConfiguration {
                                 .setDefaultPlan(UzumAnalyticsContext.UzumAnalyticsPlan.UzumAnalyticsDefaultPlan
                                         .newBuilder().buildPartial()).build()).build())).build();
         return List.of(kePaidService, uzumPaidService);
+    }
+
+    @Test
+    public void testRecurrentPayment() {
+        String userId = UUID.randomUUID().toString();
+        PaidService paidService = PaidService.newBuilder().setContext(PaidServiceContext.newBuilder()
+                .setKeAnalyticsContext(KeAnalyticsContext.newBuilder()
+                        .setPlan(KeAnalyticsContext.KeAnalyticsPlan.newBuilder()
+                                .setDefaultPlan(KeAnalyticsContext.KeAnalyticsPlan.KeAnalyticsDefaultPlan
+                                        .newBuilder().buildPartial()).build()).build())).build();
+        var purchaseService = PaymentCreateRequest.PaymentPurchaseService.newBuilder()
+                .setUserId(userId)
+                .setMultiply(1)
+                .setPaidService(paidService)
+                .setPaymentSystem(PaymentSystem.PAYMENT_SYSTEM_YOOKASSA)
+                .setReturnUrl("return-test.test")
+                .setSavePaymentMethod(true)
+                .build();
+        PaymentCreateRequest paymentCreateRequest = PaymentCreateRequest.newBuilder()
+                .setPaymentPurchaseService(purchaseService)
+                .build();
+        StreamRecorder<PaymentCreateResponse> paymentCreateObserver = StreamRecorder.create();
+        grpcService.createPayment(paymentCreateRequest, paymentCreateObserver);
+        Assertions.assertNull(paymentCreateObserver.getError());
+
+        String paymentId = paymentCreateObserver.getValues().get(0).getPaymentId();
+        Optional<Payment> payment = paymentRepository.findByPaymentId(paymentId);
+        Assertions.assertTrue(payment.isPresent());
+
+        purchaseServiceJob.checkPaymentStatus(payment.get());
+
+        Optional<Payment> successPayment = paymentRepository.findByPaymentId(paymentId);
+
+        Assertions.assertTrue(successPayment.isPresent());
+
+        UserSavedPayment userSavedPayment = savedPaymentService.findByUserId(successPayment.get().getUser().getId());
+        Assertions.assertNotNull(userSavedPayment);
+        Assertions.assertEquals(successPayment.get().getStatus(), RequestPaymentStatus.SUCCESS);
+
+        Optional<User> userOptional = userRepository.findById(userId);
+        Assertions.assertTrue(userOptional.isPresent());
+
+        User user = userOptional.get();
+        Assertions.assertNotNull(user.getSubscriptionValidUntil());
+        user.setSubscriptionValidUntil(LocalDateTime.now()); //Set subscription valid on today for recurrent job to work
+        LocalDateTime oldSubscriptionValidUntil = user.getSubscriptionValidUntil();
+        userRepository.save(user);
+
+        List<User> todaySubscriptionEnds = userService.findTodaySubscriptionEnds();
+        Assertions.assertFalse(todaySubscriptionEnds.isEmpty());
+
+        paymentRepository.delete(payment.get()); // Delete old payment (for test)
+
+        for (User todaySubscriptionEndUser : todaySubscriptionEnds) {
+            recurrentPaymentJob.processPayment(userSavedPayment, todaySubscriptionEndUser); //creating recurrent payment
+        }
+
+        List<Payment> betweenTimeRange = paymentService
+                .getPaymentByPendingStatusAndOperationTypeBetweenTimeRange(Operation.PURCHASE_SERVICE.getTitle());
+
+        Assertions.assertFalse(betweenTimeRange.isEmpty());
+        for (Payment pendingPayment : betweenTimeRange) {
+            purchaseServiceJob.checkPaymentStatus(pendingPayment); // processing payment
+        }
+        Optional<User> updatedUser = userRepository.findById(userId);
+        Assertions.assertTrue(updatedUser.isPresent());
+        Assertions.assertNotEquals(updatedUser.get().getSubscriptionValidUntil(), oldSubscriptionValidUntil);
+
+        // cancel recurrent payment
+        RecurrentPaymentCancelRequest cancelRequest = RecurrentPaymentCancelRequest
+                .newBuilder()
+                .setUserId(userId)
+                .build();
+        StreamRecorder<RecurrentPaymentCancelResponse> paymentCancelObserver = StreamRecorder.create();
+        grpcService.recurrentPaymentCancel(cancelRequest, paymentCancelObserver);
+        Assertions.assertNull(paymentCreateObserver.getError());
+
+        Assertions.assertNull(savedPaymentService.findByUserId(userId));
     }
 
 //    @Test

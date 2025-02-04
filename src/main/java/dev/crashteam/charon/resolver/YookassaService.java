@@ -1,22 +1,30 @@
 package dev.crashteam.charon.resolver;
 
 import dev.crashteam.charon.mapper.integration.YookassaPaymentMapper;
+import dev.crashteam.charon.model.Operation;
+import dev.crashteam.charon.model.PaymentSystemType;
 import dev.crashteam.charon.model.RequestPaymentStatus;
+import dev.crashteam.charon.model.domain.OperationType;
+import dev.crashteam.charon.model.domain.Payment;
+import dev.crashteam.charon.model.domain.UserSavedPayment;
 import dev.crashteam.charon.model.dto.resolver.PaymentData;
-import dev.crashteam.charon.model.dto.yookassa.YkPaymentCreateRequestDTO;
-import dev.crashteam.charon.model.dto.yookassa.YkPaymentRefundRequestDTO;
-import dev.crashteam.charon.model.dto.yookassa.YkPaymentRefundResponseDTO;
-import dev.crashteam.charon.model.dto.yookassa.YkPaymentResponseDTO;
+import dev.crashteam.charon.model.dto.yookassa.*;
+import dev.crashteam.charon.repository.PaymentRepository;
 import dev.crashteam.charon.service.CurrencyService;
+import dev.crashteam.charon.service.PaymentService;
+import dev.crashteam.charon.service.UserSavedPaymentService;
 import dev.crashteam.charon.service.feign.YookassaClient;
 import dev.crashteam.charon.util.PaymentProtoUtils;
-import dev.crashteam.payment.*;
+import dev.crashteam.payment.PaymentCreateRequest;
+import dev.crashteam.payment.PaymentRefundRequest;
+import dev.crashteam.payment.PaymentSystem;
+import dev.crashteam.payment.RecurrentPaymentCreateRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
-import java.math.RoundingMode;
+import java.util.Optional;
 import java.util.UUID;
 
 @Slf4j
@@ -27,12 +35,17 @@ public class YookassaService implements PaymentResolver {
     private final YookassaClient kassaClient;
     private final CurrencyService currencyService;
     private final YookassaPaymentMapper yookassaPaymentMapper;
+    private final UserSavedPaymentService savedPaymentService;
+    private final PaymentRepository paymentRepository;
 
     public PaymentData createPayment(PaymentCreateRequest request, String amount) {
         //BigDecimal exchangeRate = currencyService.getExchangeRate("RUB");
         BigDecimal convertedAmount = BigDecimal.valueOf(Double.parseDouble(amount));
         YkPaymentCreateRequestDTO paymentRequestDto = yookassaPaymentMapper
                 .getCreatePaymentRequestDto(request, String.valueOf(convertedAmount));
+        if (request.hasPaymentPurchaseService() && request.getPaymentPurchaseService().getSavePaymentMethod()) {
+            paymentRequestDto.setSavePaymentMethod(true);
+        }
         YkPaymentResponseDTO responseDTO = kassaClient.createPayment(paymentRequestDto);
 
         String phone = PaymentProtoUtils.getPhoneFromRequest(request);
@@ -55,15 +68,58 @@ public class YookassaService implements PaymentResolver {
     }
 
     @Override
-    public RequestPaymentStatus getPaymentStatus(String paymentId) {
-        return yookassaPaymentMapper.getPaymentStatus(kassaClient.paymentStatus(paymentId).getStatus());
+    public PaymentData recurrentPayment(String paymentId, String amount) {
+        YkPaymentCreateRequestDTO paymentRequestDto = yookassaPaymentMapper
+                .getRecurrentPaymentRequestDto(paymentId, amount);
+        YkPaymentResponseDTO responseDTO = kassaClient.createPayment(paymentRequestDto);
+
+        PaymentData paymentData = new PaymentData();
+        paymentData.setPaymentId(UUID.randomUUID().toString());
+        paymentData.setProviderId(responseDTO.getId());
+        paymentData.setCreatedAt(responseDTO.getCreatedAt());
+        paymentData.setStatus(RequestPaymentStatus.PENDING);
+        paymentData.setProviderCurrency("RUB");
+        BigDecimal moneyAmount = PaymentProtoUtils.getMinorMoneyAmount(responseDTO.getAmount().getValue());
+        paymentData.setProviderAmount(String.valueOf(moneyAmount));
+        paymentData.setDescription(responseDTO.getDescription());
+        paymentData.setConfirmationUrl(responseDTO.getConfirmation().getConfirmationUrl());
+
+        return paymentData;
+
     }
 
-    @Deprecated
-    public YkPaymentResponseDTO createRecurrentPayment(RecurrentPaymentCreateRequest request) {
-        YkPaymentCreateRequestDTO requestDto = yookassaPaymentMapper.getRecurrentPaymentRequestDto(request);
-        return kassaClient.createPayment(requestDto);
+    @Override
+    public RequestPaymentStatus getPaymentStatus(String paymentId) {
+        YkPaymentResponseDTO paymentResponseDTO = kassaClient.paymentStatus(paymentId);
+        YkPaymentMethodDTO paymentMethod = paymentResponseDTO.getPaymentMethod();
+        RequestPaymentStatus paymentStatus = yookassaPaymentMapper.getPaymentStatus(paymentResponseDTO.getStatus());
 
+        if (paymentStatus.equals(RequestPaymentStatus.SUCCESS) && paymentMethod != null && paymentMethod.getSaved()) {
+            Optional<Payment> optionalPayment = paymentRepository.findByExternalId(paymentId);
+            if (optionalPayment.isPresent()) {
+                Payment payment = optionalPayment.get();
+                if (payment.getOperationType().getType().equals(Operation.PURCHASE_SERVICE.getTitle())) {
+                    String userId = payment.getUser().getId();
+                    UserSavedPayment userSavedPayment = savedPaymentService.findByUserId(userId);
+                    if (userSavedPayment != null) {
+                        userSavedPayment.setPaymentId(paymentMethod.getId());
+                        userSavedPayment.setPaidService(payment.getPaidService());
+                        userSavedPayment.setMonthPaid(payment.getMonthPaid());
+                        userSavedPayment.setPaymentSystem(PaymentSystemType.PAYMENT_SYSTEM_YOOKASSA.getTitle());
+                        savedPaymentService.save(userSavedPayment);
+                    } else {
+                        UserSavedPayment savedPayment = new UserSavedPayment();
+                        savedPayment.setUserId(userId);
+                        savedPayment.setPaymentId(paymentMethod.getId());
+                        savedPayment.setPaymentSystem(PaymentSystemType.PAYMENT_SYSTEM_YOOKASSA.getTitle());
+                        savedPayment.setPaidService(payment.getPaidService());
+                        savedPayment.setMonthPaid(payment.getMonthPaid());
+                        savedPaymentService.save(savedPayment);
+                    }
+                }
+            }
+        }
+        return paymentStatus;
     }
 
     @Deprecated
@@ -71,6 +127,7 @@ public class YookassaService implements PaymentResolver {
         YkPaymentRefundRequestDTO refundRequestDto = yookassaPaymentMapper.getPaymentRefundRequestDto(request);
         return kassaClient.refund(refundRequestDto);
     }
+
     @Override
     public PaymentSystem getPaymentSystem() {
         return PaymentSystem.PAYMENT_SYSTEM_YOOKASSA;

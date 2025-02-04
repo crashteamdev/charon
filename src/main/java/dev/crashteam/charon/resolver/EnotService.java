@@ -74,6 +74,11 @@ public class EnotService implements PaymentResolver {
     }
 
     @Override
+    public PaymentData recurrentPayment(String paymentId, String amount) {
+        return null;
+    }
+
+    @Override
     public RequestPaymentStatus getPaymentStatus(String paymentId) {
         Payment payment = paymentRepository.findByExternalId(paymentId).orElse(null);
         if (payment == null) {

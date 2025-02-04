@@ -1,9 +1,6 @@
 package dev.crashteam.charon.config;
 
-import dev.crashteam.charon.job.BalancePaymentJob;
-import dev.crashteam.charon.job.CurrencyCacheEvictJob;
-import dev.crashteam.charon.job.ExchangeRateCacheEvictJob;
-import dev.crashteam.charon.job.PurchaseServiceJob;
+import dev.crashteam.charon.job.*;
 import org.quartz.JobDetail;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
@@ -26,6 +23,21 @@ public class QuartzJobHandler {
 
     @Value("${app.scheduler.purchase-service.cron}")
     private String purchaseService;
+
+    @Value("${app.scheduler.recurrent-payment.cron}")
+    private String recurrentPayment;
+
+    @Bean("recurrentPaymentTrigger")
+    public CronTriggerFactoryBean recurrentPaymentTrigger(@Qualifier("recurrentPaymentJobDetail") JobDetail jobDetail) {
+        return QuartzBeanCreatorConfig.cronTriggerFactoryBean(jobDetail, recurrentPayment,
+                "recurrent_payment_trigger");
+    }
+
+    @Bean(name = "recurrentPaymentJobDetail")
+    public JobDetailFactoryBean recurrentPaymentJob() {
+        return QuartzBeanCreatorConfig.jobDetail(RecurrentPaymentJob.class,
+                "recurrent_payment_job");
+    }
 
     @Bean("balancePaymentTrigger")
     public CronTriggerFactoryBean balancePaymentTrigger(@Qualifier("balancePaymentJobDetail") JobDetail jobDetail) {

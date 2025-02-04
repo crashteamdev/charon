@@ -6,6 +6,7 @@ import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.Id;
 import javax.persistence.Table;
+import java.time.LocalDateTime;
 
 @Data
 @Entity
@@ -20,5 +21,8 @@ public class User {
 
     @Column(name = "currency")
     private String currency;
+
+    @Column(name = "subscription_valid_until")
+    private LocalDateTime subscriptionValidUntil;
 
 }

@@ -54,6 +54,13 @@ public class PaymentServiceImpl extends PaymentServiceGrpc.PaymentServiceImplBas
     }
 
     @Override
+    public void recurrentPaymentCancel(RecurrentPaymentCancelRequest request, StreamObserver<RecurrentPaymentCancelResponse> responseObserver) {
+        RecurrentPaymentCancelResponse response = paymentService.cancelRecurrentPayment(request);
+        responseObserver.onNext(response);
+        responseObserver.onCompleted();
+    }
+
+    @Override
     public void getPayments(PaymentsQuery request, StreamObserver<PaymentsResponse> responseObserver) {
         var payments = paymentService.getPayments(request);
         List<UserPayment> userPayments = protoMapper.getUserPaymentResponse(payments.getContent());

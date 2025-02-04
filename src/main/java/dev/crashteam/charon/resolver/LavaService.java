@@ -87,6 +87,11 @@ public class LavaService implements PaymentResolver {
     }
 
     @Override
+    public PaymentData recurrentPayment(String paymentId, String amount) {
+        return null;
+    }
+
+    @Override
     public RequestPaymentStatus getPaymentStatus(String paymentId) {
         Payment payment = paymentRepository.findByExternalId(paymentId).orElse(null);
         if (payment == null) {
@@ -133,4 +138,5 @@ public class LavaService implements PaymentResolver {
         sha256_HMAC.init(secret_key);
         return Hex.encodeHexString(sha256_HMAC.doFinal(json.getBytes()));
     }
+
 }

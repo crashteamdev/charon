@@ -5,6 +5,7 @@ import dev.crashteam.charon.model.Operation;
 import dev.crashteam.charon.model.PaymentSystemType;
 import dev.crashteam.charon.model.RequestPaymentStatus;
 import dev.crashteam.charon.model.domain.Payment;
+import dev.crashteam.charon.model.domain.User;
 import dev.crashteam.charon.publisher.handler.StreamPublisherHandler;
 import dev.crashteam.charon.service.PaymentService;
 import dev.crashteam.charon.service.UserService;
@@ -19,7 +20,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.HashMap;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 
@@ -64,10 +65,18 @@ public class PurchaseServiceJob implements Job {
                 && !RequestPaymentStatus.NOT_ACCEPTABLE.equals(paymentStatus)) {
             if (RequestPaymentStatus.SUCCESS.equals(paymentStatus)) {
                 log.info("Payment with id [{}] successful, purchasing service", payment.getPaymentId());
+                User user = userService.getUser(payment.getUser().getId());
                 payment.setStatus(RequestPaymentStatus.SUCCESS);
                 if (payment.getPromoCode() != null) {
                     paymentService.savePromoCodeRestrictions(payment.getPromoCode(), payment.getUser());
                 }
+                if (user.getSubscriptionValidUntil() == null) {
+                    user.setSubscriptionValidUntil(LocalDateTime.now().plusMonths(payment.getMonthPaid()));
+                } else {
+                    LocalDateTime plusMonths = user.getSubscriptionValidUntil().plusMonths(payment.getMonthPaid());
+                    user.setSubscriptionValidUntil(plusMonths);
+                }
+                userService.saveUser(user);
                 sendUserPurchaseAnalyticsEvent(payment.getUserId(), payment);
             } else if (RequestPaymentStatus.FAILED.equals(paymentStatus)) {
                 log.info("Payment with id [{}] failed for some reason", payment.getPaymentId());

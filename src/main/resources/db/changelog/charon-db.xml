@@ -363,4 +363,55 @@
                                  referencedColumnNames="id"
                                  deleteCascade="true"/>
     </changeSet>
+    <changeSet id="add_subscriprion_valid_until" author="sagefreke">
+        <addColumn tableName="app_user">
+            <column name="subscription_valid_until" type="TIMESTAMP"/>
+        </addColumn>
+        <createIndex tableName="app_user" indexName="idx_subscription_valid_until">
+            <column name="subscription_valid_until"/>
+        </createIndex>
+    </changeSet>
+
+    <changeSet id="create_user_saved_payment" author="sagefreke">
+        <createTable tableName="user_saved_payment">
+            <column name="id" type="BIGINT">
+                <constraints primaryKey="true" primaryKeyName="user_saved_payment_id_pkey"/>
+            </column>
+            <column name="retry" type="SMALLINT"/>
+            <column name="paid_service_id" type="BIGINT"/>
+            <column name="month_paid" type="BIGINT"/>
+            <column name="last_paid_date" type="TIMESTAMP"/>
+            <column name="payment_id" type="VARCHAR(255)"/>
+            <column name="payment_system" type="VARCHAR(64)"/>
+            <column name="user_id" type="VARCHAR(255)"/>
+        </createTable>
+        <createIndex tableName="user_saved_payment" indexName="idx_user_saved_payment_payment_id">
+            <column name="payment_id"/>
+        </createIndex>
+        <createIndex tableName="user_saved_payment" indexName="idx_user_saved_payment_user_id">
+            <column name="user_id"/>
+        </createIndex>
+        <createSequence sequenceName="user_saved_payment_id_seq" startValue="1" incrementBy="1"/>
+    </changeSet>
+
+    <changeSet id="user_saved_payment_paid_service_foreign_key" author="sagefreke">
+        <addForeignKeyConstraint baseTableName="user_saved_payment"
+                                 baseColumnNames="paid_service_id"
+                                 constraintName="user_saved_payment_paid_service_fkey"
+                                 onDelete="NO ACTION"
+                                 onUpdate="NO ACTION"
+                                 referencedTableName="paid_service"
+                                 referencedColumnNames="id"/>
+    </changeSet>
+
+    <changeSet id="create_user_saved_payment_user_foreign_key" author="sagefreke">
+        <addForeignKeyConstraint baseTableName="user_saved_payment"
+                                 baseColumnNames="user_id"
+                                 constraintName="user_saved_payment_user_fkey"
+                                 onDelete="NO ACTION"
+                                 onUpdate="NO ACTION"
+                                 referencedTableName="app_user"
+                                 referencedColumnNames="id"/>
+
+    </changeSet>
 </databaseChangeLog>
