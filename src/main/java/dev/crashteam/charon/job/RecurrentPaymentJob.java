@@ -49,6 +49,7 @@ public class RecurrentPaymentJob implements Job {
     ProtoMapper protoMapper;
 
     @Override
+    @Transactional
     public void execute(JobExecutionContext jobExecutionContext) throws JobExecutionException {
         for (User user : userService.findTodaySubscriptionEnds()) {
             UserSavedPayment savedPayment = savedPaymentService.findByUserId(user.getId());
