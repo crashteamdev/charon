@@ -561,6 +561,45 @@ public class PaymentTest extends ContainerConfiguration {
         Assertions.assertNull(savedPaymentService.findByUserId(userId));
     }
 
+    @Test
+    public void testOldRecurrentPayment() {
+        User user = new User();
+        user.setCurrency("RUB");
+        user.setId("XNWAhWBTT4QeDtNnikroYZKO6jx4");
+        user.setBalance(400000L);
+        user.setSubscriptionValidUntil(LocalDateTime.now().minusMonths(3));
+        userRepository.save(user);
+
+        PaidService paidService = PaidService.newBuilder().setContext(PaidServiceContext.newBuilder()
+                .setKeAnalyticsContext(KeAnalyticsContext.newBuilder()
+                        .setPlan(KeAnalyticsContext.KeAnalyticsPlan.newBuilder()
+                                .setDefaultPlan(KeAnalyticsContext.KeAnalyticsPlan.KeAnalyticsDefaultPlan
+                                        .newBuilder().buildPartial()).build()).build())).build();
+        var purchaseService = PaymentCreateRequest.PaymentPurchaseService.newBuilder()
+                .setUserId(user.getId())
+                .setMultiply(1)
+                .setPaidService(paidService)
+                .setPaymentSystem(PaymentSystem.PAYMENT_SYSTEM_YOOKASSA)
+                .setReturnUrl("return-test.test")
+                .setSavePaymentMethod(true)
+                .build();
+        PaymentCreateRequest paymentCreateRequest = PaymentCreateRequest.newBuilder()
+                .setPaymentPurchaseService(purchaseService)
+                .build();
+        StreamRecorder<PaymentCreateResponse> paymentCreateObserver = StreamRecorder.create();
+        grpcService.createPayment(paymentCreateRequest, paymentCreateObserver);
+        Assertions.assertNull(paymentCreateObserver.getError());
+
+        String paymentId = paymentCreateObserver.getValues().get(0).getPaymentId();
+        Optional<Payment> payment = paymentRepository.findByPaymentId(paymentId);
+        Assertions.assertTrue(payment.isPresent());
+
+        purchaseServiceJob.checkPaymentStatus(payment.get());
+        User userWithPurchase = userRepository.findById(user.getId()).get();
+        Assertions.assertTrue(userWithPurchase.getSubscriptionValidUntil().isAfter(LocalDateTime.now()));
+
+    }
+
 //    @Test
 //    public void testRefundPayment() {
 //        Payment payment = new Payment();
