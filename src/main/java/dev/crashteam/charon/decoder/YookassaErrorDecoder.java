@@ -14,7 +14,7 @@ public class YookassaErrorDecoder implements ErrorDecoder {
                 response.status(),
                 "Yokassa request failed",
                 response.request().httpMethod(),
-                null,
+                1000L,
                 response.request()
         );
     }

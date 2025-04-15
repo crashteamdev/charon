@@ -1,13 +1,13 @@
 package dev.crashteam.charon.config;
 
 import com.github.tomakehurst.wiremock.WireMockServer;
-import com.github.tomakehurst.wiremock.core.WireMockConfiguration;
+import org.springframework.boot.autoconfigure.ImportAutoConfiguration;
 import org.springframework.boot.test.context.TestConfiguration;
+import org.springframework.cloud.openfeign.FeignAutoConfiguration;
 import org.springframework.context.annotation.Bean;
 
-import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.wireMockConfig;
-
 @TestConfiguration
+@ImportAutoConfiguration({FeignAutoConfiguration.class})
 public class WireMockConfig {
 
     @Bean(initMethod = "start", destroyMethod = "stop")

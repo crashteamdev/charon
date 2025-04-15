@@ -2,7 +2,7 @@ package dev.crashteam.charon.model.domain;
 
 import lombok.Data;
 
-import javax.persistence.*;
+import jakarta.persistence.*;
 
 @Data
 @Entity

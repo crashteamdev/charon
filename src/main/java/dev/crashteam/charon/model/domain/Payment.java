@@ -3,12 +3,14 @@ package dev.crashteam.charon.model.domain;
 import dev.crashteam.charon.model.RequestPaymentStatus;
 import lombok.Data;
 import lombok.ToString;
+import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.annotations.Type;
+import org.hibernate.type.SqlTypes;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
-import javax.persistence.*;
+import jakarta.persistence.*;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.Set;
@@ -29,8 +31,7 @@ public class Payment {
     @JoinColumn(name = "user_id", referencedColumnName = "id")
     private User user;
     @Column(name = "status")
-    @Enumerated(EnumType.STRING)
-    @Type(type = "dev.crashteam.charon.model.domain.PaymentStatusPsqlType")
+    @JdbcTypeCode(SqlTypes.NAMED_ENUM)
     private RequestPaymentStatus status;
     @Column(name = "amount")
     private Long amount;

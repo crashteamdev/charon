@@ -3,7 +3,7 @@ package dev.crashteam.charon.model.domain;
 import lombok.Data;
 import lombok.ToString;
 
-import javax.persistence.*;
+import jakarta.persistence.*;
 import java.math.BigDecimal;
 
 @Data

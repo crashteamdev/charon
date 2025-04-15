@@ -5,8 +5,6 @@ import dev.crashteam.charon.repository.CurrencyRateRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
-import javax.persistence.EntityNotFoundException;
-
 @Service
 @RequiredArgsConstructor
 public class CurrencyRateService {
