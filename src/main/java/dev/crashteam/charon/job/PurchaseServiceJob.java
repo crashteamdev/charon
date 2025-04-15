@@ -73,8 +73,12 @@ public class PurchaseServiceJob implements Job {
                 if (user.getSubscriptionValidUntil() == null) {
                     user.setSubscriptionValidUntil(LocalDateTime.now().plusMonths(payment.getMonthPaid()));
                 } else {
-                    LocalDateTime plusMonths = user.getSubscriptionValidUntil().plusMonths(payment.getMonthPaid());
-                    user.setSubscriptionValidUntil(plusMonths);
+                    if (user.getSubscriptionValidUntil().isBefore(LocalDateTime.now())) {
+                        user.setSubscriptionValidUntil(LocalDateTime.now().plusMonths(payment.getMonthPaid()));
+                    } else {
+                        LocalDateTime plusMonths = user.getSubscriptionValidUntil().plusMonths(payment.getMonthPaid());
+                        user.setSubscriptionValidUntil(plusMonths);
+                    }
                 }
                 userService.saveUser(user);
                 sendUserPurchaseAnalyticsEvent(payment.getUserId(), payment);
