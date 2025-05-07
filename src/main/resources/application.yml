@@ -111,6 +111,9 @@ click:
   secretKey: someKey
   merchantUserId: 36242
 
+tinkoff:
+  baseUrl: https://securepay.tinkoff.ru/v2/
+
 
 
 management:
