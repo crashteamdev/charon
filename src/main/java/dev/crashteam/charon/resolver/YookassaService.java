@@ -22,6 +22,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -54,7 +55,7 @@ public class YookassaService implements PaymentResolver {
         paymentData.setEmail(email);
         paymentData.setPaymentId(UUID.randomUUID().toString());
         paymentData.setProviderId(responseDTO.getId());
-        paymentData.setCreatedAt(responseDTO.getCreatedAt());
+        paymentData.setCreatedAt(LocalDateTime.now());
         paymentData.setStatus(RequestPaymentStatus.PENDING);
         paymentData.setProviderCurrency("RUB");
         BigDecimal moneyAmount = PaymentProtoUtils.getMinorMoneyAmount(responseDTO.getAmount().getValue());
@@ -74,7 +75,7 @@ public class YookassaService implements PaymentResolver {
         PaymentData paymentData = new PaymentData();
         paymentData.setPaymentId(UUID.randomUUID().toString());
         paymentData.setProviderId(responseDTO.getId());
-        paymentData.setCreatedAt(responseDTO.getCreatedAt());
+        paymentData.setCreatedAt(LocalDateTime.now());
         paymentData.setStatus(RequestPaymentStatus.PENDING);
         paymentData.setProviderCurrency("RUB");
         BigDecimal moneyAmount = PaymentProtoUtils.getMinorMoneyAmount(responseDTO.getAmount().getValue());

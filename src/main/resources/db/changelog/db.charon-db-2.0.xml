@@ -63,5 +63,50 @@
         </insert>
     </changeSet>
 
+    <changeSet id="add_business_sub_type" author="sagefreke">
+        <insert tableName="subscription_type">
+            <column name="id" valueSequenceNext="subscription_type_id_seq"/>
+            <column name="name" value="business"/>
+            <column name="type" value="13"/>
+        </insert>
+    </changeSet>
+
+    <changeSet id="insert_ai_hub_paid_service" author="sagefreke">
+        <insert tableName="paid_service">
+            <column name="id" valueSequenceNext="paid_service_id_seq"/>
+            <column name="name" value="ai_hub"/>
+            <column name="type" value="14"/>
+            <column name="amount" value="300000"/>
+            <column name="currency" value="RUB"/>
+            <column name="subscription_type_id" valueComputed="(SELECT id FROM subscription_type WHERE name='default')"/>
+        </insert>
+
+        <insert tableName="paid_service">
+            <column name="id" valueSequenceNext="paid_service_id_seq"/>
+            <column name="name" value="ai_hub"/>
+            <column name="type" value="14"/>
+            <column name="amount" value="300000"/>
+            <column name="currency" value="RUB"/>
+            <column name="subscription_type_id" valueComputed="(SELECT id FROM subscription_type WHERE name='advanced')"/>
+        </insert>
+
+        <insert tableName="paid_service">
+            <column name="id" valueSequenceNext="paid_service_id_seq"/>
+            <column name="name" value="ai_hub"/>
+            <column name="type" value="14"/>
+            <column name="amount" value="300000"/>
+            <column name="currency" value="RUB"/>
+            <column name="subscription_type_id" valueComputed="(SELECT id FROM subscription_type WHERE name='pro')"/>
+        </insert>
+
+        <insert tableName="paid_service">
+            <column name="id" valueSequenceNext="paid_service_id_seq"/>
+            <column name="name" value="ai_hub"/>
+            <column name="type" value="14"/>
+            <column name="amount" value="300000"/>
+            <column name="currency" value="RUB"/>
+            <column name="subscription_type_id" valueComputed="(SELECT id FROM subscription_type WHERE name='business')"/>
+        </insert>
+    </changeSet>
 </databaseChangeLog>
 

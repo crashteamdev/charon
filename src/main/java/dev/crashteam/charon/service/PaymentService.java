@@ -260,6 +260,11 @@ public class PaymentService {
                 LocalDateTime.now().minusDays(1), LocalDateTime.now());
     }
 
+    @Transactional(readOnly = true)
+    public List<Payment> getPaymentByPendingStatusAndBetweenTimeRange() {
+        return paymentRepository.findAllByPendingStatusCreatedBetween(LocalDateTime.now().minusDays(1), LocalDateTime.now());
+    }
+
     @Deprecated
     @Transactional
     public Payment refundPayment(YkPaymentRefundResponseDTO refundResponse, String userId, String id) {

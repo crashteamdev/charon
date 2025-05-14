@@ -36,6 +36,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mockito;
+import org.quartz.JobExecutionException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.ImportAutoConfiguration;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
@@ -301,6 +302,16 @@ public class PaymentTest extends ContainerConfiguration {
     }
 
     @Test
+    public void createGenericPurchaseServicePaymentTestTbank() {
+        createGenericPurchaseServicePaymentTest(PaymentSystem.PAYMENT_SYSTEM_TBANK);
+    }
+
+    @Test
+    public void createGenericPurchaseServicePaymentTestYk() {
+        createGenericPurchaseServicePaymentTest(PaymentSystem.PAYMENT_SYSTEM_YOOKASSA);
+    }
+
+    @Test
     public void createPurchaseServicePaymentTestTbank() {
         createPurchaseServicePaymentTest(PaymentSystem.PAYMENT_SYSTEM_TBANK);
     }
@@ -468,7 +479,12 @@ public class PaymentTest extends ContainerConfiguration {
                         .setPlan(UzumAnalyticsContext.UzumAnalyticsPlan.newBuilder()
                                 .setDefaultPlan(UzumAnalyticsContext.UzumAnalyticsPlan.UzumAnalyticsDefaultPlan
                                         .newBuilder().buildPartial()).build()).build())).build();
-        return List.of(kePaidService, uzumPaidService);
+        PaidService aiHubPaidService = PaidService.newBuilder().setContext(PaidServiceContext.newBuilder()
+                .setAiHubContext(AiHubContext.newBuilder()
+                        .setPlan(AiHubContext.AiHubPlan.newBuilder()
+                                .setBusinessPlan(AiHubContext.AiHubPlan.AiBusiness
+                                        .newBuilder().buildPartial())).build()).build()).build();
+        return List.of(kePaidService, uzumPaidService, aiHubPaidService);
     }
 
     @Test
@@ -584,7 +600,7 @@ public class PaymentTest extends ContainerConfiguration {
         }
 
         List<Payment> betweenTimeRange = paymentService
-                .getPaymentByPendingStatusAndOperationTypeBetweenTimeRange(Operation.PURCHASE_SERVICE.getTitle());
+                .getPaymentByPendingStatusAndBetweenTimeRange();
 
         Assertions.assertFalse(betweenTimeRange.isEmpty());
         for (Payment pendingPayment : betweenTimeRange) {
@@ -626,7 +642,41 @@ public class PaymentTest extends ContainerConfiguration {
         Optional<Payment> payment = paymentRepository.findByPaymentId(paymentId);
         Assertions.assertTrue(payment.isPresent());
 
-        purchaseServiceJob.checkPaymentStatus(payment.get());
+        try {
+            purchaseServiceJob.execute(null);
+        } catch (JobExecutionException e) {
+            throw new RuntimeException(e);
+        }
+
+        Optional<Payment> successPayment = paymentRepository.findByPaymentId(paymentId);
+        Assertions.assertEquals(successPayment.get().getStatus(), RequestPaymentStatus.SUCCESS);
+    }
+
+    private void createGenericPurchaseServicePaymentTest(PaymentSystem paymentSystem) {
+        String userId = UUID.randomUUID().toString();
+        var purchaseService = PaymentCreateRequest.GenericPaymentPurchaseService.newBuilder()
+                .setUserId(userId)
+                .setAmount(4000)
+                .setPaymentSystem(paymentSystem)
+                .setReturnUrl("return-test.test")
+                .setDescription("TEST")
+                .build();
+        PaymentCreateRequest paymentCreateRequest = PaymentCreateRequest.newBuilder()
+                .setGenericPaymentPurchaseService(purchaseService)
+                .build();
+        StreamRecorder<PaymentCreateResponse> paymentCreateObserver = StreamRecorder.create();
+        grpcService.createPayment(paymentCreateRequest, paymentCreateObserver);
+        Assertions.assertNull(paymentCreateObserver.getError());
+
+        String paymentId = paymentCreateObserver.getValues().getFirst().getPaymentId();
+        Optional<Payment> payment = paymentRepository.findByPaymentId(paymentId);
+        Assertions.assertTrue(payment.isPresent());
+
+        try {
+            purchaseServiceJob.execute(null);
+        } catch (JobExecutionException e) {
+            throw new RuntimeException(e);
+        }
 
         Optional<Payment> successPayment = paymentRepository.findByPaymentId(paymentId);
         Assertions.assertEquals(successPayment.get().getStatus(), RequestPaymentStatus.SUCCESS);
