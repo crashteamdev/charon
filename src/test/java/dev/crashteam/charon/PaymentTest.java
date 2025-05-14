@@ -11,6 +11,7 @@ import dev.crashteam.charon.job.BalancePaymentJob;
 import dev.crashteam.charon.job.PurchaseServiceJob;
 import dev.crashteam.charon.job.RecurrentPaymentJob;
 import dev.crashteam.charon.mock.LavaMock;
+import dev.crashteam.charon.mock.TbankMock;
 import dev.crashteam.charon.mock.YookassaMock;
 import dev.crashteam.charon.model.Operation;
 import dev.crashteam.charon.model.RequestPaymentStatus;
@@ -128,6 +129,10 @@ public class PaymentTest extends ContainerConfiguration {
         YookassaMock.createPayment(mockServer);
         YookassaMock.createRefundPayment(mockServer);
         YookassaMock.paymentStatus(mockServer);
+
+        TbankMock.createPayment(mockServer);
+        TbankMock.chargePayment(mockServer);
+        TbankMock.paymentStatus(mockServer);
 
         LavaMock.paymentStatus(mockServer);
         LavaMock.createPayment(mockServer);
@@ -296,30 +301,13 @@ public class PaymentTest extends ContainerConfiguration {
     }
 
     @Test
-    public void createPurchaseServicePaymentTest() {
-        String userId = UUID.randomUUID().toString();
-        var purchaseService = PaymentCreateRequest.PaymentPurchaseService.newBuilder()
-                .setUserId(userId)
-                .setMultiply(1)
-                .addAllPaidServices(getPaidServices())
-                .setPaymentSystem(PaymentSystem.PAYMENT_SYSTEM_YOOKASSA)
-                .setReturnUrl("return-test.test")
-                .build();
-        PaymentCreateRequest paymentCreateRequest = PaymentCreateRequest.newBuilder()
-                .setPaymentPurchaseService(purchaseService)
-                .build();
-        StreamRecorder<PaymentCreateResponse> paymentCreateObserver = StreamRecorder.create();
-        grpcService.createPayment(paymentCreateRequest, paymentCreateObserver);
-        Assertions.assertNull(paymentCreateObserver.getError());
+    public void createPurchaseServicePaymentTestTbank() {
+        createPurchaseServicePaymentTest(PaymentSystem.PAYMENT_SYSTEM_TBANK);
+    }
 
-        String paymentId = paymentCreateObserver.getValues().get(0).getPaymentId();
-        Optional<Payment> payment = paymentRepository.findByPaymentId(paymentId);
-        Assertions.assertTrue(payment.isPresent());
-
-        purchaseServiceJob.checkPaymentStatus(payment.get());
-
-        Optional<Payment> successPayment = paymentRepository.findByPaymentId(paymentId);
-        Assertions.assertEquals(successPayment.get().getStatus(), RequestPaymentStatus.SUCCESS);
+    @Test
+    public void createPurchaseServicePaymentTestYk() {
+        createPurchaseServicePaymentTest(PaymentSystem.PAYMENT_SYSTEM_YOOKASSA);
     }
 
     @Test
@@ -484,7 +472,64 @@ public class PaymentTest extends ContainerConfiguration {
     }
 
     @Test
-    public void testRecurrentPayment() {
+    public void testRecurrentPaymentTbank() {
+        testRecurrentPayment(PaymentSystem.PAYMENT_SYSTEM_TBANK);
+    }
+
+    @Test
+    public void testRecurrentPaymentYk() {
+        testRecurrentPayment(PaymentSystem.PAYMENT_SYSTEM_YOOKASSA);
+    }
+
+    @Test
+    public void testOldRecurrentPaymentTbank() {
+        testOldRecurrentPayment(PaymentSystem.PAYMENT_SYSTEM_TBANK);
+    }
+
+    @Test
+    public void testOldRecurrentPaymentYk() {
+       testOldRecurrentPayment(PaymentSystem.PAYMENT_SYSTEM_YOOKASSA);
+    }
+
+    private void testOldRecurrentPayment(PaymentSystem paymentSystem) {
+        User user = new User();
+        user.setCurrency("RUB");
+        user.setId("XNWAhWBTT4QeDtNnikroYZKO6jx4");
+        user.setBalance(400000L);
+        user.setSubscriptionValidUntil(LocalDateTime.now().minusMonths(3));
+        userRepository.save(user);
+
+        PaidService paidService = PaidService.newBuilder().setContext(PaidServiceContext.newBuilder()
+                .setKeAnalyticsContext(KeAnalyticsContext.newBuilder()
+                        .setPlan(KeAnalyticsContext.KeAnalyticsPlan.newBuilder()
+                                .setDefaultPlan(KeAnalyticsContext.KeAnalyticsPlan.KeAnalyticsDefaultPlan
+                                        .newBuilder().buildPartial()).build()).build())).build();
+        var purchaseService = PaymentCreateRequest.PaymentPurchaseService.newBuilder()
+                .setUserId(user.getId())
+                .setMultiply(1)
+                .setPaidService(paidService)
+                .setPaymentSystem(paymentSystem)
+                .setReturnUrl("return-test.test")
+                .setSavePaymentMethod(true)
+                .build();
+        PaymentCreateRequest paymentCreateRequest = PaymentCreateRequest.newBuilder()
+                .setPaymentPurchaseService(purchaseService)
+                .build();
+        StreamRecorder<PaymentCreateResponse> paymentCreateObserver = StreamRecorder.create();
+        grpcService.createPayment(paymentCreateRequest, paymentCreateObserver);
+        Assertions.assertNull(paymentCreateObserver.getError());
+
+        String paymentId = paymentCreateObserver.getValues().get(0).getPaymentId();
+        Optional<Payment> payment = paymentRepository.findByPaymentId(paymentId);
+        Assertions.assertTrue(payment.isPresent());
+
+        purchaseServiceJob.checkPaymentStatus(payment.get());
+        User userWithPurchase = userRepository.findById(user.getId()).get();
+        Assertions.assertTrue(userWithPurchase.getSubscriptionValidUntil().isAfter(LocalDateTime.now()));
+
+    }
+
+    private void testRecurrentPayment(PaymentSystem paymentSystem) {
         String userId = UUID.randomUUID().toString();
         PaidService paidService = PaidService.newBuilder().setContext(PaidServiceContext.newBuilder()
                 .setKeAnalyticsContext(KeAnalyticsContext.newBuilder()
@@ -495,7 +540,7 @@ public class PaymentTest extends ContainerConfiguration {
                 .setUserId(userId)
                 .setMultiply(1)
                 .setPaidService(paidService)
-                .setPaymentSystem(PaymentSystem.PAYMENT_SYSTEM_YOOKASSA)
+                .setPaymentSystem(paymentSystem)
                 .setReturnUrl("return-test.test")
                 .setSavePaymentMethod(true)
                 .build();
@@ -561,27 +606,14 @@ public class PaymentTest extends ContainerConfiguration {
         Assertions.assertNull(savedPaymentService.findByUserId(userId));
     }
 
-    @Test
-    public void testOldRecurrentPayment() {
-        User user = new User();
-        user.setCurrency("RUB");
-        user.setId("XNWAhWBTT4QeDtNnikroYZKO6jx4");
-        user.setBalance(400000L);
-        user.setSubscriptionValidUntil(LocalDateTime.now().minusMonths(3));
-        userRepository.save(user);
-
-        PaidService paidService = PaidService.newBuilder().setContext(PaidServiceContext.newBuilder()
-                .setKeAnalyticsContext(KeAnalyticsContext.newBuilder()
-                        .setPlan(KeAnalyticsContext.KeAnalyticsPlan.newBuilder()
-                                .setDefaultPlan(KeAnalyticsContext.KeAnalyticsPlan.KeAnalyticsDefaultPlan
-                                        .newBuilder().buildPartial()).build()).build())).build();
+    private void createPurchaseServicePaymentTest(PaymentSystem paymentSystem) {
+        String userId = UUID.randomUUID().toString();
         var purchaseService = PaymentCreateRequest.PaymentPurchaseService.newBuilder()
-                .setUserId(user.getId())
+                .setUserId(userId)
                 .setMultiply(1)
-                .setPaidService(paidService)
-                .setPaymentSystem(PaymentSystem.PAYMENT_SYSTEM_YOOKASSA)
+                .addAllPaidServices(getPaidServices())
+                .setPaymentSystem(paymentSystem)
                 .setReturnUrl("return-test.test")
-                .setSavePaymentMethod(true)
                 .build();
         PaymentCreateRequest paymentCreateRequest = PaymentCreateRequest.newBuilder()
                 .setPaymentPurchaseService(purchaseService)
@@ -595,34 +627,8 @@ public class PaymentTest extends ContainerConfiguration {
         Assertions.assertTrue(payment.isPresent());
 
         purchaseServiceJob.checkPaymentStatus(payment.get());
-        User userWithPurchase = userRepository.findById(user.getId()).get();
-        Assertions.assertTrue(userWithPurchase.getSubscriptionValidUntil().isAfter(LocalDateTime.now()));
 
+        Optional<Payment> successPayment = paymentRepository.findByPaymentId(paymentId);
+        Assertions.assertEquals(successPayment.get().getStatus(), RequestPaymentStatus.SUCCESS);
     }
-
-//    @Test
-//    public void testRefundPayment() {
-//        Payment payment = new Payment();
-//        payment.setPaymentId("request_refund_payment_id");
-//        payment.setExternalId("22e12f66-000f-5000-8000-18db351245c7");
-//        payment.setStatus("pending");
-//        payment.setCurrency("RUB");
-//        payment.setAmount(1000L);
-//        payment.setUserId("user_id");
-//        payment.setCreated(LocalDate.parse("2022-07-20", DateTimeFormatter.ofPattern("yyyy-MM-dd")).atStartOfDay());
-//        payment.setUpdated(LocalDateTime.now());
-//        paymentRepository.save(payment);
-//
-//        StreamRecorder<PaymentRefundResponse> refundObserver = StreamRecorder.create();
-//        PaymentRefundRequest refundRequest = PaymentRefundRequest.newBuilder()
-//                .setAmount(Amount.newBuilder().setValue(1000L).setCurrency("RUB").build())
-//                .setPaymentId("request_refund_payment_id")
-//                .setUserId("user_id").build();
-//        grpcService.refundPayment(refundRequest, refundObserver);
-//        Assertions.assertNull(refundObserver.getError());
-//
-//        Payment refundedPayment = paymentRepository.findByPaymentId("request_refund_payment_id")
-//                .orElseThrow(EntityNotFoundException::new);
-//        Assertions.assertEquals(RequestPaymentStatus.SUCCESS.getTitle(), refundedPayment.getStatus());
-//    }
 }

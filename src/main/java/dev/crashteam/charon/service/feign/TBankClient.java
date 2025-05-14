@@ -8,7 +8,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 
 @FeignClient(
         name = "tinkoffClient",
-        url  = "${tinkoff.base-url}",
+        url  = "${app.integration.tinkoff.url}",
         configuration = TinkoffFeignConfig.class
 )
 public interface TBankClient {

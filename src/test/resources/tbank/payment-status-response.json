@@ -1,0 +1,11 @@
+{
+  "Success": true,
+  "ErrorCode": "0",
+  "Message": "OK",
+  "TerminalKey": "TinkoffBankTest",
+  "Status": "CONFIRMED",
+  "PaymentId": "13660",
+  "OrderId": "21050",
+  "Amount": 1230,
+  "RebillId": "some-rebill-test-id"
+}

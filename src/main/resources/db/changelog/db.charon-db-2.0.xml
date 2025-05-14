@@ -55,5 +55,13 @@
               and subscription_type_id = (SELECT s.id FROM subscription_type s WHERE type = 10);
         </sql>
     </changeSet>
+
+    <changeSet id="add_generic_operation_type" author="sagefreke">
+        <insert tableName="operation_type">
+            <column name="id" valueSequenceNext="operation_type_id_seq"/>
+            <column name="type" value="GENERIC_PURCHASE"/>
+        </insert>
+    </changeSet>
+
 </databaseChangeLog>
 

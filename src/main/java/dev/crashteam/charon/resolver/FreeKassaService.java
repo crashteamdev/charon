@@ -2,6 +2,7 @@ package dev.crashteam.charon.resolver;
 
 import dev.crashteam.charon.component.FreeKassaProperties;
 import dev.crashteam.charon.model.RequestPaymentStatus;
+import dev.crashteam.charon.model.dto.UserSavedPaymentResolverDto;
 import dev.crashteam.charon.model.dto.resolver.PaymentData;
 import dev.crashteam.charon.service.CurrencyService;
 import dev.crashteam.charon.util.PaymentProtoUtils;
@@ -74,7 +75,7 @@ public class FreeKassaService implements PaymentResolver {
     }
 
     @Override
-    public PaymentData recurrentPayment(String paymentId, String amount) {
+    public PaymentData recurrentPayment(UserSavedPaymentResolverDto resolverDto) {
         return null;
     }
 

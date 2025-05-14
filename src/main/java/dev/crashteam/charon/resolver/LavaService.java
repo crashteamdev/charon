@@ -6,6 +6,7 @@ import dev.crashteam.charon.exception.IntegrationException;
 import dev.crashteam.charon.mapper.integration.LavaPaymentMapper;
 import dev.crashteam.charon.model.RequestPaymentStatus;
 import dev.crashteam.charon.model.domain.Payment;
+import dev.crashteam.charon.model.dto.UserSavedPaymentResolverDto;
 import dev.crashteam.charon.model.dto.lava.LavaRequest;
 import dev.crashteam.charon.model.dto.lava.LavaResponse;
 import dev.crashteam.charon.model.dto.lava.LavaStatusRequest;
@@ -87,7 +88,7 @@ public class LavaService implements PaymentResolver {
     }
 
     @Override
-    public PaymentData recurrentPayment(String paymentId, String amount) {
+    public PaymentData recurrentPayment(UserSavedPaymentResolverDto resolverDto) {
         return null;
     }
 

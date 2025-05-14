@@ -1,46 +1,60 @@
 package dev.crashteam.charon.util;
 
+import dev.crashteam.charon.exception.NoSuchPaymentTypeException;
 import dev.crashteam.charon.model.RequestPaymentStatus;
 import dev.crashteam.charon.model.domain.SubscriptionType;
 import dev.crashteam.payment.PaymentCreateRequest;
 import dev.crashteam.payment.PaymentStatus;
-import org.springframework.util.StringUtils;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
-import java.util.Optional;
 
 public class PaymentProtoUtils {
 
 
     public static String getUrlFromRequest(PaymentCreateRequest request) {
-        return Optional.of(request.getPaymentDepositUserBalance().getReturnUrl())
-                .filter(StringUtils::hasText)
-                .orElse(request.getPaymentPurchaseService().getReturnUrl());
+        return switch (request.getPaymentCase()) {
+            case PAYMENT_DEPOSIT_USER_BALANCE -> request.getPaymentDepositUserBalance().getReturnUrl();
+            case PAYMENT_PURCHASE_SERVICE -> request.getPaymentPurchaseService().getReturnUrl();
+            case GENERIC_PAYMENT_PURCHASE_SERVICE -> request.getGenericPaymentPurchaseService().getReturnUrl();
+            case PAYMENT_NOT_SET -> throw new NoSuchPaymentTypeException("No such payment type exists");
+        };
     }
 
     public static String getEmailFromRequest(PaymentCreateRequest request) {
-        return Optional.of(request.getPaymentDepositUserBalance().getUserEmail())
-                .filter(StringUtils::hasText)
-                .orElse(request.getPaymentPurchaseService().getUserEmail());
+        return switch (request.getPaymentCase()) {
+            case PAYMENT_DEPOSIT_USER_BALANCE -> request.getPaymentDepositUserBalance().getUserEmail();
+            case PAYMENT_PURCHASE_SERVICE -> request.getPaymentPurchaseService().getUserEmail();
+            case GENERIC_PAYMENT_PURCHASE_SERVICE -> "";
+            case PAYMENT_NOT_SET -> throw new NoSuchPaymentTypeException("No such payment type exists");
+        };
     }
 
     public static String getPhoneFromRequest(PaymentCreateRequest request) {
-        return Optional.of(request.getPaymentDepositUserBalance().getUserPhone())
-                .filter(StringUtils::hasText)
-                .orElse(request.getPaymentPurchaseService().getUserPhone());
+        return switch (request.getPaymentCase()) {
+            case PAYMENT_DEPOSIT_USER_BALANCE -> request.getPaymentDepositUserBalance().getUserPhone();
+            case PAYMENT_PURCHASE_SERVICE -> request.getPaymentPurchaseService().getUserPhone();
+            case GENERIC_PAYMENT_PURCHASE_SERVICE -> "";
+            case PAYMENT_NOT_SET -> throw new NoSuchPaymentTypeException("No such payment type exists");
+        };
     }
 
     public static String getDescriptionFromRequest(PaymentCreateRequest request) {
-        return Optional.of(request.getPaymentDepositUserBalance().getDescription())
-                .filter(StringUtils::hasText)
-                .orElse(request.getPaymentPurchaseService().getDescription());
+        return switch (request.getPaymentCase()) {
+            case PAYMENT_DEPOSIT_USER_BALANCE -> request.getPaymentDepositUserBalance().getDescription();
+            case PAYMENT_PURCHASE_SERVICE -> request.getPaymentPurchaseService().getDescription();
+            case GENERIC_PAYMENT_PURCHASE_SERVICE -> request.getGenericPaymentPurchaseService().getDescription();
+            case PAYMENT_NOT_SET -> throw new NoSuchPaymentTypeException("No such payment type exists");
+        };
     }
 
     public static String getUserIdFromRequest(PaymentCreateRequest request) {
-        return Optional.of(request.getPaymentDepositUserBalance().getUserId())
-                .filter(StringUtils::hasText)
-                .orElse(request.getPaymentPurchaseService().getUserId());
+        return switch (request.getPaymentCase()) {
+            case PAYMENT_DEPOSIT_USER_BALANCE -> request.getPaymentDepositUserBalance().getUserId();
+            case PAYMENT_PURCHASE_SERVICE -> request.getPaymentPurchaseService().getUserId();
+            case GENERIC_PAYMENT_PURCHASE_SERVICE -> request.getGenericPaymentPurchaseService().getUserId();
+            case PAYMENT_NOT_SET -> throw new NoSuchPaymentTypeException("No such payment type exists");
+        };
     }
 
     public static RequestPaymentStatus getStatus(int status) {

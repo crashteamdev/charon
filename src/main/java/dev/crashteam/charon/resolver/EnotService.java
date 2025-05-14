@@ -5,6 +5,7 @@ import dev.crashteam.charon.exception.IntegrationException;
 import dev.crashteam.charon.mapper.integration.EnotPaymentMapper;
 import dev.crashteam.charon.model.RequestPaymentStatus;
 import dev.crashteam.charon.model.domain.Payment;
+import dev.crashteam.charon.model.dto.UserSavedPaymentResolverDto;
 import dev.crashteam.charon.model.dto.enot.EnotPaymentCreateRequest;
 import dev.crashteam.charon.model.dto.enot.EnotPaymentCreateResponse;
 import dev.crashteam.charon.model.dto.enot.EnotPaymentStatusResponse;
@@ -74,7 +75,7 @@ public class EnotService implements PaymentResolver {
     }
 
     @Override
-    public PaymentData recurrentPayment(String paymentId, String amount) {
+    public PaymentData recurrentPayment(UserSavedPaymentResolverDto resolverDto) {
         return null;
     }
 

@@ -1,11 +1,9 @@
 package dev.crashteam.charon.job;
 
 import dev.crashteam.charon.mapper.ProtoMapper;
-import dev.crashteam.charon.model.Currency;
-import dev.crashteam.charon.model.Operation;
-import dev.crashteam.charon.model.PaymentSystemType;
-import dev.crashteam.charon.model.RequestPaymentStatus;
+import dev.crashteam.charon.model.*;
 import dev.crashteam.charon.model.domain.*;
+import dev.crashteam.charon.model.dto.UserSavedPaymentResolverDto;
 import dev.crashteam.charon.model.dto.resolver.PaymentData;
 import dev.crashteam.charon.publisher.handler.StreamPublisherHandler;
 import dev.crashteam.charon.repository.PaymentRepository;
@@ -27,6 +25,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 
 @Slf4j
 @Component
@@ -72,10 +71,22 @@ public class RecurrentPaymentJob implements Job {
             Long amount = PaymentProtoUtils
                     .multiplyDiscount(multipliedAmount, monthPaid, paidService.getSubscriptionType());
             BigDecimal moneyAmount = PaymentProtoUtils.getMajorMoneyAmount(amount);
-            PaymentData response = paymentResolver.recurrentPayment(savedPayment.getPaymentId(), String.valueOf(moneyAmount));
+            UserSavedPaymentResolverDto savedPaymentDto = UserSavedPaymentResolverDto.builder()
+                    .paymentId(savedPayment.getPaymentId())
+                    .userId(savedPayment.getUserId())
+                    .amount(String.valueOf(moneyAmount))
+                    .build();
+            PaymentData response = paymentResolver.recurrentPayment(savedPaymentDto);
 
-            Payment payment = new Payment();
-            payment.setPaymentId(response.getPaymentId());
+            Optional<Payment> optionalPayment = paymentRepository.findByExternalId(response.getProviderId());
+
+            Payment payment;
+            if (optionalPayment.isPresent()) {
+                payment = optionalPayment.get();
+            } else {
+                payment = new Payment();
+                payment.setPaymentId(response.getPaymentId());
+            }
             payment.setExternalId(response.getProviderId());
             payment.setStatus(RequestPaymentStatus.PENDING);
             payment.setCurrency(Currency.RUB.getTitle());

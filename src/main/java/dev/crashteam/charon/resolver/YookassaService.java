@@ -4,21 +4,19 @@ import dev.crashteam.charon.mapper.integration.YookassaPaymentMapper;
 import dev.crashteam.charon.model.Operation;
 import dev.crashteam.charon.model.PaymentSystemType;
 import dev.crashteam.charon.model.RequestPaymentStatus;
-import dev.crashteam.charon.model.domain.OperationType;
 import dev.crashteam.charon.model.domain.Payment;
 import dev.crashteam.charon.model.domain.UserSavedPayment;
+import dev.crashteam.charon.model.dto.UserSavedPaymentResolverDto;
 import dev.crashteam.charon.model.dto.resolver.PaymentData;
 import dev.crashteam.charon.model.dto.yookassa.*;
 import dev.crashteam.charon.repository.PaymentRepository;
 import dev.crashteam.charon.service.CurrencyService;
-import dev.crashteam.charon.service.PaymentService;
 import dev.crashteam.charon.service.UserSavedPaymentService;
 import dev.crashteam.charon.service.feign.YookassaClient;
 import dev.crashteam.charon.util.PaymentProtoUtils;
 import dev.crashteam.payment.PaymentCreateRequest;
 import dev.crashteam.payment.PaymentRefundRequest;
 import dev.crashteam.payment.PaymentSystem;
-import dev.crashteam.payment.RecurrentPaymentCreateRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -68,9 +66,9 @@ public class YookassaService implements PaymentResolver {
     }
 
     @Override
-    public PaymentData recurrentPayment(String paymentId, String amount) {
+    public PaymentData recurrentPayment(UserSavedPaymentResolverDto savedPaymentDto) {
         YkPaymentCreateRequestDTO paymentRequestDto = yookassaPaymentMapper
-                .getRecurrentPaymentRequestDto(paymentId, amount);
+                .getRecurrentPaymentRequestDto(savedPaymentDto.getPaymentId(), savedPaymentDto.getAmount());
         YkPaymentResponseDTO responseDTO = kassaClient.createPayment(paymentRequestDto);
 
         PaymentData paymentData = new PaymentData();

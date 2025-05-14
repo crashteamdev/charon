@@ -63,6 +63,7 @@ public class PaymentService {
             return switch (request.getPaymentCase()) {
                 case PAYMENT_DEPOSIT_USER_BALANCE -> createBalanceDepositPayment(request);
                 case PAYMENT_PURCHASE_SERVICE -> createPurchaseServicePayment(request);
+                case GENERIC_PAYMENT_PURCHASE_SERVICE -> createGenericPurchasePayment(request);
                 case PAYMENT_NOT_SET -> throw new NoSuchPaymentTypeException("No such payment type exists");
             };
         } catch (Exception e) {
@@ -72,6 +73,47 @@ public class PaymentService {
                     .setDescription(e.getMessage())
                     .build();
         }
+    }
+
+    @Transactional
+    public PaymentCreateResponse createGenericPurchasePayment(PaymentCreateRequest request) throws JsonProcessingException {
+        PaymentCreateRequest.GenericPaymentPurchaseService purchaseService = request.getGenericPaymentPurchaseService();
+
+        log.info("Processing generic service purchase request for user - {}.", purchaseService.getUserId());
+        PaymentResolver paymentResolver = paymentResolvers.stream().filter(it -> it.getPaymentSystem()
+                        .equals(purchaseService.getPaymentSystem()))
+                .findFirst()
+                .orElseThrow(IllegalArgumentException::new);
+
+        User user = userService.getUser(purchaseService.getUserId());
+
+        Payment payment = new Payment();
+        BigDecimal moneyAmount = PaymentProtoUtils.getMajorMoneyAmount(purchaseService.getAmount());
+        PaymentData response = paymentResolver.createPayment(request, String.valueOf(moneyAmount));
+
+        ObjectMapper objectMapper = new ObjectMapper();
+        payment.setPaymentId(response.getPaymentId());
+        payment.setExternalId(response.getProviderId());
+        payment.setStatus(RequestPaymentStatus.PENDING);
+        payment.setCurrency(Currency.RUB.getTitle());
+        payment.setAmount(purchaseService.getAmount());
+        payment.setProviderAmount(Long.valueOf(response.getProviderAmount()));
+        payment.setProviderCurrency(response.getProviderCurrency());
+        payment.setUser(user);
+        payment.setCreated(response.getCreatedAt());
+        payment.setUpdated(LocalDateTime.now());
+        payment.setOperationType(operationTypeService.getOperationType(Operation.GENERIC_PURCHASE.getTitle()));
+        payment.setEmail(response.getEmail());
+        payment.setPhone(response.getPhone());
+        payment.setPaymentSystem(protoMapper.getPaymentSystemType(purchaseService.getPaymentSystem()).getTitle());
+        payment.setMetadata(objectMapper.writeValueAsString(request.getMetadataMap()));
+        payment.setExchangeRate(response.getExchangeRate());
+        paymentRepository.save(payment);
+        log.info("Saving generic payment with paymentId - {}", response.getPaymentId());
+
+        publisherHandler.publishPaymentCreatedMessage(payment);
+        return protoMapper.getPaymentResponse(response, payment, purchaseService.getAmount());
+
     }
 
     public RecurrentPaymentCancelResponse cancelRecurrentPayment(RecurrentPaymentCancelRequest request) {
@@ -382,6 +424,7 @@ public class PaymentService {
             case UZUM_REPRICER_CONTEXT ->
                     paidServiceContext.getUzumRepricerContext().getPlan().getPlanCase().getNumber();
             case KE_REPRICER_CONTEXT -> paidServiceContext.getKeRepricerContext().getPlan().getPlanCase().getNumber();
+            case AI_HUB_CONTEXT -> paidServiceContext.getAiHubContext().getPlan().getPlanCase().getNumber();
             case CONTEXT_NOT_SET -> throw new NoSuchSubscriptionTypeException();
         };
         return paidServiceService.getPaidServiceByTypeAndPlan((long) paidServiceContextType, (long) subscriptionType);

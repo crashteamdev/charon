@@ -1,6 +1,7 @@
 package dev.crashteam.charon.resolver;
 
 import dev.crashteam.charon.model.RequestPaymentStatus;
+import dev.crashteam.charon.model.dto.UserSavedPaymentResolverDto;
 import dev.crashteam.charon.model.dto.resolver.PaymentData;
 import dev.crashteam.payment.PaymentCreateRequest;
 import dev.crashteam.payment.PaymentSystem;
@@ -17,7 +18,13 @@ public interface PaymentResolver {
      */
     PaymentData createPayment(PaymentCreateRequest request, String amount);
 
-    PaymentData recurrentPayment(String paymentId, String amount);
+    /***
+     * paymentId provider payment id
+     * savedPaymentDto provider additionalId (nullable)
+     * amount major value of initial amount with dot, for example - 40.00
+     * PaymentData - object will be mapped to Payment entity
+     */
+    PaymentData recurrentPayment(UserSavedPaymentResolverDto savedPaymentDto);
 
     /***
      * Get status from integration service
