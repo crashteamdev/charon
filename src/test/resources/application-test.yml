@@ -57,6 +57,10 @@ app:
       url: http://localhost:8085/v3
       secretKey: test-key
       shopId: some-id
+    tinkoff:
+      url: http://localhost:8085/tbank
+      shopId: test-id
+      secretKey: test-key
 org:
   jobrunr:
     background-job-server:

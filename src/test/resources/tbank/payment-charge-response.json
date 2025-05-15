@@ -1,0 +1,9 @@
+{
+  "TerminalKey": "TinkoffBankTest",
+  "Amount": 100000,
+  "OrderId": "21050",
+  "Success": true,
+  "Status": "NEW",
+  "PaymentId": "13660",
+  "ErrorCode": "0"
+}

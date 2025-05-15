@@ -10,6 +10,7 @@ public enum PaymentSystemType {
     PAYMENT_SYSTEM_CLICK("PAYMENT_SYSTEM_CLICK", 4, true),
     PAYMENT_SYSTEM_LAVA("PAYMENT_SYSTEM_LAVA", 5, false),
     PAYMENT_SYSTEM_ENOT("PAYMENT_SYSTEM_ENOT", 6, false),
+    PAYMENT_SYSTEM_TBANK("PAYMENT_SYSTEM_TBANK", 7, false),
     UNRECOGNIZED("UNRECOGNIZED", -1, false);
 
     private final String title;

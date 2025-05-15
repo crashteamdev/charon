@@ -1,0 +1,10 @@
+{
+  "Success": true,
+  "ErrorCode": "0",
+  "TerminalKey": "TinkoffBankTest",
+  "Status": "NEW",
+  "PaymentId": "3093639567",
+  "OrderId": "21090",
+  "Amount": 140000,
+  "PaymentURL": "https://securepay.tinkoff.ru/new/fU1ppgqa"
+}

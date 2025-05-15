@@ -7,10 +7,9 @@ spring:
     redis:
       repositories:
         enabled: false
-  redis:
-    host: 0.0.0.0
-    port: 6380
-    password: redispw
+      host: 0.0.0.0
+      port: 6380
+      password: redispw
   quartz:
     job-store-type: jdbc
     properties:
@@ -96,6 +95,10 @@ app:
       url: https://api.enot.io/invoice
       shopId: d374961e-f7db-4cf4-a4a9-9caa61e661a8
       secretKey:
+    tinkoff:
+      url: https://securepay.tinkoff.ru/v2/
+      shopId:
+      secretKey:
 
 freekassa:
   baseUrl: https://api.freekassa.ru
@@ -110,8 +113,6 @@ click:
   serviceId: 30232
   secretKey: someKey
   merchantUserId: 36242
-
-
 
 management:
   security:

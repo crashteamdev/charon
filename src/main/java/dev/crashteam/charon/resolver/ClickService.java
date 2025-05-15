@@ -2,6 +2,7 @@ package dev.crashteam.charon.resolver;
 
 import dev.crashteam.charon.component.ClickProperties;
 import dev.crashteam.charon.model.RequestPaymentStatus;
+import dev.crashteam.charon.model.dto.UserSavedPaymentResolverDto;
 import dev.crashteam.charon.model.dto.currency.ExchangeDto;
 import dev.crashteam.charon.model.dto.resolver.PaymentData;
 import dev.crashteam.charon.service.CurrencyService;
@@ -71,7 +72,7 @@ public class ClickService implements PaymentResolver {
     }
 
     @Override
-    public PaymentData recurrentPayment(String paymentId, String amount) {
+    public PaymentData recurrentPayment(UserSavedPaymentResolverDto resolverDto) {
         return null;
     }
 
