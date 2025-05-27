@@ -92,14 +92,13 @@ public class YookassaService implements PaymentResolver {
         YkPaymentResponseDTO paymentResponseDTO = kassaClient.paymentStatus(paymentId);
         YkPaymentMethodDTO paymentMethod = paymentResponseDTO.getPaymentMethod();
         RequestPaymentStatus paymentStatus = yookassaPaymentMapper.getPaymentStatus(paymentResponseDTO.getStatus());
-
-        if (paymentStatus.equals(RequestPaymentStatus.SUCCESS) && paymentMethod != null && paymentMethod.getSaved()) {
-            Optional<Payment> optionalPayment = paymentRepository.findByExternalId(paymentId);
-            if (optionalPayment.isPresent()) {
-                Payment payment = optionalPayment.get();
+        Optional<Payment> optionalPayment = paymentRepository.findByExternalId(paymentId);
+        if (optionalPayment.isPresent() && paymentStatus.equals(RequestPaymentStatus.SUCCESS)) {
+            Payment payment = optionalPayment.get();
+            String userId = payment.getUser().getId();
+            UserSavedPayment userSavedPayment = savedPaymentService.findByUserId(userId);
+            if ((paymentMethod != null && paymentMethod.getSaved())) {
                 if (payment.getOperationType().getType().equals(Operation.PURCHASE_SERVICE.getTitle())) {
-                    String userId = payment.getUser().getId();
-                    UserSavedPayment userSavedPayment = savedPaymentService.findByUserId(userId);
                     if (userSavedPayment != null) {
                         userSavedPayment.setPaymentId(paymentMethod.getId());
                         userSavedPayment.setPaidService(payment.getPaidService());
@@ -116,8 +115,10 @@ public class YookassaService implements PaymentResolver {
                         savedPaymentService.save(savedPayment);
                     }
                 }
+            } else if (userSavedPayment != null) {
+                savedPaymentService.cancelRecurrentPayment(userId);
             }
-        }
+         }
         return paymentStatus;
     }
 

@@ -130,15 +130,14 @@ public class TbankService implements PaymentResolver {
                 .terminalKey(shopId)
                 .build();
         GetStateResponseDTO state = tBankClient.getState(requestDTO);
-
+        Optional<Payment> optionalPayment = paymentRepository.findByExternalId(paymentId);
         RequestPaymentStatus paymentStatus = paymentMapper.getPaymentStatus(state.status());
-        if (StringUtils.hasText(state.rebillId()) && paymentStatus.equals(RequestPaymentStatus.SUCCESS)) {
-            Optional<Payment> optionalPayment = paymentRepository.findByExternalId(paymentId);
-            if (optionalPayment.isPresent()) {
-                Payment payment = optionalPayment.get();
+        if (optionalPayment.isPresent() && paymentStatus.equals(RequestPaymentStatus.SUCCESS)) {
+            Payment payment = optionalPayment.get();
+            String userId = payment.getUser().getId();
+            UserSavedPayment userSavedPayment = savedPaymentService.findByUserId(userId);
+            if (StringUtils.hasText(state.rebillId())) {
                 if (payment.getOperationType().getType().equals(Operation.PURCHASE_SERVICE.getTitle())) {
-                    String userId = payment.getUser().getId();
-                    UserSavedPayment userSavedPayment = savedPaymentService.findByUserId(userId);
                     if (userSavedPayment != null) {
                         userSavedPayment.setPaymentId(state.rebillId());
                         userSavedPayment.setPaidService(payment.getPaidService());
@@ -155,6 +154,9 @@ public class TbankService implements PaymentResolver {
                         savedPaymentService.save(savedPayment);
                     }
                 }
+
+            } else if (userSavedPayment != null) {
+                savedPaymentService.cancelRecurrentPayment(userId);
             }
         }
         return paymentStatus;
