@@ -53,7 +53,6 @@ public class TbankService implements PaymentResolver {
     }
 
     public PaymentData createPayment(PaymentCreateRequest request, String amount) {
-        log.info("Creating TBANK payment with request params - {}", request);
         BigDecimal moneyAmount = PaymentProtoUtils.getMinorMoneyAmount(amount);
         String paymentId = UUID.randomUUID().toString();
         InitRequestDTO requestDTO = paymentMapper.getPaymentRequestDTO(request,
@@ -62,7 +61,6 @@ public class TbankService implements PaymentResolver {
                 paymentId,
                 moneyAmount.longValue());
         InitResponseDTO responseDTO = tBankClient.init(requestDTO);
-        log.info("Got TBANK payment response - {}", responseDTO);
 
         String phone = PaymentProtoUtils.getPhoneFromRequest(request);
         String email = PaymentProtoUtils.getEmailFromRequest(request);
