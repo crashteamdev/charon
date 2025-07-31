@@ -17,6 +17,7 @@ import dev.crashteam.charon.service.UserSavedPaymentService;
 import dev.crashteam.charon.service.UserService;
 import dev.crashteam.charon.service.feign.TBankClient;
 import dev.crashteam.charon.util.PaymentProtoUtils;
+import dev.crashteam.charon.util.TbankTokenGenerator;
 import dev.crashteam.payment.PaymentCreateRequest;
 import dev.crashteam.payment.PaymentSystem;
 import lombok.RequiredArgsConstructor;
@@ -123,10 +124,11 @@ public class TbankService implements PaymentResolver {
 
     @Override
     public RequestPaymentStatus getPaymentStatus(String paymentId) {
+        String token = TbankTokenGenerator.generateGetStateToken(paymentId, shopId, secretKey);
 
         GetStateRequestDTO requestDTO = GetStateRequestDTO.builder()
                 .paymentId(paymentId)
-                .token(secretKey)
+                .token(token)
                 .terminalKey(shopId)
                 .build();
         GetStateResponseDTO state = tBankClient.getState(requestDTO);

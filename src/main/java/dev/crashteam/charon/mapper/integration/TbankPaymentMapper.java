@@ -4,6 +4,7 @@ import dev.crashteam.charon.model.RequestPaymentStatus;
 import dev.crashteam.charon.model.dto.tbank.ChargeRequestDTO;
 import dev.crashteam.charon.model.dto.tbank.InitRequestDTO;
 import dev.crashteam.charon.util.PaymentProtoUtils;
+import dev.crashteam.charon.util.TbankTokenGenerator;
 import dev.crashteam.payment.PaymentCreateRequest;
 import org.springframework.stereotype.Component;
 
@@ -12,39 +13,63 @@ public class TbankPaymentMapper {
 
     public InitRequestDTO getPaymentRequestDTO(PaymentCreateRequest createRequest,
                                                String terminalKey,
-                                               String token,
+                                               String secretKey,
                                                String paymentId,
                                                Long amount) {
+        String description = PaymentProtoUtils.getDescriptionFromRequest(createRequest);
+        String customerKey = PaymentProtoUtils.getUserIdFromRequest(createRequest);
+        String recurrent = null;
+        
+        if (createRequest.hasPaymentPurchaseService() && createRequest.getPaymentPurchaseService().getSavePaymentMethod()) {
+            recurrent = "Y";
+        }
+        
+        String token = TbankTokenGenerator.generateInitToken(
+            amount, customerKey, description, paymentId, recurrent, terminalKey, secretKey
+        );
+
         InitRequestDTO.InitRequestDTOBuilder dtoBuilder = InitRequestDTO.builder()
                 .amount(amount)
                 .terminalKey(terminalKey)
                 .token(token)
-                .description(PaymentProtoUtils.getDescriptionFromRequest(createRequest))
+                .description(description)
                 .orderId(paymentId)
-                .customerKey(PaymentProtoUtils.getUserIdFromRequest(createRequest));
-        if (createRequest.hasPaymentPurchaseService() && createRequest.getPaymentPurchaseService().getSavePaymentMethod()) {
-            dtoBuilder.recurrent("Y");
+                .customerKey(customerKey);
+                
+        if (recurrent != null) {
+            dtoBuilder.recurrent(recurrent);
         }
+        
         return dtoBuilder.build();
     }
 
     public InitRequestDTO getPaymentRecurrentRequestDTO(String terminalKey,
-                                                        String token,
+                                                        String secretKey,
                                                         String paymentId,
                                                         Long amount) {
-        InitRequestDTO.InitRequestDTOBuilder dtoBuilder = InitRequestDTO.builder()
+        String description = "Recurrent payment";
+        
+        String token = TbankTokenGenerator.generateInitToken(
+            amount, null, description, paymentId, null, terminalKey, secretKey
+        );
+
+        return InitRequestDTO.builder()
                 .amount(amount)
                 .terminalKey(terminalKey)
                 .token(token)
-                .description("Recurrent payment")
-                .orderId(paymentId);
-        return dtoBuilder.build();
+                .description(description)
+                .orderId(paymentId)
+                .build();
     }
 
     public ChargeRequestDTO getChargeRequestDTO(String terminalKey,
-                                                String token,
+                                                String secretKey,
                                                 String rebillId,
                                                 String externalPaymentId) {
+        String token = TbankTokenGenerator.generateChargeToken(
+            externalPaymentId, rebillId, terminalKey, secretKey
+        );
+
         return ChargeRequestDTO.builder()
                 .rebillId(rebillId)
                 .paymentId(externalPaymentId)
