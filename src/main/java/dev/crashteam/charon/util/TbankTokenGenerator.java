@@ -49,9 +49,11 @@ public class TbankTokenGenerator {
     private static String generateToken(Map<String, String> params, String secretKey) {
         StringBuilder concatenated = new StringBuilder();
         
-        for (Map.Entry<String, String> entry : params.entrySet()) {
-            concatenated.append(entry.getKey()).append(entry.getValue());
+        // Конкатенируем ТОЛЬКО значения параметров в алфавитном порядке ключей
+        for (String value : params.values()) {
+            concatenated.append(value);
         }
+        // Добавляем секретный ключ
         concatenated.append(secretKey);
         
         return sha256(concatenated.toString());
