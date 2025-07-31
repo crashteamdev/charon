@@ -21,6 +21,7 @@ import dev.crashteam.charon.util.TbankTokenGenerator;
 import dev.crashteam.payment.PaymentCreateRequest;
 import dev.crashteam.payment.PaymentSystem;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
@@ -30,6 +31,7 @@ import java.time.LocalDateTime;
 import java.util.Optional;
 import java.util.UUID;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class TbankService implements PaymentResolver {
@@ -94,7 +96,7 @@ public class TbankService implements PaymentResolver {
         payment.setStatus(RequestPaymentStatus.PENDING);
         payment.setCurrency(Currency.RUB.getTitle());
         payment.setAmount(amount);
-        payment.setProviderAmount(Long.valueOf(response.amount()));
+        payment.setProviderAmount(response.amount());
         payment.setProviderCurrency(Currency.RUB.getTitle());
         payment.setUser(user);
         payment.setCreated(LocalDateTime.now());
@@ -116,8 +118,7 @@ public class TbankService implements PaymentResolver {
         paymentData.setCreatedAt(LocalDateTime.now());
         paymentData.setStatus(RequestPaymentStatus.PENDING);
         paymentData.setProviderCurrency("RUB");
-        BigDecimal moneyAmount = PaymentProtoUtils.getMinorMoneyAmount(response.amount());
-        paymentData.setProviderAmount(String.valueOf(moneyAmount));
+        paymentData.setProviderAmount(String.valueOf(response.amount()));
 
         return paymentData;
     }
