@@ -48,13 +48,12 @@ public class TbankTokenGenerator {
 
     private static String generateToken(Map<String, String> params, String secretKey) {
         StringBuilder concatenated = new StringBuilder();
-
-        for (String value : params.values()) {
-            concatenated.append(value);
+        
+        for (Map.Entry<String, String> entry : params.entrySet()) {
+            concatenated.append(entry.getKey()).append(entry.getValue());
         }
-
         concatenated.append(secretKey);
-
+        
         return sha256(concatenated.toString());
     }
 
