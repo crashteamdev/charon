@@ -8,61 +8,53 @@ import java.util.TreeMap;
 
 public class TbankTokenGenerator {
 
-    public static String generateInitToken(Long amount, String customerKey, String description,
-                                           String orderId, String recurrent, String terminalKey,
-                                           String secretKey) {
+    public static String generateInitToken(String terminalKey, Long amount, String orderId, 
+                                         String description, String customerKey, String secretKey) {
         Map<String, String> params = new TreeMap<>();
-        params.put("Amount", String.valueOf(amount));
-        if (customerKey != null) {
-            params.put("CustomerKey", customerKey);
-        }
-        if (description != null) {
+        params.put("TerminalKey", terminalKey);
+        params.put("Amount", amount.toString());
+        params.put("OrderId", orderId);
+        
+        if (description != null && !description.isEmpty()) {
             params.put("Description", description);
         }
-        params.put("OrderId", orderId);
-        if (recurrent != null) {
-            params.put("Recurrent", recurrent);
+        if (customerKey != null && !customerKey.isEmpty()) {
+            params.put("CustomerKey", customerKey);
         }
-        params.put("TerminalKey", terminalKey);
-
-        return generateToken(params, secretKey);
+        
+        params.put("Password", secretKey);
+        
+        return calculateHash(params);
     }
 
-    public static String generateChargeToken(String paymentId, String rebillId,
-                                             String terminalKey, String secretKey) {
+    public static String generateChargeToken(String terminalKey, String paymentId, String secretKey) {
         Map<String, String> params = new TreeMap<>();
-        params.put("PaymentId", paymentId);
-        params.put("RebillId", rebillId);
         params.put("TerminalKey", terminalKey);
-
-        return generateToken(params, secretKey);
+        params.put("PaymentId", paymentId);
+        params.put("Password", secretKey);
+        
+        return calculateHash(params);
     }
 
     public static String generateGetStateToken(String paymentId, String terminalKey, String secretKey) {
         Map<String, String> params = new TreeMap<>();
-        params.put("PaymentId", paymentId);
         params.put("TerminalKey", terminalKey);
-
-        return generateToken(params, secretKey);
+        params.put("PaymentId", paymentId);
+        params.put("Password", secretKey);
+        
+        return calculateHash(params);
     }
 
-    private static String generateToken(Map<String, String> params, String secretKey) {
-        StringBuilder concatenated = new StringBuilder();
-        
-        for (Map.Entry<String, String> entry : params.entrySet()) {
-            concatenated.append(entry.getKey())
-                      .append('=')
-                      .append(entry.getValue());
-        }
-        concatenated.append(secretKey);
-        
-        return sha256(concatenated.toString());
-    }
-
-    private static String sha256(String input) {
+    private static String calculateHash(Map<String, String> params) {
         try {
+            StringBuilder concatenated = new StringBuilder();
+            for (String value : params.values()) {
+                concatenated.append(value);
+            }
+
             MessageDigest digest = MessageDigest.getInstance("SHA-256");
-            byte[] hash = digest.digest(input.getBytes(StandardCharsets.UTF_8));
+            byte[] hash = digest.digest(concatenated.toString().getBytes(StandardCharsets.UTF_8));
+            
 
             StringBuilder hexString = new StringBuilder();
             for (byte b : hash) {

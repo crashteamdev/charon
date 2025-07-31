@@ -25,22 +25,18 @@ public class TbankPaymentMapper {
         }
         
         String token = TbankTokenGenerator.generateInitToken(
-            amount, customerKey, description, paymentId, recurrent, terminalKey, secretKey
+            terminalKey, amount, paymentId, description, customerKey, secretKey
         );
 
-        InitRequestDTO.InitRequestDTOBuilder dtoBuilder = InitRequestDTO.builder()
-                .amount(amount)
-                .terminalKey(terminalKey)
-                .token(token)
-                .description(description)
-                .orderId(paymentId)
-                .customerKey(customerKey);
-                
-        if (recurrent != null) {
-            dtoBuilder.recurrent(recurrent);
-        }
-        
-        return dtoBuilder.build();
+        return new InitRequestDTO(
+                terminalKey,
+                amount,
+                paymentId,
+                token,
+                description,
+                customerKey,
+                recurrent
+        );
     }
 
     public InitRequestDTO getPaymentRecurrentRequestDTO(String terminalKey,
@@ -50,16 +46,18 @@ public class TbankPaymentMapper {
         String description = "Recurrent payment";
         
         String token = TbankTokenGenerator.generateInitToken(
-            amount, null, description, paymentId, null, terminalKey, secretKey
+            terminalKey, amount, paymentId, description, null, secretKey
         );
 
-        return InitRequestDTO.builder()
-                .amount(amount)
-                .terminalKey(terminalKey)
-                .token(token)
-                .description(description)
-                .orderId(paymentId)
-                .build();
+        return new InitRequestDTO(
+                terminalKey,
+                amount,
+                paymentId,
+                token,
+                description,
+                null,
+                null
+        );
     }
 
     public ChargeRequestDTO getChargeRequestDTO(String terminalKey,
@@ -67,15 +65,18 @@ public class TbankPaymentMapper {
                                                 String rebillId,
                                                 String externalPaymentId) {
         String token = TbankTokenGenerator.generateChargeToken(
-            externalPaymentId, rebillId, terminalKey, secretKey
+            terminalKey, externalPaymentId, secretKey
         );
 
-        return ChargeRequestDTO.builder()
-                .rebillId(rebillId)
-                .paymentId(externalPaymentId)
-                .terminalKey(terminalKey)
-                .token(token)
-                .build();
+        return new ChargeRequestDTO(
+                terminalKey,
+                externalPaymentId,
+                rebillId,
+                token,
+                null,
+                null,
+                null
+        );
     }
 
     public RequestPaymentStatus getPaymentStatus(String status) {

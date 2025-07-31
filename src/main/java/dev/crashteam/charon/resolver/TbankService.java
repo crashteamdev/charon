@@ -127,11 +127,11 @@ public class TbankService implements PaymentResolver {
     public RequestPaymentStatus getPaymentStatus(String paymentId) {
         String token = TbankTokenGenerator.generateGetStateToken(paymentId, shopId, secretKey);
 
-        GetStateRequestDTO requestDTO = GetStateRequestDTO.builder()
-                .paymentId(paymentId)
-                .token(token)
-                .terminalKey(shopId)
-                .build();
+        GetStateRequestDTO requestDTO = new GetStateRequestDTO(
+                shopId,
+                paymentId,
+                token
+        );
         GetStateResponseDTO state = tBankClient.getState(requestDTO);
         Optional<Payment> optionalPayment = paymentRepository.findByExternalId(paymentId);
         RequestPaymentStatus paymentStatus = paymentMapper.getPaymentStatus(state.status());
