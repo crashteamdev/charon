@@ -10,9 +10,10 @@ import dev.crashteam.charon.mapper.ProtoMapper;
 import dev.crashteam.charon.model.Currency;
 import dev.crashteam.charon.model.Operation;
 import dev.crashteam.charon.model.RequestPaymentStatus;
-import dev.crashteam.charon.model.domain.*;
 import dev.crashteam.charon.model.domain.PaidService;
+import dev.crashteam.charon.model.domain.Payment;
 import dev.crashteam.charon.model.domain.PromoCode;
+import dev.crashteam.charon.model.domain.User;
 import dev.crashteam.charon.model.dto.resolver.PaymentData;
 import dev.crashteam.charon.model.dto.yookassa.YkPaymentRefundResponseDTO;
 import dev.crashteam.charon.publisher.handler.StreamPublisherHandler;
@@ -32,6 +33,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
+
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
@@ -432,6 +434,7 @@ public class PaymentService {
             case AI_HUB_CONTEXT -> paidServiceContext.getAiHubContext().getPlan().getPlanCase().getNumber();
             case CONTEXT_NOT_SET -> throw new NoSuchSubscriptionTypeException();
         };
+        log.info("Get paid service from context. paidServiceContextType: {}, subscriptionType: {}", paidServiceContextType, subscriptionType);
         return paidServiceService.getPaidServiceByTypeAndPlan((long) paidServiceContextType, (long) subscriptionType);
     }
 
