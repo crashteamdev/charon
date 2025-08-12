@@ -133,12 +133,3 @@ management:
     web:
       exposure:
         include: health,info,prometheus
-
-logging:
-  level:
-    dev:
-      crashteam:
-        charon:
-          service:
-            feign:
-              TBankClient: DEBUG

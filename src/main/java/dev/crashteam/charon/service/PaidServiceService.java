@@ -14,6 +14,7 @@ public class PaidServiceService {
     private final PaidServiceRepository paidServiceRepository;
 
     public PaidService getPaidServiceByTypeAndPlan(Long type, Long subscriptionType) {
-        return paidServiceRepository.findByTypeAndSubscriptionType(type, subscriptionType).orElseThrow(EntityNotFoundException::new);
+        return paidServiceRepository.findByTypeAndSubscriptionType(type, subscriptionType)
+                .orElseThrow(() -> new EntityNotFoundException("Not found paid service type [" + type + "] and subscription type [" + subscriptionType + "]"));
     }
 }

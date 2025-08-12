@@ -14,6 +14,7 @@ public class OperationTypeService {
     private final OperationTypeRepository operationTypeRepository;
 
     public OperationType getOperationType(String type) {
-        return operationTypeRepository.findByType(type).orElseThrow(EntityNotFoundException::new);
+        return operationTypeRepository.findByType(type)
+                .orElseThrow(() -> new EntityNotFoundException("Not found operation type - " + type));
     }
 }
