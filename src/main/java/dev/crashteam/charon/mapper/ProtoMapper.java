@@ -17,6 +17,7 @@ import dev.crashteam.charon.model.dto.yookassa.YkPaymentResponseDTO;
 import dev.crashteam.payment.*;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import org.springframework.util.CollectionUtils;
 
 import java.time.Instant;
 import java.time.LocalDateTime;
@@ -39,35 +40,24 @@ public class ProtoMapper {
         Instant instantCreated = payment.getCreated().toInstant(ZoneOffset.UTC);
         Timestamp timestampCreated = Timestamp.newBuilder().setSeconds(instantCreated.getEpochSecond())
                 .setNanos(instantCreated.getNano()).build();
-        var paymentPaidService = payment.getPaidService();
+        UserPaidService.Builder userPaidServiceBuilder = UserPaidService.newBuilder()
+                .setUserId(payment.getUser().getId());
 
-        PaidServiceContext paidServiceContext = PaidServiceContext.newBuilder().build();
-        if (paymentPaidService != null) {
-            paidServiceContext = switch (String.valueOf(paymentPaidService.getType())) {
-                case "10" -> PaidServiceContext.newBuilder().setMultiply(payment.getMonthPaid())
-                        .setUzumAnalyticsContext(UzumAnalyticsContext.newBuilder()
-                                .setPlan(getUzumAnalyticsPlan(paymentPaidService.getSubscriptionType())).build()).build();
-                case "11" -> PaidServiceContext.newBuilder().setMultiply(payment.getMonthPaid())
-                        .setKeAnalyticsContext(KeAnalyticsContext.newBuilder()
-                                .setPlan(getKeAnalyticsPlan(paymentPaidService.getSubscriptionType())).build()).build();
-                case "12" -> PaidServiceContext.newBuilder().setMultiply(payment.getMonthPaid())
-                        .setUzumRepricerContext(UzumRepricerContext.newBuilder()
-                                .setPlan(getUzumRepricerPlan(paymentPaidService.getSubscriptionType())).build()).build();
-                case "13" -> PaidServiceContext.newBuilder().setMultiply(payment.getMonthPaid())
-                        .setKeRepricerContext(KeRepricerContext.newBuilder()
-                                .setPlan(getKeRepricerPlan(paymentPaidService.getSubscriptionType())).build()).build();
-                default -> throw new IllegalStateException("Unexpected value: " + paymentPaidService.getType());
-            };
+        if (!CollectionUtils.isEmpty(payment.getPaidServices())) {
+            for (var paymentPaidService : payment.getPaidServices()) {
+                PaidService paidService = PaidService.newBuilder()
+                        .setContext(getPaidServiceContext(paymentPaidService, payment.getMonthPaid()))
+                        .build();
+                userPaidServiceBuilder.addPaidServices(paidService);
+            }
+        } else {
+            PaidService paidService = PaidService.newBuilder()
+                    .setContext(getPaidServiceContext(payment.getPaidService(), payment.getMonthPaid()))
+                    .build();
+            userPaidServiceBuilder.setPaidService(paidService);
         }
 
-        PaidService paidService = PaidService.newBuilder()
-                .setContext(paidServiceContext)
-                .build();
-
-        UserPaidService userPaidService = UserPaidService.newBuilder()
-                .setUserId(payment.getUser().getId())
-                .setPaidService(paidService)
-                .build();
+        UserPaidService userPaidService = userPaidServiceBuilder.build();
 
         PaymentCreated paymentCreated = PaymentCreated.newBuilder()
                 .setPaymentId(payment.getPaymentId())
@@ -353,5 +343,46 @@ public class ProtoMapper {
                     .build();
             default -> throw new IllegalStateException("Unexpected value: " + subscriptionType.getType());
         };
+    }
+
+    public AiHubContext.AiHubPlan getAiHubPlan(SubscriptionType subscriptionType) {
+        return switch (String.valueOf(subscriptionType.getType())) {
+            case "10" -> AiHubContext.AiHubPlan.newBuilder()
+                    .setBasicPlan(AiHubContext.AiHubPlan.AiHubBasicPlan.newBuilder().build())
+                    .build();
+            case "11" -> AiHubContext.AiHubPlan.newBuilder()
+                    .setProPlan(AiHubContext.AiHubPlan.AiHubPro.newBuilder().build())
+                    .build();
+            case "12" -> AiHubContext.AiHubPlan.newBuilder()
+                    .setCreatorPlan(AiHubContext.AiHubPlan.AiCreator.newBuilder().build()).build();
+            case "13" -> AiHubContext.AiHubPlan.newBuilder()
+                    .setBusinessPlan(AiHubContext.AiHubPlan.AiBusiness.newBuilder().build()).build();
+            default -> throw new IllegalStateException("Unexpected value: " + subscriptionType.getType());
+        };
+    }
+
+    private PaidServiceContext getPaidServiceContext(dev.crashteam.charon.model.domain.PaidService paymentPaidService, Long monthPaid) {
+        PaidServiceContext paidServiceContext = PaidServiceContext.newBuilder().build();
+        if (paymentPaidService != null) {
+            return switch (String.valueOf(paymentPaidService.getType())) {
+                case "10" -> PaidServiceContext.newBuilder().setMultiply(monthPaid)
+                        .setUzumAnalyticsContext(UzumAnalyticsContext.newBuilder()
+                                .setPlan(getUzumAnalyticsPlan(paymentPaidService.getSubscriptionType())).build()).build();
+                case "11" -> PaidServiceContext.newBuilder().setMultiply(monthPaid)
+                        .setKeAnalyticsContext(KeAnalyticsContext.newBuilder()
+                                .setPlan(getKeAnalyticsPlan(paymentPaidService.getSubscriptionType())).build()).build();
+                case "12" -> PaidServiceContext.newBuilder().setMultiply(monthPaid)
+                        .setUzumRepricerContext(UzumRepricerContext.newBuilder()
+                                .setPlan(getUzumRepricerPlan(paymentPaidService.getSubscriptionType())).build()).build();
+                case "13" -> PaidServiceContext.newBuilder().setMultiply(monthPaid)
+                        .setKeRepricerContext(KeRepricerContext.newBuilder()
+                                .setPlan(getKeRepricerPlan(paymentPaidService.getSubscriptionType())).build()).build();
+                case "14" -> PaidServiceContext.newBuilder().setMultiply(monthPaid)
+                        .setAiHubContext(AiHubContext.newBuilder()
+                                .setPlan(getAiHubPlan(paymentPaidService.getSubscriptionType())).build()).build();
+                default -> throw new IllegalStateException("Unexpected value: " + paymentPaidService.getType());
+            };
+        }
+        throw new RuntimeException("PaidService can't be null");
     }
 }
