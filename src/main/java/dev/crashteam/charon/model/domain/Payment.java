@@ -1,16 +1,15 @@
 package dev.crashteam.charon.model.domain;
 
 import dev.crashteam.charon.model.RequestPaymentStatus;
+import jakarta.persistence.*;
 import lombok.Data;
 import lombok.ToString;
 import org.hibernate.annotations.JdbcTypeCode;
-import org.hibernate.annotations.Type;
 import org.hibernate.type.SqlTypes;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
-import jakarta.persistence.*;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.Set;
@@ -86,4 +85,6 @@ public class Payment {
     )
     @ToString.Exclude
     private Set<PaidService> paidServices;
+    @Column(name = "generic_service_id")
+    private String genericServiceId;
 }

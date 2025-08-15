@@ -102,7 +102,8 @@ public class PurchaseServiceJob implements Job {
             boolean isPromo = payment.getPromoCode() != null;
             Map<String, Object> properties = Map.of(
                     "amount", payment.getAmount().toString(),
-                    "paid-service", payment.getPaidService().getName(),
+                    "paid-service", payment.getPaidServices() != null
+                            ? payment.getPaidService().getName() : "Generic payment",
                     "promo", isPromo);
             postHog.capture(userId, "payment_complete", properties);
         } catch (Exception ex) {

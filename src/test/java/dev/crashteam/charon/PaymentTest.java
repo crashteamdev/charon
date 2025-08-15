@@ -660,6 +660,7 @@ public class PaymentTest extends ContainerConfiguration {
                 .setPaymentSystem(paymentSystem)
                 .setReturnUrl("return-test.test")
                 .setDescription("TEST")
+                .setGenericServiceId("generic-service-purchase")
                 .build();
         PaymentCreateRequest paymentCreateRequest = PaymentCreateRequest.newBuilder()
                 .setGenericPaymentPurchaseService(purchaseService)

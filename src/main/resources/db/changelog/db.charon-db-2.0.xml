@@ -108,5 +108,11 @@
             <column name="subscription_type_id" valueComputed="(SELECT id FROM subscription_type WHERE name='business')"/>
         </insert>
     </changeSet>
+
+    <changeSet id="add_generic_service_id" author="sagefreke">
+        <addColumn tableName="payment">
+            <column name="generic_service_id" type="TEXT"/>
+        </addColumn>
+    </changeSet>
 </databaseChangeLog>
 

@@ -43,30 +43,36 @@ public class ProtoMapper {
         UserPaidService.Builder userPaidServiceBuilder = UserPaidService.newBuilder()
                 .setUserId(payment.getUser().getId());
 
-        if (!CollectionUtils.isEmpty(payment.getPaidServices())) {
-            for (var paymentPaidService : payment.getPaidServices()) {
+        if (payment.getGenericServiceId() == null) {
+            if (!CollectionUtils.isEmpty(payment.getPaidServices())) {
+                for (var paymentPaidService : payment.getPaidServices()) {
+                    PaidService paidService = PaidService.newBuilder()
+                            .setContext(getPaidServiceContext(paymentPaidService, payment.getMonthPaid()))
+                            .build();
+                    userPaidServiceBuilder.addPaidServices(paidService);
+                }
+            } else {
                 PaidService paidService = PaidService.newBuilder()
-                        .setContext(getPaidServiceContext(paymentPaidService, payment.getMonthPaid()))
+                        .setContext(getPaidServiceContext(payment.getPaidService(), payment.getMonthPaid()))
                         .build();
-                userPaidServiceBuilder.addPaidServices(paidService);
+                userPaidServiceBuilder.setPaidService(paidService);
             }
-        } else {
-            PaidService paidService = PaidService.newBuilder()
-                    .setContext(getPaidServiceContext(payment.getPaidService(), payment.getMonthPaid()))
-                    .build();
-            userPaidServiceBuilder.setPaidService(paidService);
         }
 
         UserPaidService userPaidService = userPaidServiceBuilder.build();
 
-        PaymentCreated paymentCreated = PaymentCreated.newBuilder()
+        PaymentCreated.Builder paymentBuilder = PaymentCreated.newBuilder()
                 .setPaymentId(payment.getPaymentId())
                 .setCreatedAt(timestampCreated)
                 .setAmount(Amount.newBuilder().setValue(payment.getAmount()).setCurrency(payment.getCurrency()).build())
                 .setStatus(getPaymentStatus(payment.getStatus()))
                 .setUserPaidService(userPaidService)
-                .setUserId(payment.getUser().getId())
-                .build();
+                .setUserId(payment.getUser().getId());
+
+        if (payment.getGenericServiceId() != null) {
+            paymentBuilder.setGenericServiceId(payment.getGenericServiceId());
+        }
+        PaymentCreated paymentCreated = paymentBuilder.build();
 
         PaymentChange paymentChange = PaymentChange.newBuilder()
                 .setPaymentCreated(paymentCreated)
@@ -126,7 +132,7 @@ public class ProtoMapper {
                 .build();
         Instant instantCreated = payment.getCreated().toInstant(ZoneOffset.UTC);
         Instant instantUpdated = payment.getUpdated().toInstant(ZoneOffset.UTC);
-        return UserPayment.newBuilder()
+        UserPayment.Builder userBuilder = UserPayment.newBuilder()
                 .setAmount(amount)
                 .setCreatedAt(Timestamp.newBuilder().setSeconds(instantCreated.getEpochSecond())
                         .setNanos(instantCreated.getNano()).build())
@@ -134,7 +140,11 @@ public class ProtoMapper {
                         .setNanos(instantUpdated.getNano()).build())
                 .setPaymentId(payment.getPaymentId())
                 .setStatus(getPaymentStatus(payment.getStatus()))
-                .setUserId(payment.getUser().getId()).build();
+                .setUserId(payment.getUser().getId());
+        if (payment.getGenericServiceId() != null) {
+            userBuilder.setGenericServiceId(payment.getGenericServiceId());
+        }
+        return userBuilder.build();
     }
 
     public CreatePromoCodeResponse getPromoCodeResponse(PromoCode promoCode) {
@@ -362,7 +372,6 @@ public class ProtoMapper {
     }
 
     private PaidServiceContext getPaidServiceContext(dev.crashteam.charon.model.domain.PaidService paymentPaidService, Long monthPaid) {
-        PaidServiceContext paidServiceContext = PaidServiceContext.newBuilder().build();
         if (paymentPaidService != null) {
             return switch (String.valueOf(paymentPaidService.getType())) {
                 case "10" -> PaidServiceContext.newBuilder().setMultiply(monthPaid)
