@@ -111,6 +111,7 @@ public class PaymentService {
         payment.setMetadata(objectMapper.writeValueAsString(request.getMetadataMap()));
         payment.setExchangeRate(response.getExchangeRate());
         payment.setGenericServiceId(purchaseService.getGenericServiceId());
+        payment.setConfirmationUrl(response.getConfirmationUrl());
         paymentRepository.save(payment);
         log.info("Saving generic payment with paymentId - {}", response.getPaymentId());
 
@@ -355,6 +356,7 @@ public class PaymentService {
         payment.setPaymentSystem(protoMapper.getPaymentSystemType(purchaseService.getPaymentSystem()).getTitle());
         payment.setMetadata(objectMapper.writeValueAsString(request.getMetadataMap()));
         payment.setExchangeRate(response.getExchangeRate());
+        payment.setConfirmationUrl(response.getConfirmationUrl());
         paymentRepository.save(payment);
         log.info("Saving payment with paymentId - {}", response.getPaymentId());
 
@@ -400,6 +402,7 @@ public class PaymentService {
         payment.setPaymentSystem(paymentSystemTitle);
         payment.setMetadata(objectMapper.writeValueAsString(request.getMetadataMap()));
         payment.setExchangeRate(response.getExchangeRate());
+        payment.setConfirmationUrl(response.getConfirmationUrl());
         paymentRepository.save(payment);
         log.info("Saving payment with paymentId - {}", response.getPaymentId());
 

@@ -72,6 +72,9 @@ public class ProtoMapper {
         if (payment.getGenericServiceId() != null) {
             paymentBuilder.setGenericServiceId(payment.getGenericServiceId());
         }
+        if (payment.getConfirmationUrl() != null) {
+            paymentBuilder.setConfirmationUrl(payment.getConfirmationUrl());
+        }
         PaymentCreated paymentCreated = paymentBuilder.build();
 
         PaymentChange paymentChange = PaymentChange.newBuilder()
