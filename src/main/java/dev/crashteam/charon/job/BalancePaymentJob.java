@@ -49,6 +49,7 @@ public class BalancePaymentJob implements Job {
             log.info("Balance payment with id [{}] timed out to be processed for some reason", payment.getPaymentId());
             payment.setStatus(RequestPaymentStatus.CANCELED);
             paymentService.save(payment);
+            publisherHandler.publishPaymentStatusChangeMessage(payment);
             return;
         }
         PaymentSystemType systemType = PaymentSystemType.getByTitle(payment.getPaymentSystem());
