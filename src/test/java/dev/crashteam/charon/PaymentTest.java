@@ -178,7 +178,7 @@ public class PaymentTest extends ContainerConfiguration {
         grpcService.createPayment(paymentCreateRequest, paymentCreateObserver);
 
         PaymentCreateResponse payment = paymentCreateObserver.getValues().get(0);
-        Payment paymentEntity = paymentService.findByPaymentId(payment.getPaymentId());
+        Payment paymentEntity = paymentService.findByPaymentIdReadOnly(payment.getPaymentId());
 
         FkCallbackData fkCallbackData = new FkCallbackData();
         fkCallbackData.setMerchantId("test");
@@ -504,7 +504,7 @@ public class PaymentTest extends ContainerConfiguration {
 
     @Test
     public void testOldRecurrentPaymentYk() {
-       testOldRecurrentPayment(PaymentSystem.PAYMENT_SYSTEM_YOOKASSA);
+        testOldRecurrentPayment(PaymentSystem.PAYMENT_SYSTEM_YOOKASSA);
     }
 
     private void testOldRecurrentPayment(PaymentSystem paymentSystem) {
@@ -642,11 +642,7 @@ public class PaymentTest extends ContainerConfiguration {
         Optional<Payment> payment = paymentRepository.findByPaymentId(paymentId);
         Assertions.assertTrue(payment.isPresent());
 
-        try {
-            purchaseServiceJob.execute(null);
-        } catch (JobExecutionException e) {
-            throw new RuntimeException(e);
-        }
+        purchaseServiceJob.checkPaymentStatus(payment.get());
 
         Optional<Payment> successPayment = paymentRepository.findByPaymentId(paymentId);
         Assertions.assertEquals(successPayment.get().getStatus(), RequestPaymentStatus.SUCCESS);
@@ -673,12 +669,7 @@ public class PaymentTest extends ContainerConfiguration {
         Optional<Payment> payment = paymentRepository.findByPaymentId(paymentId);
         Assertions.assertTrue(payment.isPresent());
 
-        try {
-            purchaseServiceJob.execute(null);
-        } catch (JobExecutionException e) {
-            throw new RuntimeException(e);
-        }
-
+        purchaseServiceJob.checkPaymentStatus(payment.get());
         Optional<Payment> successPayment = paymentRepository.findByPaymentId(paymentId);
         Assertions.assertEquals(successPayment.get().getStatus(), RequestPaymentStatus.SUCCESS);
     }

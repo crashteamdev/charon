@@ -1,21 +1,19 @@
 package dev.crashteam.charon.job;
 
-import dev.crashteam.charon.model.Operation;
 import dev.crashteam.charon.model.PaymentSystemType;
 import dev.crashteam.charon.model.RequestPaymentStatus;
+import dev.crashteam.charon.model.domain.Constant;
 import dev.crashteam.charon.model.domain.Payment;
 import dev.crashteam.charon.model.domain.User;
 import dev.crashteam.charon.publisher.handler.StreamPublisherHandler;
 import dev.crashteam.charon.resolver.PaymentResolver;
+import dev.crashteam.charon.service.PaymentJobService;
 import dev.crashteam.charon.service.PaymentService;
 import dev.crashteam.charon.service.UserService;
 import dev.crashteam.payment.PaymentSystem;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.quartz.DisallowConcurrentExecution;
-import org.quartz.Job;
-import org.quartz.JobExecutionContext;
-import org.quartz.JobExecutionException;
-import org.springframework.beans.factory.annotation.Autowired;
+import org.quartz.*;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -25,27 +23,34 @@ import java.util.List;
 @Slf4j
 @Service
 @DisallowConcurrentExecution
+@RequiredArgsConstructor
 public class BalancePaymentJob implements Job {
 
-    @Autowired
-    PaymentService paymentService;
-    @Autowired
-    StreamPublisherHandler publisherHandler;
-    @Autowired
-    UserService userService;
-    @Autowired
-    List<PaymentResolver> resolvers;
+    private final PaymentService paymentService;
+    private final StreamPublisherHandler publisherHandler;
+    private final UserService userService;
+    private final List<PaymentResolver> resolvers;
+    private final PaymentJobService paymentJobService;
+    private int seconds;
 
     @Override
     @Transactional
     public void execute(JobExecutionContext jobExecutionContext) throws JobExecutionException {
-        var payments = paymentService
-                .getPaymentByPendingStatusAndOperationTypeBetweenTimeRange(Operation.DEPOSIT_BALANCE.getTitle()).stream();
-        payments.forEach(this::checkPaymentStatus);
+        JobDetail jobDetail = jobExecutionContext.getJobDetail();
+        String paymentId = String.valueOf(jobDetail.getJobDataMap().get("payment_id"));
+        Payment payment = paymentService.findByPaymentId(paymentId);
+        seconds = Integer.parseInt(jobDetail.getJobDataMap().get("seconds").toString());
+        checkPaymentStatus(payment);
     }
 
     @Transactional
     public void checkPaymentStatus(Payment payment) {
+        if (payment.getCreated() != null && LocalDateTime.now().plusMinutes(10).isBefore(payment.getCreated())) {
+            log.info("Balance payment with id [{}] timed out to be processed for some reason", payment.getPaymentId());
+            payment.setStatus(RequestPaymentStatus.CANCELED);
+            paymentService.save(payment);
+            return;
+        }
         PaymentSystemType systemType = PaymentSystemType.getByTitle(payment.getPaymentSystem());
         if (systemType.isCallback()) {
             return;
@@ -80,6 +85,8 @@ public class BalancePaymentJob implements Job {
             payment.setStatus(RequestPaymentStatus.CANCELED);
             paymentService.save(payment);
             publisherHandler.publishPaymentStatusChangeMessage(payment);
+        } else {
+            paymentJobService.schedulePaymentJob(payment.getPaymentId(), BalancePaymentJob.class, seconds, Constant.BALANCE_PAYMENT_JOB_NAME);
         }
     }
 }

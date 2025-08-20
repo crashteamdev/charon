@@ -1,7 +1,12 @@
 package dev.crashteam.charon.config;
 
 import dev.crashteam.charon.job.*;
+import jakarta.annotation.PostConstruct;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.quartz.JobDetail;
+import org.quartz.Scheduler;
+import org.quartz.TriggerKey;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
@@ -37,30 +42,6 @@ public class QuartzJobHandler {
     public JobDetailFactoryBean recurrentPaymentJob() {
         return QuartzBeanCreatorConfig.jobDetail(RecurrentPaymentJob.class,
                 "recurrent_payment_job");
-    }
-
-    @Bean("balancePaymentTrigger")
-    public CronTriggerFactoryBean balancePaymentTrigger(@Qualifier("balancePaymentJobDetail") JobDetail jobDetail) {
-        return QuartzBeanCreatorConfig.cronTriggerFactoryBean(jobDetail, balanceDeposit,
-                "balance_payment_trigger");
-    }
-
-    @Bean(name = "balancePaymentJobDetail")
-    public JobDetailFactoryBean balancePaymentJob() {
-        return QuartzBeanCreatorConfig.jobDetail(BalancePaymentJob.class,
-                "balance_payment_job");
-    }
-
-    @Bean("purchaseServiceTrigger")
-    public CronTriggerFactoryBean purchaseServiceTrigger(@Qualifier("purchaseServiceJobDetail") JobDetail jobDetail) {
-        return QuartzBeanCreatorConfig.cronTriggerFactoryBean(jobDetail, purchaseService,
-                "purchase_service_trigger");
-    }
-
-    @Bean(name = "purchaseServiceJobDetail")
-    public JobDetailFactoryBean purchaseServiceJob() {
-        return QuartzBeanCreatorConfig.jobDetail(PurchaseServiceJob.class,
-                "purchase_service_job");
     }
 
     @Bean("currencyCacheEvictTrigger")

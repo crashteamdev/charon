@@ -16,7 +16,6 @@ import org.apache.commons.codec.digest.DigestUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import jakarta.persistence.EntityNotFoundException;
 import java.math.BigDecimal;
 
 @Slf4j
@@ -52,7 +51,7 @@ public class CallbackService {
     @Transactional
     public void freeKassaCallback(FkCallbackData callbackData) {
 
-        Payment payment = paymentService.findByPaymentId(callbackData.getPaymentId());
+        Payment payment = paymentService.findByPaymentIdReadOnly(callbackData.getPaymentId());
         if (payment == null) {
             log.error("Payment with id - {} not found", callbackData.getPaymentId());
             return;
@@ -198,7 +197,7 @@ public class CallbackService {
         response.setClickTransId(clickTransId);
         response.setMerchantTransId(merchantTransId);
 
-        Payment payment = paymentService.findByPaymentId(merchantTransId);
+        Payment payment = paymentService.findByPaymentIdReadOnly(merchantTransId);
         if (payment == null) {
             response.setError(-5L);
             response.setErrorNote("User does not exist");

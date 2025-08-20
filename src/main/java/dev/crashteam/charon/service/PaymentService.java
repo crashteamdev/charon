@@ -6,14 +6,15 @@ import dev.crashteam.charon.config.PromoCodeConfig;
 import dev.crashteam.charon.exception.DuplicateTransactionException;
 import dev.crashteam.charon.exception.NoSuchPaymentTypeException;
 import dev.crashteam.charon.exception.NoSuchSubscriptionTypeException;
+import dev.crashteam.charon.job.BalancePaymentJob;
+import dev.crashteam.charon.job.PurchaseServiceJob;
 import dev.crashteam.charon.mapper.ProtoMapper;
 import dev.crashteam.charon.model.Currency;
 import dev.crashteam.charon.model.Operation;
 import dev.crashteam.charon.model.RequestPaymentStatus;
 import dev.crashteam.charon.model.domain.PaidService;
-import dev.crashteam.charon.model.domain.Payment;
 import dev.crashteam.charon.model.domain.PromoCode;
-import dev.crashteam.charon.model.domain.User;
+import dev.crashteam.charon.model.domain.*;
 import dev.crashteam.charon.model.dto.resolver.PaymentData;
 import dev.crashteam.charon.model.dto.yookassa.YkPaymentRefundResponseDTO;
 import dev.crashteam.charon.publisher.handler.StreamPublisherHandler;
@@ -58,6 +59,7 @@ public class PaymentService {
     private final StreamPublisherHandler publisherHandler;
     private final List<PaymentResolver> paymentResolvers;
     private final UserSavedPaymentService savedPaymentService;
+    private final PaymentJobService paymentJobService;
 
     @Transactional
     public PaymentCreateResponse createPayment(PaymentCreateRequest request) {
@@ -102,7 +104,7 @@ public class PaymentService {
         payment.setProviderAmount(Long.valueOf(response.getProviderAmount()));
         payment.setProviderCurrency(response.getProviderCurrency());
         payment.setUser(user);
-        payment.setCreated(response.getCreatedAt());
+        payment.setCreated(LocalDateTime.now());
         payment.setUpdated(LocalDateTime.now());
         payment.setOperationType(operationTypeService.getOperationType(Operation.GENERIC_PURCHASE.getTitle()));
         payment.setEmail(response.getEmail());
@@ -116,6 +118,7 @@ public class PaymentService {
         log.info("Saving generic payment with paymentId - {}", response.getPaymentId());
 
         publisherHandler.publishPaymentCreatedMessage(payment);
+        paymentJobService.schedulePaymentJob(payment.getPaymentId(), PurchaseServiceJob.class, 3, Constant.PURCHASE_SERVICE_JOB_NAME);
         return protoMapper.getPaymentResponse(response, payment, purchaseService.getAmount());
 
     }
@@ -347,7 +350,7 @@ public class PaymentService {
         payment.setProviderAmount(Long.valueOf(response.getProviderAmount()));
         payment.setProviderCurrency(response.getProviderCurrency());
         payment.setUser(user);
-        payment.setCreated(response.getCreatedAt());
+        payment.setCreated(LocalDateTime.now());
         payment.setUpdated(LocalDateTime.now());
         payment.setOperationType(operationTypeService.getOperationType(Operation.PURCHASE_SERVICE.getTitle()));
         payment.setMonthPaid(multiply);
@@ -361,6 +364,7 @@ public class PaymentService {
         log.info("Saving payment with paymentId - {}", response.getPaymentId());
 
         publisherHandler.publishPaymentCreatedMessage(payment);
+        paymentJobService.schedulePaymentJob(payment.getPaymentId(), PurchaseServiceJob.class, 3, Constant.PURCHASE_SERVICE_JOB_NAME);
         return protoMapper.getPaymentResponse(response, payment, amount);
 
     }
@@ -393,7 +397,7 @@ public class PaymentService {
         payment.setAmount(balanceRequest.getAmount());
         payment.setProviderAmount(Long.valueOf(response.getProviderAmount()));
         payment.setProviderCurrency(response.getProviderCurrency());
-        payment.setCreated(response.getCreatedAt());
+        payment.setCreated(LocalDateTime.now());
         payment.setUpdated(LocalDateTime.now());
         payment.setUser(user);
         payment.setEmail(response.getEmail());
@@ -407,7 +411,7 @@ public class PaymentService {
         log.info("Saving payment with paymentId - {}", response.getPaymentId());
 
         publisherHandler.publishPaymentCreatedMessage(payment);
-
+        paymentJobService.schedulePaymentJob(payment.getPaymentId(), BalancePaymentJob.class, 3, Constant.BALANCE_PAYMENT_JOB_NAME);
         return protoMapper.getPaymentResponse(response, payment);
     }
 
@@ -443,6 +447,10 @@ public class PaymentService {
     }
 
     @Transactional(readOnly = true)
+    public Payment findByPaymentIdReadOnly(String paymentId) {
+        return paymentRepository.findByPaymentId(paymentId).orElse(null);
+    }
+
     public Payment findByPaymentId(String paymentId) {
         return paymentRepository.findByPaymentId(paymentId).orElse(null);
     }
