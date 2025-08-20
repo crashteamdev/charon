@@ -45,7 +45,8 @@ public class BalancePaymentJob implements Job {
 
     @Transactional
     public void checkPaymentStatus(Payment payment) {
-        if (payment.getCreated() != null && LocalDateTime.now().plusMinutes(10).isBefore(payment.getCreated())) {
+        if (!RequestPaymentStatus.SUCCESS.equals(payment.getStatus())
+                && (payment.getCreated() != null && LocalDateTime.now().plusMinutes(10).isBefore(payment.getCreated()))) {
             log.info("Balance payment with id [{}] timed out to be processed for some reason", payment.getPaymentId());
             payment.setStatus(RequestPaymentStatus.CANCELED);
             paymentService.save(payment);
