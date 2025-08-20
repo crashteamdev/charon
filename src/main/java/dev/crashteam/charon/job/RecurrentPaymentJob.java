@@ -9,6 +9,7 @@ import dev.crashteam.charon.publisher.handler.StreamPublisherHandler;
 import dev.crashteam.charon.repository.PaymentRepository;
 import dev.crashteam.charon.resolver.PaymentResolver;
 import dev.crashteam.charon.service.OperationTypeService;
+import dev.crashteam.charon.service.PaymentJobService;
 import dev.crashteam.charon.service.UserSavedPaymentService;
 import dev.crashteam.charon.service.UserService;
 import dev.crashteam.charon.util.PaymentProtoUtils;
@@ -46,6 +47,8 @@ public class RecurrentPaymentJob implements Job {
     OperationTypeService operationTypeService;
     @Autowired
     ProtoMapper protoMapper;
+    @Autowired
+    PaymentJobService paymentJobService;
 
     @Override
     @Transactional
@@ -104,8 +107,8 @@ public class RecurrentPaymentJob implements Job {
             payment.setExchangeRate(response.getExchangeRate());
             paymentRepository.save(payment);
             log.info("Saving payment with paymentId - {}", response.getPaymentId());
-
             publisherHandler.publishPaymentCreatedMessage(payment);
+            paymentJobService.schedulePaymentJob(payment.getPaymentId(), PurchaseServiceJob.class, 3, Constant.PURCHASE_SERVICE_JOB_NAME);
         }
     }
 }
