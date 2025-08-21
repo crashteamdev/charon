@@ -3,6 +3,7 @@ package dev.crashteam.charon.service;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.quartz.*;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import java.util.Date;
@@ -14,8 +15,10 @@ public class PaymentJobService {
 
     private final Scheduler scheduler;
 
+    @Value("${app.payment-check.exponent}")
+    private double exponent;
+
     public void schedulePaymentJob(String paymentId, Class<? extends Job> jobClass, int seconds, String jobName) {
-        double exponent = 1.8;
         int secondsToAdd = (int) (seconds * exponent);
         JobKey jobKey = new JobKey(jobName.formatted(paymentId, secondsToAdd));
         JobDetail jobDetail = JobBuilder.newJob(jobClass)
