@@ -52,10 +52,12 @@ public class ProtoMapper {
                     userPaidServiceBuilder.addPaidServices(paidService);
                 }
             } else {
-                PaidService paidService = PaidService.newBuilder()
-                        .setContext(getPaidServiceContext(payment.getPaidService(), payment.getMonthPaid()))
-                        .build();
-                userPaidServiceBuilder.setPaidService(paidService);
+                if (payment.getPaidService() != null) {
+                    PaidService paidService = PaidService.newBuilder()
+                            .setContext(getPaidServiceContext(payment.getPaidService(), payment.getMonthPaid()))
+                            .build();
+                    userPaidServiceBuilder.setPaidService(paidService);
+                }
             }
         }
 
