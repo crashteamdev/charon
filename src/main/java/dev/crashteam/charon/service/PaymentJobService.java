@@ -7,6 +7,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import java.util.Date;
+import java.util.UUID;
 
 @Slf4j
 @Service
@@ -23,7 +24,7 @@ public class PaymentJobService {
 
     public void schedulePaymentJob(String paymentId, Class<? extends Job> jobClass, int seconds, String jobName) {
         int secondsToAdd = (int) (seconds * exponent);
-        JobKey jobKey = new JobKey(jobName.formatted(paymentId, secondsToAdd));
+        JobKey jobKey = new JobKey(jobName.formatted(paymentId, UUID.randomUUID().toString()));
         JobDetail jobDetail = JobBuilder.newJob(jobClass)
                 .withIdentity(jobKey)
                 .requestRecovery(true)
@@ -35,10 +36,10 @@ public class PaymentJobService {
             jobDetail.getJobDataMap().put("seconds", String.valueOf(secondsToAdd));
         }
 
-        Date futureDate = DateBuilder.futureDate(secondsToAdd, DateBuilder.IntervalUnit.SECOND);
+        Date futureDate = DateBuilder.futureDate(secondsToAdd >= maxSeconds ? maxSeconds : secondsToAdd, DateBuilder.IntervalUnit.SECOND);
 
         SimpleTrigger simpleTrigger = TriggerBuilder.newTrigger()
-                .withIdentity("trigger_" + jobName.formatted(paymentId, secondsToAdd))
+                .withIdentity("trigger_" + jobName.formatted(paymentId, UUID.randomUUID().toString()))
                 .startAt(futureDate)
                 .withSchedule(SimpleScheduleBuilder.simpleSchedule().withMisfireHandlingInstructionFireNow())
                 .build();
