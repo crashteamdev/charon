@@ -23,15 +23,13 @@ public class PaymentJobService {
 
     public void schedulePaymentJob(String paymentId, Class<? extends Job> jobClass, int seconds, String jobName) {
         int secondsToAdd = (int) (seconds * exponent);
-        String jobNameFormatted = jobName.formatted(paymentId, secondsToAdd);
-        JobKey jobKey = new JobKey(jobNameFormatted);
+        JobKey jobKey = new JobKey(jobName.formatted(paymentId, secondsToAdd));
         JobDetail jobDetail = JobBuilder.newJob(jobClass)
                 .withIdentity(jobKey)
                 .requestRecovery(true)
                 .build();
         jobDetail.getJobDataMap().put("payment_id", String.valueOf(paymentId));
         if (secondsToAdd >= maxSeconds) {
-            jobNameFormatted = jobName.formatted(paymentId, maxSeconds);
             jobDetail.getJobDataMap().put("seconds", String.valueOf(maxSeconds));
         } else {
             jobDetail.getJobDataMap().put("seconds", String.valueOf(secondsToAdd));
@@ -40,7 +38,7 @@ public class PaymentJobService {
         Date futureDate = DateBuilder.futureDate(secondsToAdd, DateBuilder.IntervalUnit.SECOND);
 
         SimpleTrigger simpleTrigger = TriggerBuilder.newTrigger()
-                .withIdentity("trigger_" + jobNameFormatted)
+                .withIdentity("trigger_" + jobName.formatted(paymentId, secondsToAdd))
                 .startAt(futureDate)
                 .withSchedule(SimpleScheduleBuilder.simpleSchedule().withMisfireHandlingInstructionFireNow())
                 .build();
