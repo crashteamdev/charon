@@ -14,6 +14,7 @@ import dev.crashteam.payment.PaymentSystem;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.quartz.*;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -33,6 +34,9 @@ public class BalancePaymentJob implements Job {
     private final PaymentJobService paymentJobService;
     private int seconds;
 
+    @Value("${app.payment-check.timeout}")
+    private int paymentTimeoutMinutes;
+
     @Override
     @Transactional
     public void execute(JobExecutionContext jobExecutionContext) throws JobExecutionException {
@@ -46,7 +50,7 @@ public class BalancePaymentJob implements Job {
     @Transactional
     public void checkPaymentStatus(Payment payment) {
         if (!RequestPaymentStatus.SUCCESS.equals(payment.getStatus())
-                && (payment.getCreated() != null && LocalDateTime.now().plusMinutes(10).isBefore(payment.getCreated()))) {
+                && (payment.getCreated() != null && LocalDateTime.now().plusMinutes(paymentTimeoutMinutes).isBefore(payment.getCreated()))) {
             log.info("Balance payment with id [{}] timed out to be processed for some reason", payment.getPaymentId());
             payment.setStatus(RequestPaymentStatus.CANCELED);
             paymentService.save(payment);

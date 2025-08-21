@@ -47,6 +47,8 @@ spring:
 app:
   payment-check:
     exponent: 1.5
+    maxSeconds: 30
+    timeout: 15
   stream:
     publisher: REDIS
   redis:

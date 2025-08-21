@@ -18,6 +18,9 @@ public class PaymentJobService {
     @Value("${app.payment-check.exponent}")
     private double exponent;
 
+    @Value("${app.payment-check.maxSeconds}")
+    private int maxSeconds;
+
     public void schedulePaymentJob(String paymentId, Class<? extends Job> jobClass, int seconds, String jobName) {
         int secondsToAdd = (int) (seconds * exponent);
         JobKey jobKey = new JobKey(jobName.formatted(paymentId, secondsToAdd));
@@ -26,7 +29,11 @@ public class PaymentJobService {
                 .requestRecovery(true)
                 .build();
         jobDetail.getJobDataMap().put("payment_id", String.valueOf(paymentId));
-        jobDetail.getJobDataMap().put("seconds", String.valueOf(secondsToAdd));
+        if (secondsToAdd >= maxSeconds) {
+            jobDetail.getJobDataMap().put("seconds", String.valueOf(maxSeconds));
+        } else {
+            jobDetail.getJobDataMap().put("seconds", String.valueOf(secondsToAdd));
+        }
 
         Date futureDate = DateBuilder.futureDate(secondsToAdd, DateBuilder.IntervalUnit.SECOND);
 
