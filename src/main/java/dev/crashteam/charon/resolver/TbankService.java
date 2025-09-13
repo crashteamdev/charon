@@ -61,7 +61,9 @@ public class TbankService implements PaymentResolver {
                 secretKey,
                 paymentId,
                 moneyAmount.longValue());
+        log.info("Preparing TBANK request with amount - {}, recurrent - {}", requestDTO.amount(), requestDTO.recurrent());
         InitResponseDTO responseDTO = tBankClient.init(requestDTO);
+        log.info("Got TBANK response - {}", responseDTO);
 
         String phone = PaymentProtoUtils.getPhoneFromRequest(request);
         String email = PaymentProtoUtils.getEmailFromRequest(request);

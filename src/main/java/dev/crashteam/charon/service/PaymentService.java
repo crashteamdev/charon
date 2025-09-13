@@ -6,6 +6,7 @@ import dev.crashteam.charon.config.PromoCodeConfig;
 import dev.crashteam.charon.exception.DuplicateTransactionException;
 import dev.crashteam.charon.exception.NoSuchPaymentTypeException;
 import dev.crashteam.charon.exception.NoSuchSubscriptionTypeException;
+import dev.crashteam.charon.exception.PaymentResponseException;
 import dev.crashteam.charon.job.BalancePaymentJob;
 import dev.crashteam.charon.job.PurchaseServiceJob;
 import dev.crashteam.charon.mapper.ProtoMapper;
@@ -83,7 +84,6 @@ public class PaymentService {
     public PaymentCreateResponse createGenericPurchasePayment(PaymentCreateRequest request) throws JsonProcessingException {
         PaymentCreateRequest.GenericPaymentPurchaseService purchaseService = request.getGenericPaymentPurchaseService();
 
-        log.info("Processing generic service purchase request for user - {}.", purchaseService.getUserId());
         PaymentResolver paymentResolver = paymentResolvers.stream().filter(it -> it.getPaymentSystem()
                         .equals(purchaseService.getPaymentSystem()))
                 .findFirst()
@@ -93,7 +93,12 @@ public class PaymentService {
 
         Payment payment = new Payment();
         BigDecimal moneyAmount = PaymentProtoUtils.getMajorMoneyAmount(purchaseService.getAmount());
+        log.info("Processing generic service purchase request for user - {}. Amount - {}", purchaseService.getUserId(), moneyAmount);
+
         PaymentData response = paymentResolver.createPayment(request, String.valueOf(moneyAmount));
+        if (!StringUtils.hasText(response.getProviderAmount())) {
+            throw new PaymentResponseException("Provider returned null or empty amount, check if request was correct");
+        }
 
         ObjectMapper objectMapper = new ObjectMapper();
         payment.setPaymentId(response.getPaymentId());
@@ -340,6 +345,12 @@ public class PaymentService {
         }
         BigDecimal moneyAmount = PaymentProtoUtils.getMajorMoneyAmount(amount);
         PaymentData response = paymentResolver.createPayment(request, String.valueOf(moneyAmount));
+        String paymentSystemTitle = protoMapper.getPaymentSystemType(purchaseService.getPaymentSystem()).getTitle();
+        log.info("Got response from {} with values - {}", paymentSystemTitle, response);
+
+        if (!StringUtils.hasText(response.getProviderAmount())) {
+            throw new PaymentResponseException("Provider returned null or empty amount, check if request was correct");
+        }
 
         ObjectMapper objectMapper = new ObjectMapper();
         payment.setPaymentId(response.getPaymentId());
@@ -356,7 +367,7 @@ public class PaymentService {
         payment.setMonthPaid(multiply);
         payment.setEmail(response.getEmail());
         payment.setPhone(response.getPhone());
-        payment.setPaymentSystem(protoMapper.getPaymentSystemType(purchaseService.getPaymentSystem()).getTitle());
+        payment.setPaymentSystem(paymentSystemTitle);
         payment.setMetadata(objectMapper.writeValueAsString(request.getMetadataMap()));
         payment.setExchangeRate(response.getExchangeRate());
         payment.setConfirmationUrl(response.getConfirmationUrl());
