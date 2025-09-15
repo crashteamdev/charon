@@ -1,5 +1,7 @@
 package dev.crashteam.charon.util;
 
+import org.springframework.util.StringUtils;
+
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
@@ -9,7 +11,7 @@ import java.util.TreeMap;
 public class TbankTokenGenerator {
 
     public static String generateInitToken(String terminalKey, Long amount, String orderId, 
-                                         String description, String customerKey, String secretKey) {
+                                         String description, String customerKey, String secretKey, String recurrent) {
         Map<String, String> params = new TreeMap<>();
         params.put("TerminalKey", terminalKey);
         params.put("Amount", amount.toString());
@@ -20,6 +22,9 @@ public class TbankTokenGenerator {
         }
         if (customerKey != null && !customerKey.isEmpty()) {
             params.put("CustomerKey", customerKey);
+        }
+        if (StringUtils.hasText(recurrent)) {
+            params.put("Recurrent", recurrent);
         }
         
         params.put("Password", secretKey);

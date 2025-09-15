@@ -25,7 +25,7 @@ public class TbankPaymentMapper {
         }
         
         String token = TbankTokenGenerator.generateInitToken(
-            terminalKey, amount, paymentId, description, customerKey, secretKey
+            terminalKey, amount, paymentId, description, customerKey, secretKey, recurrent
         );
 
         return new InitRequestDTO(
@@ -46,7 +46,7 @@ public class TbankPaymentMapper {
         String description = "Recurrent payment";
         
         String token = TbankTokenGenerator.generateInitToken(
-            terminalKey, amount, paymentId, description, null, secretKey
+            terminalKey, amount, paymentId, description, null, secretKey, null
         );
 
         return new InitRequestDTO(
