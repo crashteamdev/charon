@@ -11,6 +11,7 @@ public record InitResponseDTO(
         @JsonProperty("PaymentId") String paymentId,
         @JsonProperty("Status") String status,
         @JsonProperty("Amount") Long amount,
-        @JsonProperty("Message") String message
+        @JsonProperty("Message") String message,
+        @JsonProperty("Details") String details
 ) {
 }
