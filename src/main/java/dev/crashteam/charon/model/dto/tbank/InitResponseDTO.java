@@ -5,10 +5,12 @@ import lombok.Builder;
 
 @Builder
 public record InitResponseDTO(
-        @JsonProperty("Success")    Boolean success,
-        @JsonProperty("ErrorCode")  String  errorCode,
-        @JsonProperty("PaymentURL") String  paymentURL,
-        @JsonProperty("PaymentId")  String  paymentId,
-        @JsonProperty("Status")     String  status,
-        @JsonProperty("Amount")     Long  amount
-) {}
+        @JsonProperty("Success") Boolean success,
+        @JsonProperty("ErrorCode") String errorCode,
+        @JsonProperty("PaymentURL") String paymentURL,
+        @JsonProperty("PaymentId") String paymentId,
+        @JsonProperty("Status") String status,
+        @JsonProperty("Amount") Long amount,
+        @JsonProperty("Message") String message
+) {
+}
