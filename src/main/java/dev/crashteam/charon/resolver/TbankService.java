@@ -88,6 +88,7 @@ public class TbankService implements PaymentResolver {
                 .getPaymentRecurrentRequestDTO(shopId, secretKey, savedPaymentDto.getPaymentId(), amount);
 
         InitResponseDTO response = tBankClient.init(request);
+        log.info("Got TBANK recurrent response - {}", response);
 
         User user = userService.getUser(savedPaymentDto.getUserId());
 

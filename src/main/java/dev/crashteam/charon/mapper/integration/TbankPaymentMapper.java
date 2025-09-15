@@ -65,7 +65,7 @@ public class TbankPaymentMapper {
                                                 String rebillId,
                                                 String externalPaymentId) {
         String token = TbankTokenGenerator.generateChargeToken(
-            terminalKey, externalPaymentId, secretKey
+            terminalKey, externalPaymentId, secretKey, rebillId
         );
 
         return new ChargeRequestDTO(

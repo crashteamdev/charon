@@ -10,13 +10,13 @@ import java.util.TreeMap;
 
 public class TbankTokenGenerator {
 
-    public static String generateInitToken(String terminalKey, Long amount, String orderId, 
-                                         String description, String customerKey, String secretKey, String recurrent) {
+    public static String generateInitToken(String terminalKey, Long amount, String orderId,
+                                           String description, String customerKey, String secretKey, String recurrent) {
         Map<String, String> params = new TreeMap<>();
         params.put("TerminalKey", terminalKey);
         params.put("Amount", amount.toString());
         params.put("OrderId", orderId);
-        
+
         if (description != null && !description.isEmpty()) {
             params.put("Description", description);
         }
@@ -26,18 +26,19 @@ public class TbankTokenGenerator {
         if (StringUtils.hasText(recurrent)) {
             params.put("Recurrent", recurrent);
         }
-        
+
         params.put("Password", secretKey);
-        
+
         return calculateHash(params);
     }
 
-    public static String generateChargeToken(String terminalKey, String paymentId, String secretKey) {
+    public static String generateChargeToken(String terminalKey, String paymentId, String secretKey, String rebillId) {
         Map<String, String> params = new TreeMap<>();
         params.put("TerminalKey", terminalKey);
         params.put("PaymentId", paymentId);
         params.put("Password", secretKey);
-        
+        params.put("RebillId", rebillId);
+
         return calculateHash(params);
     }
 
@@ -46,7 +47,7 @@ public class TbankTokenGenerator {
         params.put("TerminalKey", terminalKey);
         params.put("PaymentId", paymentId);
         params.put("Password", secretKey);
-        
+
         return calculateHash(params);
     }
 
@@ -59,7 +60,7 @@ public class TbankTokenGenerator {
 
             MessageDigest digest = MessageDigest.getInstance("SHA-256");
             byte[] hash = digest.digest(concatenated.toString().getBytes(StandardCharsets.UTF_8));
-            
+
 
             StringBuilder hexString = new StringBuilder();
             for (byte b : hash) {
