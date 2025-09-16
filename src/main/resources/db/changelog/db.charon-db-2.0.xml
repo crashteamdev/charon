@@ -114,5 +114,11 @@
             <column name="generic_service_id" type="TEXT"/>
         </addColumn>
     </changeSet>
+
+    <changeSet id="add_confirmation_url_for_payment" author="sagefreke">
+        <addColumn tableName="payment">
+            <column name="confirmation_url" type="TEXT"/>
+        </addColumn>
+    </changeSet>
 </databaseChangeLog>
 

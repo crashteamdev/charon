@@ -39,10 +39,7 @@ import org.springframework.util.StringUtils;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
-import java.util.UUID;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -83,6 +80,10 @@ public class PaymentService {
     @Transactional
     public PaymentCreateResponse createGenericPurchasePayment(PaymentCreateRequest request) throws JsonProcessingException {
         PaymentCreateRequest.GenericPaymentPurchaseService purchaseService = request.getGenericPaymentPurchaseService();
+        Optional<Payment> optionalPayment = paymentRepository.findByOperationId(purchaseService.getOperationId());
+        if (purchaseService.hasOperationId() && optionalPayment.isPresent()) {
+            return protoMapper.getPaymentResponse(optionalPayment.get());
+        }
 
         PaymentResolver paymentResolver = paymentResolvers.stream().filter(it -> it.getPaymentSystem()
                         .equals(purchaseService.getPaymentSystem()))
@@ -103,6 +104,7 @@ public class PaymentService {
         ObjectMapper objectMapper = new ObjectMapper();
         payment.setPaymentId(response.getPaymentId());
         payment.setExternalId(response.getProviderId());
+        payment.setOperationId(purchaseService.getOperationId());
         payment.setStatus(RequestPaymentStatus.PENDING);
         payment.setCurrency(Currency.RUB.getTitle());
         payment.setAmount(purchaseService.getAmount());
@@ -119,6 +121,7 @@ public class PaymentService {
         payment.setExchangeRate(response.getExchangeRate());
         payment.setGenericServiceId(purchaseService.getGenericServiceId());
         payment.setConfirmationUrl(response.getConfirmationUrl());
+        payment.setDescription(purchaseService.getDescription());
         paymentRepository.save(payment);
         log.info("Saving generic payment with paymentId - {}", response.getPaymentId());
 
@@ -297,6 +300,10 @@ public class PaymentService {
         PaymentCreateRequest.PaymentPurchaseService purchaseService = request.getPaymentPurchaseService();
         log.info("Processing service purchase request for user - {}. Promo code - {}", purchaseService.getUserId(),
                 StringUtils.hasText(purchaseService.getPromoCode()) ? purchaseService.getPromoCode() : "");
+        Optional<Payment> optionalPayment = paymentRepository.findByOperationId(purchaseService.getOperationId());
+        if (purchaseService.hasOperationId() && optionalPayment.isPresent()) {
+            return protoMapper.getPaymentResponse(optionalPayment.get());
+        }
         PaymentResolver paymentResolver = paymentResolvers.stream().filter(it -> it.getPaymentSystem()
                         .equals(purchaseService.getPaymentSystem()))
                 .findFirst()
@@ -354,6 +361,7 @@ public class PaymentService {
 
         ObjectMapper objectMapper = new ObjectMapper();
         payment.setPaymentId(response.getPaymentId());
+        payment.setOperationId(purchaseService.getOperationId());
         payment.setExternalId(response.getProviderId());
         payment.setStatus(RequestPaymentStatus.PENDING);
         payment.setCurrency(Currency.RUB.getTitle());
@@ -371,6 +379,7 @@ public class PaymentService {
         payment.setMetadata(objectMapper.writeValueAsString(request.getMetadataMap()));
         payment.setExchangeRate(response.getExchangeRate());
         payment.setConfirmationUrl(response.getConfirmationUrl());
+        payment.setDescription(purchaseService.getDescription());
         paymentRepository.save(payment);
         log.info("Saving payment with paymentId - {}", response.getPaymentId());
 
@@ -383,6 +392,10 @@ public class PaymentService {
     @Transactional
     public PaymentCreateResponse createBalanceDepositPayment(PaymentCreateRequest request) throws JsonProcessingException {
         PaymentCreateRequest.PaymentDepositUserBalance balanceRequest = request.getPaymentDepositUserBalance();
+        Optional<Payment> optionalPayment = paymentRepository.findByOperationId(balanceRequest.getOperationId());
+        if (balanceRequest.hasOperationId() && optionalPayment.isPresent()) {
+            return protoMapper.getPaymentResponse(optionalPayment.get());
+        }
         PaymentResolver paymentResolver = paymentResolvers.stream().filter(it -> it.getPaymentSystem()
                         .equals(balanceRequest.getPaymentSystem()))
                 .findFirst()
@@ -402,6 +415,7 @@ public class PaymentService {
         ObjectMapper objectMapper = new ObjectMapper();
         Payment payment = new Payment();
         payment.setPaymentId(response.getPaymentId());
+        payment.setOperationId(balanceRequest.getOperationId());
         payment.setExternalId(response.getProviderId());
         payment.setStatus(RequestPaymentStatus.PENDING);
         payment.setCurrency(Currency.RUB.getTitle());
@@ -418,6 +432,7 @@ public class PaymentService {
         payment.setMetadata(objectMapper.writeValueAsString(request.getMetadataMap()));
         payment.setExchangeRate(response.getExchangeRate());
         payment.setConfirmationUrl(response.getConfirmationUrl());
+        payment.setDescription(balanceRequest.getDescription());
         paymentRepository.save(payment);
         log.info("Saving payment with paymentId - {}", response.getPaymentId());
 

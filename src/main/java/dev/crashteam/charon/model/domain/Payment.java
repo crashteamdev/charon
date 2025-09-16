@@ -87,6 +87,8 @@ public class Payment {
     private Set<PaidService> paidServices;
     @Column(name = "generic_service_id")
     private String genericServiceId;
-    @Transient
+    @Column(name = "confirmation_url")
     private String confirmationUrl;
+    @Column
+    private String description;
 }

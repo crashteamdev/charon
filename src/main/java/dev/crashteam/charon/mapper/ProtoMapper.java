@@ -237,6 +237,21 @@ public class ProtoMapper {
                 .build();
     }
 
+    public PaymentCreateResponse getPaymentResponse(Payment payment) {
+        Instant instantCreated = payment.getCreated().toInstant(ZoneOffset.UTC);
+        log.info("Returning payment response with type - {}, url - {}, id - {}",
+                payment.getPaymentSystem(), payment.getConfirmationUrl(), payment.getPaymentId());
+        return PaymentCreateResponse.newBuilder()
+                .setAmount(getAmount(Currency.RUB.getTitle(), payment.getAmount()))
+                .setDescription(Optional.ofNullable(payment.getDescription()).orElse(""))
+                .setCreatedAt(Timestamp.newBuilder().setSeconds(instantCreated.getEpochSecond())
+                        .setNanos(instantCreated.getNano()).build())
+                .setPaymentId(payment.getPaymentId())
+                .setStatus(getPaymentStatus(payment.getStatus()))
+                .setConfirmationUrl(payment.getConfirmationUrl())
+                .build();
+    }
+
     public PurchaseServiceResponse getErrorPurchaseServiceResponse(Long amount) {
         BalanceAmount balanceAmount = BalanceAmount.newBuilder().setValue(amount).build();
         PurchaseServiceResponse.ErrorResponse errorResponse = PurchaseServiceResponse.ErrorResponse.newBuilder()
