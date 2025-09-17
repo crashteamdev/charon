@@ -104,7 +104,7 @@ public class PaymentService {
         ObjectMapper objectMapper = new ObjectMapper();
         payment.setPaymentId(response.getPaymentId());
         payment.setExternalId(response.getProviderId());
-        payment.setOperationId(purchaseService.getOperationId());
+        payment.setOperationId(StringUtils.hasText(purchaseService.getOperationId()) ? purchaseService.getOperationId() : null);
         payment.setStatus(RequestPaymentStatus.PENDING);
         payment.setCurrency(Currency.RUB.getTitle());
         payment.setAmount(purchaseService.getAmount());
@@ -361,7 +361,7 @@ public class PaymentService {
 
         ObjectMapper objectMapper = new ObjectMapper();
         payment.setPaymentId(response.getPaymentId());
-        payment.setOperationId(purchaseService.getOperationId());
+        payment.setOperationId(StringUtils.hasText(purchaseService.getOperationId()) ? purchaseService.getOperationId() : null);
         payment.setExternalId(response.getProviderId());
         payment.setStatus(RequestPaymentStatus.PENDING);
         payment.setCurrency(Currency.RUB.getTitle());
@@ -415,7 +415,7 @@ public class PaymentService {
         ObjectMapper objectMapper = new ObjectMapper();
         Payment payment = new Payment();
         payment.setPaymentId(response.getPaymentId());
-        payment.setOperationId(balanceRequest.getOperationId());
+        payment.setOperationId(StringUtils.hasText(balanceRequest.getOperationId()) ? balanceRequest.getOperationId() : null);
         payment.setExternalId(response.getProviderId());
         payment.setStatus(RequestPaymentStatus.PENDING);
         payment.setCurrency(Currency.RUB.getTitle());

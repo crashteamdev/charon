@@ -9,6 +9,7 @@ import org.hibernate.type.SqlTypes;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
+import org.springframework.util.StringUtils;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -91,4 +92,12 @@ public class Payment {
     private String confirmationUrl;
     @Column
     private String description;
+
+    public void setOperationId(String operationId) {
+        if (StringUtils.hasText(operationId)) {
+            this.operationId = operationId;
+        } else {
+            this.operationId = null;
+        }
+    }
 }
