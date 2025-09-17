@@ -81,7 +81,7 @@ public class PaymentService {
     public PaymentCreateResponse createGenericPurchasePayment(PaymentCreateRequest request) throws JsonProcessingException {
         PaymentCreateRequest.GenericPaymentPurchaseService purchaseService = request.getGenericPaymentPurchaseService();
         Optional<Payment> optionalPayment = paymentRepository.findByOperationId(purchaseService.getOperationId());
-        if (purchaseService.hasOperationId() && optionalPayment.isPresent()) {
+        if (purchaseService.hasOperationId() && StringUtils.hasText(purchaseService.getOperationId()) && optionalPayment.isPresent()) {
             return protoMapper.getPaymentResponse(optionalPayment.get());
         }
 
@@ -301,7 +301,7 @@ public class PaymentService {
         log.info("Processing service purchase request for user - {}. Promo code - {}", purchaseService.getUserId(),
                 StringUtils.hasText(purchaseService.getPromoCode()) ? purchaseService.getPromoCode() : "");
         Optional<Payment> optionalPayment = paymentRepository.findByOperationId(purchaseService.getOperationId());
-        if (purchaseService.hasOperationId() && optionalPayment.isPresent()) {
+        if (purchaseService.hasOperationId() && StringUtils.hasText(purchaseService.getOperationId()) && optionalPayment.isPresent()) {
             return protoMapper.getPaymentResponse(optionalPayment.get());
         }
         PaymentResolver paymentResolver = paymentResolvers.stream().filter(it -> it.getPaymentSystem()
@@ -393,7 +393,7 @@ public class PaymentService {
     public PaymentCreateResponse createBalanceDepositPayment(PaymentCreateRequest request) throws JsonProcessingException {
         PaymentCreateRequest.PaymentDepositUserBalance balanceRequest = request.getPaymentDepositUserBalance();
         Optional<Payment> optionalPayment = paymentRepository.findByOperationId(balanceRequest.getOperationId());
-        if (balanceRequest.hasOperationId() && optionalPayment.isPresent()) {
+        if (balanceRequest.hasOperationId() && StringUtils.hasText(balanceRequest.getOperationId()) && optionalPayment.isPresent()) {
             return protoMapper.getPaymentResponse(optionalPayment.get());
         }
         PaymentResolver paymentResolver = paymentResolvers.stream().filter(it -> it.getPaymentSystem()
